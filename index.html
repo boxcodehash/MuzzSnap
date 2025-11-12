@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MuzzSnap — Chat</title>
+
+  <!-- React (UMD) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 overflow-hidden">
+  <div id="root" class="h-screen w-screen"></div>
+
+  <script type="text/babel">
+  const { useState, useEffect, useRef } = React;
+
+  /***** CONFIG FIREBASE *****/
+  const firebaseConfig = {
+    apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
+    authDomain: "pulsari.firebaseapp.com",
+    databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
+    projectId: "pulsari",
+    storageBucket: "pulsari.firebasestorage.app",
+    messagingSenderId: "824306321233",
+    appId: "1:824306321233:web:2c9bfa02170a17d560b570"
+  };
+
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const database = firebase.database();
+
+  const DEBOUNCE_DELAY_MS = 2000;
+  const MAX_USERS = 1000;
+  const MAX_CHANNELS_PER_USER = 2;
+
+  function useDebounce(value, delay) {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+    useEffect(() => {
+      const t = setTimeout(() => setDebouncedValue(value), delay);
+      return () => clearTimeout(t);
+    }, [value, delay]);
+    return debouncedValue;
+  }
+
+  const EMOJIS = ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','😋','😛','😜','🤪','😝','🤑','🤗'];
+
+  function App() {
+    const [currentUser, setCurrentUser] = useState(null);
+    const [userNickname, setUserNickname] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [loginError, setLoginError] = useState(null);
+
+    const [authMode, setAuthMode] = useState('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [nicknameInput, setNicknameInput] = useState('');
+
+    const [channels, setChannels] = useState([]);
+    const [selectedChannel, setSelectedChannel] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [draftMessage, setDraftMessage] = useState('');
+    const messageInput = useDebounce(draftMessage, DEBOUNCE_DELAY_MS);
+    const messagesEndRef = useRef(null);
+
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [isDesktop, setIsDesktop] = useState(false);
+    const [showSidebar, setShowSidebar] = useState(true);
+    const [showNewChannelModal, setShowNewChannelModal] = useState(false);
+    const [newChannelName, setNewChannelName] = useState('');
+    const [newChannelDesc, setNewChannelDesc] = useState('');
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showRoomFull, setShowRoomFull] = useState(false);
+    const emojiPickerRef = useRef(null);
+
+    // Detect desktop
+    useEffect(() => {
+      const checkDesktop = () => setIsDesktop(window.matchMedia('(min-width: 1024px)').matches);
+      checkDesktop();
+      window.addEventListener('resize', checkDesktop);
+      return () => window.removeEventListener('resize', checkDesktop);
+    }, []);
+
+    // Auth listener
+    useEffect(() => {
+      const unsub = auth.onAuthStateChanged(async user => {
+        setCurrentUser(user);
+        setUserNickname(null);
+        setLoginError(null);
+        if (user) {
+          try {
+            const snap = await database.ref('users/' + user.uid).once('value');
+            const data = snap.val();
+            const username = data?.username || (user.uid.substring(0,6) + '...' + user.uid.slice(-4));
+            if(!data) await database.ref('users/' + user.uid).set({ username, createdAt: firebase.database.ServerValue.TIMESTAMP });
+            setUserNickname(username);
+            setupPresence(user.uid, username);
+          } catch (err) {
+            console.error(err);
+            const fallback = user.uid.substring(0,6) + '...' + user.uid.slice(-4);
+            setUserNickname(fallback);
+            setupPresence(user.uid, fallback);
+          }
+        } else {
+          setChannels([]);
+          setSelectedChannel(null);
+          setMessages([]);
+          setOnlineUsers([]);
+        }
+      });
+      return () => unsub();
+    }, []);
+
+    // Channels listener
+    useEffect(() => {
+      if (!currentUser) return;
+      const ref = database.ref('channels');
+      const listener = ref.on('value', snapshot => {
+        const data = snapshot.val();
+        if(!data) { setChannels([]); setSelectedChannel(null); return; }
+        const list = Object.keys(data).map(k => ({ id:k, ...data[k] }));
+        setChannels(list);
+        if(!selectedChannel) setSelectedChannel(list[0] || null);
+        else if(!list.some(c => c.id===selectedChannel.id)) setSelectedChannel(list[0] || null);
+      });
+      return () => ref.off('value', listener);
+    }, [currentUser]);
+
+    // Messages listener
+    useEffect(() => {
+      if(!currentUser || !selectedChannel) { setMessages([]); return; }
+      const ref = database.ref('messages/' + selectedChannel.id);
+      const listener = ref.on('value', snap => {
+        const data = snap.val() || {};
+        const list = Object.keys(data).map(k => ({ id:k, ...data[k] }));
+        const filtered = list.filter(msg => Date.now() - msg.timestamp < 24*60*60*1000);
+        setMessages(filtered);
+      });
+      return () => ref.off('value', listener);
+    }, [currentUser, selectedChannel]);
+
+    // Presence listener
+    useEffect(() => {
+      if(!currentUser){ setOnlineUsers([]); return; }
+      const ref = database.ref('presence');
+      const listener = ref.on('value', snap => {
+        const data = snap.val() || {};
+        const list = Object.keys(data).filter(k=>data[k].online).map(k=>({ userId:k, username:data[k].username }));
+        setOnlineUsers(list.slice(0, MAX_USERS));
+        if(list.length >= MAX_USERS) setShowRoomFull(true);
+        else setShowRoomFull(false);
+      });
+      return () => ref.off('value', listener);
+    }, [currentUser]);
+
+    // Scroll to bottom
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
+
+    // Emoji picker outside click
+    useEffect(() => {
+      function handleClickOutside(e) {
+        if(emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) setShowEmojiPicker(false);
+      }
+      if(showEmojiPicker) document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showEmojiPicker]);
+
+    function setupPresence(uid, username) {
+      const presenceRef = database.ref('presence/' + uid);
+      const connectedRef = database.ref('.info/connected');
+      connectedRef.on('value', snap=>{
+        if(snap.val()===true){
+          presenceRef.onDisconnect().set({ online:false, lastSeen:firebase.database.ServerValue.TIMESTAMP });
+          presenceRef.set({ online:true, username, lastSeen:firebase.database.ServerValue.TIMESTAMP });
+        }
+      });
+    }
+
+    // AUTH HANDLERS
+    async function handleRegister(e){ 
+      e&&e.preventDefault(); 
+      setLoginError(null);
+      if(!email||!password){ setLoginError("Email and password are required."); return; }
+      if(!nicknameInput || nicknameInput.trim().length<2){ setLoginError("Nickname must be at least 2 characters."); return; }
+      setLoading(true);
+      try{
+        const res = await auth.createUserWithEmailAndPassword(email,password);
+        const user = res.user;
+        const username = nicknameInput.trim();
+        await database.ref('users/' + user.uid).set({ username, email:email.toLowerCase(), createdAt:firebase.database.ServerValue.TIMESTAMP });
+      }catch(err){ 
+        console.error(err); 
+        setLoginError(err.message||"Error creating account."); 
+      }
+      finally{ setLoading(false); }
+    }
+
+    async function handleEmailLogin(e){ 
+      e&&e.preventDefault(); 
+      setLoginError(null);
+      if(!email||!password){ setLoginError("Email and password are required."); return; }
+      setLoading(true);
+      try{ 
+        await auth.signInWithEmailAndPassword(email,password); 
+      }
+      catch(err){ 
+        console.error(err); 
+        setLoginError(err.message||"Error logging in."); 
+      }
+      finally{ setLoading(false); }
+    }
+
+    async function handleSendPasswordReset(e){ 
+      e&&e.preventDefault(); 
+      setLoginError(null);
+      if(!email){ setLoginError("Enter your email to reset password."); return; }
+      setLoading(true);
+      try{ 
+        await auth.sendPasswordResetEmail(email); 
+        setLoginError("Password reset email sent successfully."); 
+        setAuthMode('login'); 
+      }
+      catch(err){ 
+        console.error(err); 
+        setLoginError(err.message||"Error sending reset email."); 
+      }
+      finally{ setLoading(false); }
+    }
+
+    async function handleLogout(){
+      if(currentUser) await database.ref('presence/' + currentUser.uid).set({ online:false, lastSeen:firebase.database.ServerValue.TIMESTAMP });
+      await auth.signOut();
+      setSelectedChannel(null); setChannels([]); setMessages([]); setOnlineUsers([]); setUserNickname(null);
+    }
+
+    // Chat actions
+    async function sendMessage(){
+      if(!messageInput.trim()||!selectedChannel||!currentUser||!userNickname) return;
+      if(messageInput !== draftMessage) return;
+      const messagesRef = database.ref('messages/' + selectedChannel.id);
+      const newMsgRef = messagesRef.push();
+      try{
+        await newMsgRef.set({ content:messageInput.trim(), userId:currentUser.uid, username:userNickname, timestamp:firebase.database.ServerValue.TIMESTAMP });
+        setDraftMessage('');
+        setShowEmojiPicker(false);
+      }catch(err){ console.error(err); setLoginError("Failed to send message. Retry."); }
+    }
+
+    function addEmoji(emoji){ setDraftMessage(prev=>prev+emoji); }
+
+    async function createChannel(){
+      if(!newChannelName.trim()||!currentUser) return;
+
+      // Check channels created by user
+      const userChannels = channels.filter(c=>c.createdBy===currentUser.uid);
+      if(currentUser.uid !== "Ryashu" && userChannels.length >= MAX_CHANNELS_PER_USER){
+        setLoginError("You can only create 2 channels");
+        return;
+      }
+
+      const channelsRef = database.ref('channels');
+      const newChannelRef = channelsRef.push();
+      try{
+        await newChannelRef.set({
+          name: newChannelName.trim(),
+          description: newChannelDesc.trim(),
+          createdBy: currentUser.uid,
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          isPrivate:false
+        });
+        setNewChannelName(''); setNewChannelDesc(''); setShowNewChannelModal(false); setLoginError(null);
+      }catch(err){ console.error(err); setLoginError("Failed to create channel. Retry."); }
+    }
+
+    // Language detection
+    function getLang(channel){
+      if(!channel) return 'es';
+      const name = channel.name.toLowerCase();
+      if(name.includes('english')) return 'en';
+      return 'es';
+    }
+
+    function t(key){
+      const lang = getLang(selectedChannel);
+      const texts = {
+        en:{
+          login:"Login", register:"Register", reset:"Reset Password",
+          createChannel:"Create Channel", cancel:"Cancel", send:"Send",
+          selectChannel:"Select a channel", roomFull:"Room Full"
+        },
+        es:{
+          login:"Iniciar sesión", register:"Crear cuenta", reset:"Recuperar contraseña",
+          createChannel:"Crear Canal", cancel:"Cancelar", send:"Enviar",
+          selectChannel:"Selecciona un canal", roomFull:"Sala llena"
+        }
+      };
+      return texts[lang][key] || key;
+    }
+
+    function formatTime(timestamp){
+      if(!timestamp) return '';
+      const d=new Date(timestamp), now=new Date(), diff=now-d;
+      if(diff<60000) return 'now'; 
+      if(diff<3600000) return Math.floor(diff/60000)+'m';
+      if(diff<86400000) return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+      return d.toLocaleDateString('en-US',{day:'2-digit',month:'2-digit'});
+    }
+
+    // Render auth if not logged
+    if(!currentUser){
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-md border border-gray-800">
+            <div className="flex justify-center mb-4 sm:mb-6">
+              <img src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000027796.png/:/rs=w:1440,h:1440"
+                alt="Logo" className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 object-contain shadow-lg" />
+            </div>
+
+            <div className="text-center mb-4">
+              <h1 className="text-xl sm:text-2xl font-bold text-white">MuzzSnap</h1>
+              <p className="text-sm sm:text-base text-gray-400">
+                {authMode === 'login' && 'Login to your account'}
+                {authMode === 'register' && 'Create new account'}
+                {authMode === 'reset' && 'Reset your password'}
+              </p>
+            </div>
+
+            {loginError && <div className="bg-red-900 border border-red-700 text-white p-3 rounded-xl mb-4 text-sm">{loginError}</div>}
+
+            <div className="space-y-3">
+              <input 
+                type="email" 
+                value={email} 
+                onChange={e=>setEmail(e.target.value)} 
+                placeholder="Email" 
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+              />
+              <input 
+                type="password" 
+                value={password} 
+                onChange={e=>setPassword(e.target.value)} 
+                placeholder="Password" 
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+              />
+              
+              {authMode === 'register' && (
+                <input 
+                  type="text" 
+                  value={nicknameInput} 
+                  onChange={e=>setNicknameInput(e.target.value)} 
+                  placeholder="Nickname (min 2 characters)" 
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+                />
+              )}
+
+              {authMode === 'login' && (
+                <button 
+                  onClick={handleEmailLogin} 
+                  disabled={loading} 
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {loading ? 'Loading...' : 'Login'}
+                </button>
+              )}
+
+              {authMode === 'register' && (
+                <button 
+                  onClick={handleRegister} 
+                  disabled={loading} 
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {loading ? 'Creating...' : 'Create Account'}
+                </button>
+              )}
+
+              {authMode === 'reset' && (
+                <button 
+                  onClick={handleSendPasswordReset} 
+                  disabled={loading} 
+                  className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 rounded-xl font-semibold text-lg hover:from-green-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {loading ? 'Sending...' : 'Send Reset Email'}
+                </button>
+              )}
+            </div>
+
+            <div className="mt-4 text-center space-y-2">
+              {authMode === 'login' && (
+                <>
+                  <button 
+                    onClick={()=>{setAuthMode('register'); setLoginError(null);}} 
+                    className="text-purple-400 hover:text-purple-300 text-sm block w-full"
+                  >
+                    Don't have an account? Sign up
+                  </button>
+                  <button 
+                    onClick={()=>{setAuthMode('reset'); setLoginError(null);}} 
+                    className="text-gray-400 hover:text-gray-300 text-sm block w-full"
+                  >
+                    Forgot password?
+                  </button>
+                </>
+              )}
+              {authMode === 'register' && (
+                <button 
+                  onClick={()=>{setAuthMode('login'); setLoginError(null);}} 
+                  className="text-blue-400 hover:text-blue-300 text-sm block w-full"
+                >
+                  Already have an account? Login
+                </button>
+              )}
+              {authMode === 'reset' && (
+                <button 
+                  onClick={()=>{setAuthMode('login'); setLoginError(null);}} 
+                  className="text-blue-400 hover:text-blue-300 text-sm block w-full"
+                >
+                  Back to login
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // MAIN UI
+    return (
+      <div className="h-screen w-screen bg-gray-900 flex fixed inset-0 overflow-hidden">
+        {/* Sidebar */}
+        <div className={`${isDesktop ? 'relative' : 'fixed inset-y-0 z-50'} ${showSidebar ? 'w-64' : 'w-0'} bg-gray-800 border-r border-gray-700 transition-all duration-300 overflow-hidden flex flex-col`}>
+          <div className="p-4 border-b border-gray-700 flex justify-between items-center shrink-0">
+            <h2 className="font-bold text-white">MuzzSnap</h2>
+            <button onClick={()=>setShowSidebar(false)} className="lg:hidden text-gray-400 hover:text-white">✕</button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex items-center justify-between px-2 py-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase">{t('createChannel')}</span>
+              <button onClick={()=>setShowNewChannelModal(true)} className="text-gray-400 hover:text-white text-xl">+</button>
+            </div>
+            {channels.map(channel=>(
+              <button key={channel.id} onClick={()=>{ setSelectedChannel(channel); if(!isDesktop)setShowSidebar(false); }} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg mb-1 text-left ${selectedChannel?.id===channel.id ? 'bg-gray-700 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>
+                <span>#</span><span className="truncate">{channel.name}</span>
+              </button>
+            ))}
+          </div>
+          <div className="p-4 border-t border-gray-700 text-gray-400 text-sm shrink-0">{onlineUsers.length}/{MAX_USERS} online</div>
+        </div>
+
+        {/* Main Chat */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-700 text-white shrink-0">
+            <button onClick={()=>setShowSidebar(true)} className="lg:hidden text-gray-400 mr-2">☰</button>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="font-semibold truncate">{selectedChannel?.name || t('selectChannel')}</span>
+              {selectedChannel?.description && <span className="text-gray-400 text-sm hidden sm:inline truncate">• {selectedChannel.description}</span>}
+            </div>
+            <button onClick={handleLogout} className="text-red-500 hover:text-red-400 text-xs sm:text-sm ml-2 shrink-0">Logout</button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
+            {messages.length === 0 && (
+              <div className="text-center text-gray-500 mt-8">
+                <p>No messages yet. Start the conversation!</p>
+              </div>
+            )}
+            {messages.map(msg=>(
+              <div key={msg.id} className="flex flex-col">
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <span className="font-semibold">{msg.username}</span>
+                  <span>{formatTime(msg.timestamp)}</span>
+                </div>
+                <div className="text-white mt-1 break-words">{msg.content}</div>
+              </div>
+            ))}
+            <div ref={messagesEndRef}></div>
+          </div>
+
+          {showRoomFull && <div className="absolute top-16 left-1/2 transform -translate-x-1/2 bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg z-10">{t('roomFull')}</div>}
+
+          <div className="p-3 sm:p-4 border-t border-gray-700 flex gap-2 items-center relative shrink-0">
+            <button onClick={()=>setShowEmojiPicker(prev=>!prev)} className="text-gray-400 hover:text-white text-xl transition-colors shrink-0">😊</button>
+            {showEmojiPicker && (
+              <div ref={emojiPickerRef} className="absolute bottom-16 sm:bottom-20 left-2 sm:left-4 p-2 bg-gray-800 border border-gray-700 rounded-xl grid grid-cols-6 gap-2 max-h-48 overflow-y-auto shadow-xl z-20">
+                {EMOJIS.map(e=><button key={e} onClick={()=>addEmoji(e)} className="text-xl hover:bg-gray-700 p-1 rounded">{e}</button>)}
+              </div>
+            )}
+            <input 
+              value={draftMessage} 
+              onChange={e=>setDraftMessage(e.target.value)} 
+              onKeyPress={e=>e.key==='Enter'&&sendMessage()}
+              placeholder="Type a message..." 
+              className="flex-1 px-3 sm:px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white focus:outline-none focus:border-purple-500 text-sm sm:text-base"
+            />
+            <button onClick={sendMessage} className="bg-purple-600 hover:bg-purple-700 text-white px-4 sm:px-6 py-2 rounded-xl font-semibold transition-colors text-sm sm:text-base shrink-0">{t('send')}</button>
+          </div>
+        </div>
+
+        {/* New Channel Modal */}
+        {showNewChannelModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 p-6 rounded-3xl w-full max-w-md border border-gray-700">
+              <h3 className="text-white font-bold mb-4 text-xl">{t('createChannel')}</h3>
+              <input 
+                value={newChannelName} 
+                onChange={e=>setNewChannelName(e.target.value)} 
+                placeholder="Channel name" 
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-xl mb-2 text-white focus:outline-none focus:border-purple-500"
+              />
+              <input 
+                value={newChannelDesc} 
+                onChange={e=>setNewChannelDesc(e.target.value)} 
+                placeholder="Description (optional)" 
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-xl mb-4 text-white focus:outline-none focus:border-purple-500"
+              />
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={()=>{setShowNewChannelModal(false); setNewChannelName(''); setNewChannelDesc('');}} 
+                  className="px-4 py-2 rounded-xl border border-gray-700 text-gray-400 hover:text-white transition-colors"
+                >
+                  {t('cancel')}
+                </button>
+                <button 
+                  onClick={createChannel} 
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-colors"
+                >
+                  {t('createChannel')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  ReactDOM.render(<App/>, document.getElementById('root'));
+  </script>
+</body>
+</html>
