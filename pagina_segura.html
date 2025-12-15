@@ -1,39 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>MuzzSnap | Private</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MuzzSnap | The Future of Decentralized Communication</title>
 
-<style>
-body {
-    background:#0b0b0f;
-    color:#fff;
-    font-family:Arial, sans-serif;
-    padding:40px;
-}
-.denied {
-    text-align:center;
-    margin-top:20vh;
-}
-</style>
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Ethers.js -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+    <!-- ===================== STYLES (ORIGINAL + NO CAMBIOS) ===================== -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Orbitron:wght@400..900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:#000;color:#fff;overflow-x:hidden;width:100vw}
+        .hero-bg{position:fixed;inset:0;background:radial-gradient(ellipse at 20% 30%,rgba(220,38,38,.15),transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(185,28,28,.2),transparent 50%),radial-gradient(circle at 50% 50%,rgba(127,29,29,.1),transparent 100%);z-index:0;animation:bgShift 20s ease infinite}
+        @keyframes bgShift{0%,100%{transform:scale(1)}50%{transform:scale(1.1) rotate(5deg)}}
+        .grid-container{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.15}
+        .grid-lines{width:100%;height:100%;background-image:linear-gradient(rgba(220,38,38,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(220,38,38,.3) 1px,transparent 1px);background-size:100px 100px;animation:gridMove 30s linear infinite}
+        @keyframes gridMove{to{transform:translate(100px,100px)}}
+        .particle{position:fixed;width:3px;height:3px;background:#dc2626;border-radius:50%;box-shadow:0 0 10px #dc2626;z-index:1}
+        .glitch-text{font-family:'Orbitron';font-weight:900;text-shadow:0 0 20px rgba(220,38,38,.8)}
+        .feature-card{background:linear-gradient(135deg,rgba(30,30,30,.8),rgba(20,20,20,.9));border:1px solid rgba(220,38,38,.3);backdrop-filter:blur(10px)}
+        .cta-button{font-family:'Rajdhani';font-weight:700;background:linear-gradient(135deg,#dc2626,#991b1b)}
+    </style>
 </head>
 
 <body>
 
-<div id="content" style="display:none;">
-    <h1>Welcome to MuzzSnap</h1>
-    <p>Exclusive content for verified MUZZLE holders.</p>
+<!-- ===================== ACCESS GATE (NIVEL 2) ===================== -->
+<div id="access-gate"
+    class="fixed inset-0 z-[9999] flex items-center justify-center bg-black">
+    <div class="text-center max-w-md px-6">
+        <i class="fas fa-lock text-6xl text-red-600 mb-6"></i>
+        <h2 class="text-3xl font-bold mb-4">Access Restricted</h2>
+        <p class="text-gray-400 mb-6">
+            This content is protected by Muzzle Token policy.<br>
+            Wallet verification required.
+        </p>
+        <button id="connectWalletBtn"
+            class="cta-button px-8 py-3 rounded-full text-white text-lg">
+            <i class="fas fa-wallet mr-2"></i> Connect Wallet
+        </button>
+        <p id="access-error" class="text-red-500 text-sm mt-4 hidden"></p>
+    </div>
 </div>
 
-<div id="denied" class="denied" style="display:none;">
-    <h2>Access denied</h2>
-    <p>Access denied due to privacy policy.</p>
+<!-- ===================== ORIGINAL PAGE ===================== -->
+<div class="hero-bg"></div>
+<div class="grid-container"><div class="grid-lines"></div></div>
+
+<div class="content-wrapper min-h-screen relative z-10">
+
+<section class="min-h-screen flex items-center justify-center text-center px-4">
+    <div>
+        <i class="fas fa-lock-open text-7xl text-red-600 mb-6"></i>
+        <h1 class="glitch-text text-6xl mb-4">MUZZSNAP</h1>
+        <p class="text-gray-400 max-w-xl mx-auto mb-8">
+            Access verified. Welcome to decentralized communication.
+        </p>
+        <button class="cta-button px-10 py-4 rounded-full text-xl">
+            Launch App (Coming Soon)
+        </button>
+    </div>
+</section>
+
 </div>
 
+<!-- ===================== MUZZLE CONFIG ===================== -->
 <script>
-const SESSION_KEY = "muzzsnap_session";
+const MUZZLE_CONTRACT = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
+const REQUIRED_BALANCE = BigInt("20000000") * BigInt(10 ** 18);
+const ETH_CHAIN_ID = "0x1";
 
+const ERC20_ABI_MIN = [
+    {
+        constant: true,
+        inputs: [{ name: "_owner", type: "address" }],
+        name: "balanceOf",
+        outputs: [{ name: "balance", type: "uint256" }],
+        type: "function"
+    }
+];
+</script>
+
+<!-- ===================== ACCESS LOGIC ===================== -->
+<script>
+async function verifyAccess() {
+    const gate = document.getElementById("access-gate");
+    const errorBox = document.getElementById("access-error");
+
+    if (!window.ethereum) {
+        errorBox.textContent = "Crypto wallet not detected.";
+        errorBox.classList.remove("hidden");
+        return;
+    }
+
+    try {
+        const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+        const user = accounts[0];
+
+        const chainId = await ethereum.request({ method: "eth_chainId" });
+        if (chainId !== ETH_CHAIN_ID) {
+            errorBox.textContent = "Please switch to Ethereum Mainnet.";
+            errorBox.classList.remove("hidden");
+            return;
+        }
+
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const token = new ethers.Contract(MUZZLE_CONTRACT, ERC20_ABI_MIN, provider);
+        const balance = await token.balanceOf(user);
+
+        if (BigInt(balance.toString()) < REQUIRED_BALANCE) {
+            errorBox.textContent = "Insufficient Muzzle Token balance.";
+            errorBox.classList.remove("hidden");
+            return;
+        }
+
+        sessionStorage.setItem("muzz_access", "granted");
+        gate.remove();
+
+    } catch (e) {
+        errorBox.textContent = "Verification failed.";
+        errorBox.classList.remove("hidden");
+        console.error(e);
+    }
+}
+
+document.getElementById("connectWalletBtn").onclick = verifyAccess;
+
+window.addEventListener("load", () => {
+    if (sessionStorage.getItem("muzz_access") === "granted") {
+        document.getElementById("access-gate")?.remove();
+    } else {
+        document.body.style.overflow = "hidden";
+    }
+});
+</script>
+
+</body>
+</html>
 try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) throw 0;
