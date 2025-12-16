@@ -1,39 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MuzzSnap | The Future of Decentralized Communication</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuzzSnap | The Future of Decentralized Communication</title>
 
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+crossorigin="anonymous" referrerpolicy="no-referrer"/>
 
-    <!-- FontAwesome -->
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
-    <!-- Ethers.js -->
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-
-    <!-- ===================== STYLES (ORIGINAL + NO CAMBIOS) ===================== -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Orbitron:wght@400..900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Inter',sans-serif;background:#000;color:#fff;overflow-x:hidden;width:100vw}
-        .hero-bg{position:fixed;inset:0;background:radial-gradient(ellipse at 20% 30%,rgba(220,38,38,.15),transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(185,28,28,.2),transparent 50%),radial-gradient(circle at 50% 50%,rgba(127,29,29,.1),transparent 100%);z-index:0;animation:bgShift 20s ease infinite}
-        @keyframes bgShift{0%,100%{transform:scale(1)}50%{transform:scale(1.1) rotate(5deg)}}
-        .grid-container{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.15}
-        .grid-lines{width:100%;height:100%;background-image:linear-gradient(rgba(220,38,38,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(220,38,38,.3) 1px,transparent 1px);background-size:100px 100px;animation:gridMove 30s linear infinite}
-        @keyframes gridMove{to{transform:translate(100px,100px)}}
-        .particle{position:fixed;width:3px;height:3px;background:#dc2626;border-radius:50%;box-shadow:0 0 10px #dc2626;z-index:1}
-        .glitch-text{font-family:'Orbitron';font-weight:900;text-shadow:0 0 20px rgba(220,38,38,.8)}
-        .feature-card{background:linear-gradient(135deg,rgba(30,30,30,.8),rgba(20,20,20,.9));border:1px solid rgba(220,38,38,.3);backdrop-filter:blur(10px)}
-        .cta-button{font-family:'Rajdhani';font-weight:700;background:linear-gradient(135deg,#dc2626,#991b1b)}
-    </style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Orbitron:wght@400..900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#000;color:#fff;overflow-x:hidden}
+.hero-bg{position:fixed;inset:0;background:radial-gradient(ellipse at 20% 30%,rgba(220,38,38,.15),transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(185,28,28,.2),transparent 50%),radial-gradient(circle at 50% 50%,rgba(127,29,29,.1),transparent 100%);z-index:0;animation:bgShift 20s ease infinite}
+@keyframes bgShift{50%{transform:scale(1.1) rotate(5deg)}}
+.grid-container{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.15}
+.grid-lines{width:100%;height:100%;background-image:linear-gradient(rgba(220,38,38,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(220,38,38,.3) 1px,transparent 1px);background-size:100px 100px;animation:gridMove 30s linear infinite}
+@keyframes gridMove{to{transform:translate(100px,100px)}}
+.glitch-text{font-family:'Orbitron';font-weight:900;text-shadow:0 0 30px rgba(220,38,38,.8)}
+.cta-button{font-family:'Rajdhani';font-weight:700;background:linear-gradient(135deg,#dc2626,#991b1b)}
+.lock-icon{filter:drop-shadow(0 0 30px rgba(220,38,38,.9))}
+</style>
 </head>
 
 <body>
+
+<!-- 🔒 ACCESS OVERLAY -->
+<div id="access-overlay"
+class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md">
+  <div class="text-center max-w-md px-6">
+    <i class="fas fa-lock text-6xl text-red-600 mb-6 lock-icon"></i>
+    <h2 class="text-3xl font-bold mb-4">Private Access</h2>
+    <p class="text-gray-400 mb-6">
+      Muzzle Token required<br>
+      Minimum: <b>20,000,000 MUZZLE</b>
+    </p>
+    <button id="connectWalletBtn"
+      class="cta-button px-8 py-3 rounded-full text-white text-lg">
+      <i class="fas fa-wallet mr-2"></i> Verify Wallet
+    </button>
+    <p id="access-error" class="text-red-500 text-sm mt-4 hidden"></p>
+  </div>
+</div>
+
+<div class="hero-bg"></div>
+<div class="grid-container"><div class="grid-lines"></div></div>
+
+<!-- ================= CONTENT ORIGINAL ================= -->
+<div class="relative z-10 min-h-screen flex items-center justify-center text-center px-4">
+  <div>
+    <i class="fas fa-lock-open text-7xl text-red-600 mb-6 lock-icon"></i>
+    <h1 class="glitch-text text-6xl mb-4">MUZZSNAP</h1>
+    <p class="text-gray-400 max-w-xl mx-auto mb-8">
+      Access verified. Prepare to enter decentralized communication.
+    </p>
+    <button class="cta-button px-10 py-4 rounded-full text-xl">
+      Launch App (Coming Soon)
+    </button>
+  </div>
+</div>
+
+<!-- ================= ACCESS SCRIPT ================= -->
+<script>
+const MUZZLE_CONTRACT = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
+const REQUIRED_TOKENS = "20000000";
+const ETH_CHAIN_ID = "0x1";
+
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
+
+async function verifyAccess(){
+  const errorBox = document.getElementById("access-error");
+
+  if(!window.ethereum){
+    errorBox.textContent="Wallet not detected.";
+    errorBox.classList.remove("hidden");
+    return;
+  }
+
+  try{
+    const provider=new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts",[]);
+    const signer=provider.getSigner();
+    const user=await signer.getAddress();
+
+    const chainId=await provider.send("eth_chainId",[]);
+    if(chainId!==ETH_CHAIN_ID){
+      errorBox.textContent="Switch to Ethereum Mainnet.";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+
+    const token=new ethers.Contract(MUZZLE_CONTRACT,ERC20_ABI,provider);
+    const decimals=await token.decimals();
+    const balance=await token.balanceOf(user);
+
+    const required=ethers.utils.parseUnits(REQUIRED_TOKENS,decimals);
+
+    if(balance.lt(required)){
+      errorBox.textContent="Insufficient MUZZLE balance.";
+      errorBox.classList.remove("hidden");
+      return;
+    }
+
+    sessionStorage.setItem("muzz_access","ok");
+    document.getElementById("access-overlay").remove();
+    document.body.classList.remove("pointer-events-none");
+
+  }catch(e){
+    console.error(e);
+    errorBox.textContent="Verification failed.";
+    errorBox.classList.remove("hidden");
+  }
+}
+
+document.getElementById("connectWalletBtn")
+.addEventListener("click",verifyAccess);
+
+window.addEventListener("load",()=>{
+  if(sessionStorage.getItem("muzz_access")==="ok"){
+    document.getElementById("access-overlay")?.remove();
+  }else{
+    document.body.classList.add("pointer-events-none");
+    document.getElementById("access-overlay")
+      .classList.remove("pointer-events-none");
+  }
+});
+</script>
+
+</body>
+</html>
 
 <!-- ===================== ACCESS GATE (NIVEL 2) ===================== -->
 <div id="access-gate"
