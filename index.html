@@ -11,15 +11,15 @@
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color: #0a0a0a; }
+body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color:#0a0a0a; }
 .muzz-background {
-    position: fixed; inset: 0; z-index: -1;
-    background:
-      radial-gradient(circle at 10% 50%, rgba(100,100,100,.08) 0%, transparent 50%),
-      radial-gradient(circle at 90% 80%, rgba(50,50,50,.1) 0%, transparent 60%);
+  position: fixed; inset:0; z-index:-1;
+  background:
+    radial-gradient(circle at 10% 50%, rgba(100,100,100,.08) 0%, transparent 50%),
+    radial-gradient(circle at 90% 80%, rgba(50,50,50,.1) 0%, transparent 60%);
 }
-#logoButton { cursor: pointer; transition: all .3s ease; }
-#logoButton:hover { opacity:.9; transform:scale(1.02); }
+#logoButton { cursor:pointer; transition:all .3s ease }
+#logoButton:hover { opacity:.9; transform:scale(1.02) }
 </style>
 </head>
 
@@ -36,11 +36,12 @@ body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color: #
 <div class="relative z-10 flex flex-col items-center justify-center min-h-[80vh] max-w-sm mx-auto text-center">
 
 <div id="logoButton" onclick="handleLogin()" class="mb-6 relative group">
-<img src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png/:/rs=w:1440,h:1440"
-     class="w-40 h-40 rounded-2xl shadow-2xl group-hover:rotate-2 transition duration-500">
+<img id="muzzLogo"
+src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png/:/rs=w:1440,h:1440"
+class="w-40 h-40 rounded-2xl shadow-2xl group-hover:rotate-2 transition duration-500">
 
 <div id="loadingSpinner"
-     class="hidden absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl backdrop-blur-sm">
+class="hidden absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl backdrop-blur-sm">
 <i class="fas fa-spinner fa-spin text-4xl"></i>
 </div>
 </div>
@@ -50,103 +51,100 @@ Secure Decentralized Chat<br>単なるアプリ以上のもの。
 </p>
 
 <div id="messageArea"
- class="hidden w-full mb-8 p-4 bg-gray-900/80 border border-gray-800 rounded-xl backdrop-blur-md">
-<p id="messageTitle" class="text-sm font-bold text-red-400 mb-1">Error</p>
+class="hidden w-full mb-8 p-4 bg-gray-900/80 border border-gray-800 rounded-xl">
+<p id="messageTitle" class="text-sm font-bold text-red-400 mb-1"></p>
 <p id="messageText" class="text-xs text-gray-400"></p>
 </div>
 
-<p class="text-xs text-gray-600 animate-pulse mt-4">
-Click the logo to connect wallet<br>
-ロゴをクリックしてウォレットを接続
+<p class="text-xs text-gray-600 animate-pulse">
+Click the logo to connect wallet<br>ロゴをクリックしてウォレットを接続
 </p>
 
 <footer class="mt-16 text-[10px] text-gray-700 font-mono">
-MuzzSnap 2025™ • By.Ryachu
+MuzzSnap 2025™ • By Ryachu
 </footer>
 </div>
 
 <script>
-/* ========= CONFIG ========= */
-const CONTRACT = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
-const MIN_BALANCE = 40000000;
-const ETH_CHAIN_ID = 1;
-
+/* ================= CONFIG ================= */
+const CONTRACT_ADDRESS = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
+const MIN_REQUIRED_TOKENS = 20000000; // 20M
 const ERC20_ABI = [
  "function balanceOf(address) view returns (uint256)",
  "function decimals() view returns (uint8)"
 ];
 
-/* ========= UI ========= */
-const status = document.getElementById('walletStatus');
-const spinner = document.getElementById('loadingSpinner');
-const msgArea = document.getElementById('messageArea');
-const msgTitle = document.getElementById('messageTitle');
-const msgText = document.getElementById('messageText');
-
-const setStatus = (t,c='gray')=>{
- status.textContent=t;
- status.className=`py-2 px-4 text-xs font-medium rounded-lg border bg-gray-900 border-${c}-700 text-${c}-400`;
+/* ================= UI ================= */
+const ui = {
+ spinner: document.getElementById("loadingSpinner"),
+ status: document.getElementById("walletStatus"),
+ msgArea: document.getElementById("messageArea"),
+ msgTitle: document.getElementById("messageTitle"),
+ msgText: document.getElementById("messageText")
 };
 
-const showMsg=(t,m,ok=false)=>{
- msgArea.classList.remove('hidden');
- msgTitle.textContent=t;
- msgTitle.className=`text-sm font-bold mb-1 ${ok?'text-green-400':'text-red-400'}`;
- msgText.textContent=m;
-};
+function setStatus(text,color="gray"){
+ ui.status.textContent=text;
+ ui.status.className=`py-2 px-4 text-xs font-medium rounded-lg border bg-gray-900 border-${color}-700 text-${color}-400`;
+}
 
-/* ========= LOGIN ========= */
+function showMsg(title,text){
+ ui.msgArea.classList.remove("hidden");
+ ui.msgTitle.textContent=title;
+ ui.msgText.textContent=text;
+}
+
+/* ================= LOGIN ================= */
 async function handleLogin(){
+ if(!window.ethereum){
+   showMsg("Wallet missing","Install or open a Web3 wallet");
+   if(/Android|iPhone|iPad/i.test(navigator.userAgent)){
+     location.href=`https://metamask.app.link/dapp/${location.host}${location.pathname}`;
+   }
+   return;
+ }
+
+ ui.spinner.classList.remove("hidden");
+ setStatus("Connecting…","yellow");
+
  try{
-  if(!window.ethereum){
-    showMsg("Wallet Missing","Please install MetaMask");
-    return;
-  }
+   const provider=new ethers.providers.Web3Provider(window.ethereum);
+   const [address]=await provider.send("eth_requestAccounts",[]);
+   const network=await provider.getNetwork();
+   if(network.chainId!==1) throw Error("Use Ethereum Mainnet");
 
-  spinner.classList.remove('hidden');
-  msgArea.classList.add('hidden');
-  setStatus('Connecting','yellow');
+   setStatus("Checking balance…","blue");
+   const contract=new ethers.Contract(CONTRACT_ADDRESS,ERC20_ABI,provider);
+   const decimals=await contract.decimals();
+   const balance=await contract.balanceOf(address);
+   const formatted=Number(ethers.utils.formatUnits(balance,decimals));
 
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  const accounts = await provider.send("eth_requestAccounts",[]);
-  const address = accounts[0];
+   if(formatted<MIN_REQUIRED_TOKENS)
+     throw Error("Access denied by privacy policy");
 
-  const network = await provider.getNetwork();
-  if(network.chainId !== ETH_CHAIN_ID){
-    throw new Error("Connect to Ethereum Mainnet");
-  }
+   setStatus("Sign message…","yellow");
+   const signer=provider.getSigner();
+   await signer.signMessage("MuzzSnap authentication");
 
-  setStatus('Checking balance','blue');
+   sessionStorage.setItem("muzzsnap_access",JSON.stringify({
+     address,
+     timestamp:Date.now()
+   }));
 
-  const token = new ethers.Contract(CONTRACT, ERC20_ABI, provider);
-  const decimals = await token.decimals();
-  const raw = await token.balanceOf(address);
-  const balance = Number(ethers.utils.formatUnits(raw,decimals));
-
-  if(balance < MIN_BALANCE){
-    throw new Error("Minimum 40,000,000 MUZZ required");
-  }
-
-  const signer = provider.getSigner();
-  await signer.signMessage("MuzzSnap Login");
-
-  sessionStorage.setItem('muzzsnap_access', JSON.stringify({
-    address,
-    timestamp: Date.now()
-  }));
-
-  setStatus('Success','green');
-  showMsg("Authenticated","Redirecting…",true);
-
-  setTimeout(()=>location.href="pagina_segura.html",900);
+   setStatus("Authenticated","green");
+   showMsg("Access granted","Redirecting…");
+   setTimeout(()=>location.href="pagina_segura.html",800);
 
  }catch(e){
-  setStatus('Denied','red');
-  showMsg("Access Denied", e.message);
+   setStatus("Access denied","red");
+   showMsg("Denied",e.message);
  }finally{
-  spinner.classList.add('hidden');
+   ui.spinner.classList.add("hidden");
  }
 }
+
+/* 🔑 expose for onclick */
+window.handleLogin = handleLogin;
 </script>
 </body>
 </html>
