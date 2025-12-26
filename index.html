@@ -1,65 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>MuzzSnap – Secure Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<title>MuzzSnap Secure Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ethers -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+<!-- ethers -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  <style>
-    body {
-      background:#000;
-      color:#fff;
-      font-family: Arial, sans-serif;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      text-align:center;
-    }
-    .box {
-      background:#111;
-      padding:30px;
-      border-radius:12px;
-      width:320px;
-    }
-    button {
-      margin-top:20px;
-      width:100%;
-      padding:14px;
-      font-size:16px;
-      border:none;
-      border-radius:8px;
-      background:#6d28d9;
-      color:#fff;
-      cursor:pointer;
-    }
-    button:disabled {
-      opacity:0.4;
-      cursor:not-allowed;
-    }
-    #status {
-      margin-top:15px;
-      font-size:14px;
-      opacity:0.9;
-    }
-  </style>
+<style>
+body {
+  background:#000;
+  color:#fff;
+  font-family:Arial, sans-serif;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+}
+.box {
+  background:#111;
+  padding:30px;
+  border-radius:14px;
+  width:340px;
+  text-align:center;
+}
+button {
+  width:100%;
+  padding:14px;
+  margin-top:20px;
+  font-size:16px;
+  background:#6d28d9;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+}
+button:disabled {
+  opacity:0.4;
+}
+#status {
+  margin-top:15px;
+  font-size:14px;
+  opacity:0.9;
+}
+.small {
+  font-size:12px;
+  opacity:0.6;
+  margin-top:10px;
+}
+</style>
 </head>
 
 <body>
-  <div class="box">
-    <h2>MuzzSnap Access</h2>
-    <p>Wallet login required</p>
-    <button id="loginBtn">Connect Wallet</button>
-    <div id="status"></div>
+<div class="box">
+  <h2>MuzzSnap Access</h2>
+  <p>Wallet connection required</p>
+  <button id="loginBtn">Connect Wallet</button>
+  <div id="status"></div>
+  <div class="small">
+    Desktop: Chrome / Brave / Edge<br>
+    Mobile: MetaMask Browser
   </div>
+</div>
 
 <script>
 /* =========================
@@ -67,22 +73,29 @@
 ========================= */
 firebase.initializeApp({
   apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
   databaseURL: "https://YOUR_PROJECT.firebaseio.com",
   projectId: "YOUR_PROJECT_ID"
 });
-
 const db = firebase.database();
 
 /* =========================
    🪙 TOKEN CONFIG
 ========================= */
-const TOKEN_ADDRESS = "0xEF3DAA5FDA8AD7AABFF4658F1F78061FD626B8F0"; // MUZZLE
+const TOKEN_ADDRESS = "0xEF3DAA5FDA8AD7AABFF4658F1F78061FD626B8F0";
 const MIN_BALANCE = 20000000;
 const TOKEN_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)"
 ];
+
+/* =========================
+   🦊 WALLET DETECTION (FIX REAL)
+========================= */
+function getEthereumProvider() {
+  if (typeof window.ethereum !== "undefined") return window.ethereum;
+  if (window.web3 && window.web3.currentProvider) return window.web3.currentProvider;
+  return null;
+}
 
 /* =========================
    🔐 LOGIN FLOW
@@ -92,33 +105,45 @@ const statusEl = document.getElementById("status");
 
 btn.onclick = async () => {
   try {
-    if (!window.ethereum) throw "Wallet not detected";
+    const eth = getEthereumProvider();
+
+    if (!eth) {
+      alert(
+        "Wallet not detected.\n\n" +
+        "✔ Desktop: Chrome / Brave with MetaMask\n" +
+        "✔ Mobile: Open inside MetaMask Browser\n\n" +
+        "❌ In-app browsers not supported"
+      );
+      return;
+    }
 
     btn.disabled = true;
-    statusEl.innerText = "Connecting wallet…";
+    statusEl.innerText = "Requesting wallet access…";
 
-    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+    const provider = new ethers.providers.Web3Provider(eth, "any");
     await provider.send("eth_requestAccounts", []);
+
     const signer = provider.getSigner();
     const address = await signer.getAddress();
 
     statusEl.innerText = "Checking MUZZLE balance…";
 
     const token = new ethers.Contract(TOKEN_ADDRESS, TOKEN_ABI, provider);
-    const rawBalance = await token.balanceOf(address);
-    const decimals = await token.decimals();
-    const balance = parseFloat(
-      ethers.utils.formatUnits(rawBalance, decimals)
-    );
+    const raw = await token.balanceOf(address);
+    const dec = await token.decimals();
+    const balance = parseFloat(ethers.utils.formatUnits(raw, dec));
 
     if (balance < MIN_BALANCE) {
       throw "Minimum 20,000,000 MUZZLE required";
     }
 
-    /* 🔏 SIGNATURE (MANDATORY) */
-    const nonce = Date.now();
-    const message = `MuzzSnap Login\nWallet: ${address}\nNonce: ${nonce}`;
     statusEl.innerText = "Signing message…";
+
+    const nonce = Date.now();
+    const message =
+      "MuzzSnap Login\n" +
+      "Wallet: " + address + "\n" +
+      "Nonce: " + nonce;
 
     const signature = await signer.signMessage(message);
     const recovered = ethers.utils.verifyMessage(message, signature);
@@ -127,7 +152,6 @@ btn.onclick = async () => {
       throw "Signature verification failed";
     }
 
-    /* 🔐 CREATE SESSION (SERVER TRUSTED) */
     statusEl.innerText = "Creating secure session…";
 
     await db.ref("sessions/" + address.toLowerCase()).set({
@@ -141,16 +165,15 @@ btn.onclick = async () => {
     statusEl.innerText = "Access granted ✔";
     setTimeout(() => {
       window.location.href = "chat.html";
-    }, 800);
+    }, 700);
 
   } catch (err) {
     console.error(err);
-    statusEl.innerText = "Access denied";
     alert(err);
+    statusEl.innerText = "Access denied";
     btn.disabled = false;
   }
 };
 </script>
-
 </body>
 </html>
