@@ -1,35 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>MuzzSnap Secure Login</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- ethers -->
+<!-- Ethers -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
 
 <!-- WalletConnect v2 -->
 <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.11.1/dist/index.umd.js"></script>
 
-<!-- Firebase (HTML COMPAT) -->
+<!-- Firebase (HTML compat) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
 body {
+  margin:0;
   background:#000;
   color:#fff;
   font-family:Arial, sans-serif;
   display:flex;
-  align-items:center;
   justify-content:center;
+  align-items:center;
   height:100vh;
-  margin:0;
 }
 .box {
   background:#111;
   padding:30px;
-  border-radius:14px;
+  border-radius:16px;
   width:340px;
   text-align:center;
 }
@@ -38,22 +38,22 @@ button {
   padding:14px;
   margin-top:14px;
   background:#6d28d9;
-  color:#fff;
   border:none;
   border-radius:8px;
   font-size:16px;
+  color:#fff;
 }
 button:disabled {
-  opacity:0.5;
+  opacity:.5;
 }
 #status {
   margin-top:12px;
-  font-size:14px;
   min-height:18px;
+  font-size:14px;
 }
 .small {
   font-size:12px;
-  opacity:0.6;
+  opacity:.6;
   margin-top:10px;
 }
 </style>
@@ -63,16 +63,13 @@ button:disabled {
 <div class="box">
   <h2>MuzzSnap Access</h2>
 
-  <!-- Desktop -->
   <button onclick="loginDesktop()">MetaMask (Desktop)</button>
-
-  <!-- Mobile -->
   <button onclick="loginMobile()">WalletConnect (Mobile)</button>
 
   <div id="status"></div>
 
   <div class="small">
-    Brave · Chrome · Safari (Mobile)<br>
+    Brave · Chrome · Safari<br>
     MetaMask · Trust · OKX · Rainbow
   </div>
 </div>
@@ -105,21 +102,20 @@ const WC_PROJECT_ID = "cbb8c131e6f916a235b0825e181ab0c9";
 let wcProvider;
 
 /* =========================
-   DESKTOP LOGIN (MetaMask)
+   🖥️ DESKTOP LOGIN
 ========================= */
 async function loginDesktop() {
   if (!window.ethereum) {
-    alert("MetaMask not detected. Use desktop browser with MetaMask.");
+    alert("MetaMask not detected. Use desktop browser.");
     return;
   }
-
   const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
   await provider.send("eth_requestAccounts", []);
-  connect(provider);
+  await processLogin(provider);
 }
 
 /* =========================
-   MOBILE LOGIN (WalletConnect)
+   📱 MOBILE LOGIN
 ========================= */
 async function loginMobile() {
   wcProvider = await window.WalletConnectEthereumProvider.init({
@@ -127,23 +123,22 @@ async function loginMobile() {
     chains: [1],
     showQrModal: true
   });
-
   await wcProvider.enable();
   const provider = new ethers.providers.Web3Provider(wcProvider, "any");
-  connect(provider);
+  await processLogin(provider);
 }
 
 /* =========================
-   CORE LOGIN LOGIC
+   🔐 CORE LOGIN LOGIC
 ========================= */
-async function connect(provider) {
+async function processLogin(provider) {
   try {
-    status("Connecting wallet…");
+    setStatus("Connecting wallet…");
 
     const signer = provider.getSigner();
     const address = await signer.getAddress();
 
-    status("Checking MUZZLE balance…");
+    setStatus("Checking MUZZLE balance…");
 
     const token = new ethers.Contract(TOKEN_ADDRESS, TOKEN_ABI, provider);
     const raw = await token.balanceOf(address);
@@ -154,7 +149,7 @@ async function connect(provider) {
       throw "Minimum 20,000,000 MUZZLE required";
     }
 
-    status("Signing message…");
+    setStatus("Signing message…");
 
     const nonce = Date.now();
     const message =
@@ -169,7 +164,7 @@ async function connect(provider) {
       throw "Signature verification failed";
     }
 
-    status("Creating secure session…");
+    setStatus("Creating secure session…");
 
     await db.ref("sessions/" + address.toLowerCase()).set({
       wallet: address.toLowerCase(),
@@ -179,7 +174,7 @@ async function connect(provider) {
 
     localStorage.setItem("wallet", address.toLowerCase());
 
-    status("Access granted ✔");
+    setStatus("Access granted ✔");
 
     setTimeout(() => {
       window.location.href = "chat.html";
@@ -188,11 +183,11 @@ async function connect(provider) {
   } catch (err) {
     console.error(err);
     alert(err);
-    status("Access denied");
+    setStatus("Access denied");
   }
 }
 
-function status(text) {
+function setStatus(text) {
   document.getElementById("status").innerText = text;
 }
 </script>
