@@ -1,28 +1,55 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { ethers } = require("ethers");
+
 admin.initializeApp();
 
-exports.sendMessage = functions.https.onCall(async (data, ctx)=>{
-  if(!ctx.auth) throw new functions.https.HttpsError("unauthenticated");
+const MUZZLE = "0xEF3DAA5FDA8AD7AABFF4658F1F78061FD626B8F0";
+const ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
+const MIN = 20000000;
 
-  const {channelId, content, username} = data;
-  const uid = ctx.auth.uid;
+exports.loginSIWE = functions.https.onCall(async (data) => {
+  const { wallet, message, signature } = data;
 
-  const url=/https?:\/\/|www\.|\.[a-z]{2,}/i;
-  if(url.test(content)) throw new functions.https.HttpsError("permission-denied");
+  const recovered = ethers.utils.verifyMessage(message, signature);
+  if (recovered.toLowerCase() !== wallet.toLowerCase())
+    throw new functions.https.HttpsError("unauthenticated");
 
-  const now=Date.now();
-  const last=admin.database().ref(`lastMessage/${uid}`);
-  const snap=await last.get();
-  if(snap.exists() && now-snap.val()<2000)
+  const provider = new ethers.providers.JsonRpcProvider(
+    "https://cloudflare-eth.com"
+  );
+  const token = new ethers.Contract(MUZZLE, ABI, provider);
+  const bal = await token.balanceOf(wallet);
+  const dec = await token.decimals();
+  const amount = Number(ethers.utils.formatUnits(bal, dec));
+
+  if (amount < MIN)
+    throw new functions.https.HttpsError("permission-denied","Not enough MUZZLE");
+
+  const customToken = await admin.auth().createCustomToken(wallet.toLowerCase());
+  return { token: customToken };
+});
+
+exports.sendMessage = functions.https.onCall(async (data, ctx) => {
+  if (!ctx.auth) throw new functions.https.HttpsError("unauthenticated");
+
+  const text = data.text;
+  if (!text || text.length > 300 || /https?:\/\//i.test(text))
+    throw new functions.https.HttpsError("invalid-argument");
+
+  const ref = admin.database().ref("lastMessage/"+ctx.auth.uid);
+  const snap = await ref.get();
+  const last = snap.val() || 0;
+  if (Date.now() - last < 2000)
     throw new functions.https.HttpsError("resource-exhausted");
 
-  await last.set(now);
-
-  await admin.database().ref(`messages/${channelId}`).push({
-    content, userId:uid, username,
-    timestamp:admin.database.ServerValue.TIMESTAMP
+  await admin.database().ref("messages/global").push({
+    user: ctx.auth.uid,
+    text,
+    ts: Date.now()
   });
-
-  return {ok:true};
+  await ref.set(Date.now());
 });
