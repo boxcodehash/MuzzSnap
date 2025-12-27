@@ -1,79 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MuzzSnap Secure Chat</title>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<title>Pulsari Chat</title>
+<meta name="viewport" content="width=device-width">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
+<body>
 
-<body class="bg-black text-white flex items-center justify-center h-screen">
-
-<h1 class="text-xl">Loading secure chat…</h1>
+<div id="chat"></div>
+<input id="msg"><button onclick="send()">Send</button>
 
 <script>
-/* 🔐 FIREBASE */
-const firebaseConfig = {
+firebase.initializeApp({
   apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
-  authDomain: "pulsari.firebaseapp.com",
   databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
   projectId: "pulsari"
-};
-firebase.initializeApp(firebaseConfig);
+});
+
+firebase.auth().onAuthStateChanged(u=>{
+  if(!u) location.href="index.html";
+});
+
 const db = firebase.database();
+db.ref("messages/global").limitToLast(50).on("child_added",s=>{
+  const m=s.val();
+  chat.innerHTML+=`<div>${m.user.slice(0,6)}: ${m.text}</div>`;
+});
 
-/* 🔐 TOKEN CONFIG */
-const CONTRACT = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
-const MIN = 20000000;
-const ABI = [
-  "function balanceOf(address) view returns (uint256)",
-  "function decimals() view returns (uint8)"
-];
-
-(async function secureGate(){
-  try{
-    if(!window.ethereum) throw "No wallet";
-
-    const provider = new ethers.providers.Web3Provider(window.ethereum,"any");
-    const accounts = await provider.send("eth_accounts",[]);
-    if(!accounts.length) throw "No account";
-
-    const address = accounts[0];
-
-    /* 🔒 SESSION CHECK */
-    const snap = await db.ref(`sessions/${address}`).get();
-    if(!snap.exists()) throw "No session";
-
-    const session = snap.val();
-    if(Date.now() - session.time > 3600000){
-      await db.ref(`sessions/${address}`).remove();
-      throw "Session expired";
-    }
-
-    /* 🔒 BALANCE RECHECK */
-    const token = new ethers.Contract(CONTRACT,ABI,provider);
-    const bal = await token.balanceOf(address);
-    const dec = await token.decimals();
-    const real = parseFloat(ethers.utils.formatUnits(bal,dec));
-
-    if(real < MIN){
-      await db.ref(`sessions/${address}`).remove();
-      throw "Insufficient balance";
-    }
-
-    document.body.innerHTML = "<h1 class='text-2xl text-green-400'>Access Granted ✅ Secure Chat Loaded</h1>";
-
-  }catch(e){
-    console.error(e);
-    window.location.href = "index.html";
-  }
-})();
+async function send(){
+  const text=msg.value;
+  msg.value="";
+  await firebase.functions().httpsCallable("sendMessage")({text});
+}
 </script>
-
 </body>
 </html>
