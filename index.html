@@ -2,15 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pulsari Secure Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Secure Web3 authentication for Pulsari platform">
+<meta name="theme-color" content="#6d28d9">
 
-<!-- ethers -->
+<!-- Open Graph / Professional metadata -->
+<meta property="og:title" content="Pulsari - Web3 Login">
+<meta property="og:description" content="Connect your wallet to access Pulsari">
+<meta property="og:type" content="website">
+
+<title>Pulsari - Connect Wallet</title>
+
+<!-- Ethers.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-
-<!-- WalletConnect v2 - ACTUALIZADO CON RESPALDO -->
-<script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.15.2/dist/index.umd.js" 
-        onerror="loadWalletConnectBackup()"></script>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -18,236 +22,361 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
 
 <style>
-body{
+*{
   margin:0;
-  background:#000;
-  color:#fff;
-  font-family:Arial, sans-serif;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  padding:20px;
+  padding:0;
   box-sizing:border-box;
 }
-.box{
-  background:#111;
-  padding:30px;
-  border-radius:16px;
-  width:100%;
-  max-width:340px;
-  text-align:center;
-  box-shadow:0 8px 32px rgba(109,40,217,0.3);
-}
-h2{
-  margin-top:0;
-  color:#a78bfa;
-}
-button{
-  width:100%;
-  padding:15px;
-  margin-top:16px;
-  background:#6d28d9;
-  border:none;
-  border-radius:10px;
-  font-size:16px;
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
+  background:linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
   color:#fff;
-  cursor:pointer;
-  transition:all 0.3s;
+}
+
+.container{
+  width:100%;
+  max-width:440px;
+}
+
+.card{
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:24px;
+  padding:40px 32px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+
+.logo{
+  text-align:center;
+  margin-bottom:32px;
+}
+
+.logo-icon{
+  width:64px;
+  height:64px;
+  background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius:16px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:32px;
+  margin-bottom:16px;
+  box-shadow:0 8px 24px rgba(102,126,234,0.3);
+}
+
+h1{
+  font-size:28px;
+  font-weight:700;
+  margin-bottom:8px;
+  text-align:center;
+  background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.subtitle{
+  text-align:center;
+  color:rgba(255,255,255,0.6);
+  font-size:14px;
+  margin-bottom:32px;
+}
+
+.connect-btn{
+  width:100%;
+  padding:18px;
+  background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border:none;
+  border-radius:12px;
+  color:#fff;
+  font-size:16px;
   font-weight:600;
+  cursor:pointer;
+  transition:all 0.3s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  box-shadow:0 4px 16px rgba(102,126,234,0.4);
 }
-button:hover:not(:disabled){
-  background:#7c3aed;
+
+.connect-btn:hover:not(:disabled){
   transform:translateY(-2px);
+  box-shadow:0 6px 24px rgba(102,126,234,0.5);
 }
-button:disabled{
-  opacity:0.5;
+
+.connect-btn:active:not(:disabled){
+  transform:translateY(0);
+}
+
+.connect-btn:disabled{
+  opacity:0.6;
   cursor:not-allowed;
 }
-#status{
-  margin-top:14px;
-  min-height:18px;
+
+.wallet-icon{
+  font-size:24px;
+}
+
+.status{
+  margin-top:20px;
+  padding:16px;
+  background:rgba(255,255,255,0.05);
+  border-radius:12px;
+  text-align:center;
   font-size:14px;
-  color:#a78bfa;
+  min-height:52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:rgba(255,255,255,0.8);
 }
-.small{
-  font-size:12px;
-  opacity:.6;
-  margin-top:12px;
-  line-height:1.6;
-}
-.loading{
-  display:inline-block;
+
+.status.loading{
   animation:pulse 1.5s ease-in-out infinite;
 }
+
 @keyframes pulse{
   0%, 100%{opacity:1;}
   50%{opacity:0.5;}
 }
+
+.features{
+  margin-top:32px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+
+.feature{
+  text-align:center;
+  padding:16px 8px;
+  background:rgba(255,255,255,0.03);
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.05);
+}
+
+.feature-icon{
+  font-size:24px;
+  margin-bottom:8px;
+}
+
+.feature-text{
+  font-size:12px;
+  color:rgba(255,255,255,0.6);
+  line-height:1.4;
+}
+
+.footer{
+  margin-top:24px;
+  text-align:center;
+  font-size:12px;
+  color:rgba(255,255,255,0.4);
+}
+
+.supported-wallets{
+  margin-top:24px;
+  padding-top:24px;
+  border-top:1px solid rgba(255,255,255,0.1);
+}
+
+.supported-title{
+  font-size:12px;
+  color:rgba(255,255,255,0.5);
+  text-align:center;
+  margin-bottom:12px;
+}
+
+.wallet-logos{
+  display:flex;
+  justify-content:center;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.wallet-logo{
+  width:32px;
+  height:32px;
+  background:rgba(255,255,255,0.1);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+}
+
+.hidden{
+  display:none !important;
+}
 </style>
 </head>
-
 <body>
-<div class="box">
-  <h2>🔐 Pulsari Access</h2>
 
-  <button id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+<div class="container">
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <h1>Pulsari</h1>
+      <p class="subtitle">Secure Web3 Authentication</p>
+    </div>
 
-  <div id="status"></div>
+    <!-- Botón de Conexión -->
+    <button id="connectBtn" class="connect-btn" onclick="connectWallet()">
+      <span class="wallet-icon">🔗</span>
+      <span id="btnText">Connect Wallet</span>
+    </button>
 
-  <div class="small">
-    Mobile & Desktop Compatible<br>
-    MetaMask · Crypto · Trust · OKX · Rainbow
+    <!-- Estado -->
+    <div id="status" class="status" style="display:none;">
+      Ready to connect
+    </div>
+
+    <!-- Features -->
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-text">Secure<br>Sign-in</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-text">Fast<br>Access</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-text">No<br>Passwords</div>
+      </div>
+    </div>
+
+    <!-- Wallets Soportadas -->
+    <div class="supported-wallets">
+      <div class="supported-title">Supported Wallets</div>
+      <div class="wallet-logos">
+        <div class="wallet-logo" title="MetaMask">🦊</div>
+        <div class="wallet-logo" title="Trust Wallet">🛡️</div>
+        <div class="wallet-logo" title="Coinbase">💙</div>
+        <div class="wallet-logo" title="Rainbow">🌈</div>
+        <div class="wallet-logo" title="Crypto.com">💎</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Powered by Ethereum · SIWE Authentication
+    </div>
   </div>
 </div>
 
 <script>
-/* =========================
-   🔄 CDN RESPALDO
-========================= */
-function loadWalletConnectBackup() {
-  console.log('Loading WalletConnect from backup CDN...');
-  const script = document.createElement('script');
-  script.src = 'https://unpkg.com/@walletconnect/ethereum-provider@2.15.2/dist/index.umd.js';
-  script.onerror = () => {
-    console.error('Both WalletConnect CDNs failed');
-    alert('Failed to load WalletConnect library. Please check your internet connection.');
-  };
-  document.head.appendChild(script);
-}
+console.log('🚀 Pulsari Login v2.0');
 
-/* =========================
-   ⏳ VERIFICAR CARGA
-========================= */
-let librariesLoaded = false;
-
-window.addEventListener('load', function() {
-  setTimeout(() => {
-    librariesLoaded = true;
-    console.log('Libraries status:', {
-      ethers: typeof ethers !== 'undefined',
-      walletConnect: typeof window.WalletConnectProvider !== 'undefined',
-      firebase: typeof firebase !== 'undefined'
-    });
-  }, 1000);
-});
-
-/* =========================
-   🔥 FIREBASE CONFIG
-========================= */
-firebase.initializeApp({
+/* Firebase Configuration */
+const firebaseConfig = {
   apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
   projectId: "pulsari"
-});
+};
 
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const functions = firebase.functions();
 
-/* =========================
-   🔗 WALLETCONNECT CONFIG
-========================= */
-const WC_PROJECT_ID = "cbb8c131e6f916a235b0825e181ab0c9";
+/* UI Elements */
+const connectBtn = document.getElementById('connectBtn');
+const btnText = document.getElementById('btnText');
+const statusDiv = document.getElementById('status');
 
-/* =========================
-   🔍 MOBILE DETECTION
-========================= */
-function isMobile() {
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+/* Helper Functions */
+function setStatus(message, isLoading = false) {
+  statusDiv.style.display = 'flex';
+  statusDiv.textContent = message;
+  statusDiv.className = isLoading ? 'status loading' : 'status';
+  console.log('📊', message);
 }
 
-/* =========================
-   🚀 CONNECT WALLET
-========================= */
+function setBtnText(text) {
+  btnText.textContent = text;
+}
+
+function disableBtn(disabled) {
+  connectBtn.disabled = disabled;
+}
+
+/* Main Connect Function */
 async function connectWallet() {
-  const btn = document.getElementById('connectBtn');
-  
   try {
-    btn.disabled = true;
-    setStatus("🔗 Connecting wallet...", true);
+    disableBtn(true);
+    setStatus('Initializing connection...', true);
 
-    // Verificar que las librerías estén cargadas
-    if (!librariesLoaded) {
-      setStatus("⏳ Loading libraries...", true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
+    // Check if provider exists
+    if (!window.ethereum) {
+      setStatus('No wallet detected');
+      alert('Please install a Web3 wallet (MetaMask, Trust, etc.) or open this page inside your wallet\'s browser.\n\nFor mobile: Open your wallet app → Browser → Paste this URL');
+      disableBtn(false);
+      return;
     }
 
-    if (typeof ethers === 'undefined') {
-      throw new Error("Ethers library not loaded. Please refresh the page.");
-    }
+    console.log('✅ Wallet provider detected:', window.ethereum.isMetaMask ? 'MetaMask' : 'Web3');
 
-    let provider;
+    setStatus('Connecting to wallet...', true);
+    setBtnText('Requesting access...');
 
-    // ✅ Desktop (MetaMask injected)
-    if (window.ethereum && !isMobile()) {
-      console.log('Using MetaMask/Injected provider');
-      provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-      await provider.send("eth_requestAccounts", []);
-    } 
-    // ✅ Mobile (WalletConnect)
-    else {
-      console.log('Using WalletConnect for mobile');
-      
-      // Verificar que WalletConnect esté disponible
-      if (typeof window.WalletConnectProvider === 'undefined') {
-        throw new Error("WalletConnect library not loaded. Please refresh the page and try again.");
-      }
+    // Create provider
+    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
 
-      setStatus("🔗 Initializing WalletConnect...", true);
-
-      const EthereumProvider = window.WalletConnectProvider.default || window.WalletConnectProvider;
-      
-      const wc = await EthereumProvider.init({
-        projectId: WC_PROJECT_ID,
-        chains: [1],
-        showQrModal: true,
-        metadata: {
-          name: "Pulsari",
-          description: "Secure Web3 Access Platform",
-          url: "https://pulsari.app",
-          icons: ["https://avatars.githubusercontent.com/u/37784886"]
-        }
-      });
-
-      setStatus("📱 Opening wallet app...", true);
-      await wc.enable();
-      
-      provider = new ethers.providers.Web3Provider(wc, "any");
-    }
-
-    await loginSIWE(provider);
-
-  } catch (err) {
-    console.error('Connection error:', err);
-    const errorMsg = err.message || err.toString();
-    setStatus("❌ Error: " + errorMsg);
+    // Request account access
+    const accounts = await provider.send("eth_requestAccounts", []);
     
-    if (errorMsg.includes('User rejected')) {
-      alert("Connection cancelled by user");
-    } else if (errorMsg.includes('not loaded')) {
-      alert(errorMsg + "\n\nPlease refresh the page and try again.");
-    } else {
-      alert("Connection failed: " + errorMsg);
+    if (!accounts || accounts.length === 0) {
+      throw new Error('No accounts returned from wallet');
     }
-  } finally {
-    btn.disabled = false;
+
+    console.log('✅ Accounts received:', accounts[0]);
+
+    // Proceed with SIWE
+    await performSIWE(provider);
+
+  } catch (error) {
+    console.error('❌ Connection error:', error);
+    
+    if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
+      setStatus('Connection rejected by user');
+      alert('You rejected the connection request. Please try again and approve the connection.');
+    } else if (error.message && error.message.includes('User rejected')) {
+      setStatus('Connection rejected');
+    } else {
+      setStatus('Connection failed: ' + (error.message || error));
+      alert('Connection failed:\n' + (error.message || error.toString()));
+    }
+
+    setBtnText('Connect Wallet');
+    disableBtn(false);
   }
 }
 
-/* =========================
-   🔐 SIWE LOGIN
-========================= */
-async function loginSIWE(provider) {
+/* SIWE Authentication */
+async function performSIWE(provider) {
   try {
     const signer = provider.getSigner();
-    const wallet = await signer.getAddress();
+    const address = await signer.getAddress();
     
-    console.log('Connected wallet:', wallet);
+    console.log('📝 Connected address:', address);
     
-    const nonce = Math.random().toString(36).substring(2);
-    const timestamp = new Date().toISOString();
+    setStatus('Preparing signature...', true);
+    setBtnText('Signing...');
 
+    // Create SIWE message
+    const nonce = Math.random().toString(36).substring(2, 15);
+    const timestamp = new Date().toISOString();
+    
     const message = `pulsari.app wants you to sign in with your Ethereum account:
-${wallet}
+${address}
+
+Sign in to Pulsari to access your account.
 
 URI: https://pulsari.app
 Version: 1
@@ -255,39 +384,67 @@ Chain ID: 1
 Nonce: ${nonce}
 Issued At: ${timestamp}`;
 
-    setStatus("✍️ Please sign the message...", true);
+    console.log('📄 SIWE Message prepared');
 
+    // Request signature
+    setStatus('Please sign the message in your wallet...', true);
+    
     const signature = await signer.signMessage(message);
+    
+    console.log('✅ Message signed successfully');
+    
+    setStatus('Verifying signature...', true);
+    setBtnText('Verifying...');
 
-    setStatus("🔍 Verifying signature...", true);
-
-    const result = await functions.httpsCallable("loginSIWE")({
-      wallet,
-      message,
-      signature
+    // Call Firebase function
+    const result = await functions.httpsCallable('loginSIWE')({
+      wallet: address,
+      message: message,
+      signature: signature
     });
 
+    console.log('✅ Signature verified by server');
+
+    // Sign in to Firebase
     await auth.signInWithCustomToken(result.data.token);
+    
+    console.log('✅ Firebase authentication successful');
+    
+    setStatus('✅ Authentication successful!');
+    setBtnText('Redirecting...');
 
-    setStatus("✅ Access granted!");
-
+    // Redirect to chat
     setTimeout(() => {
-      window.location.href = "chat.html";
-    }, 800);
+      window.location.href = 'chat.html';
+    }, 1000);
 
-  } catch (err) {
-    console.error('SIWE error:', err);
-    throw new Error('Authentication failed: ' + (err.message || err));
+  } catch (error) {
+    console.error('❌ SIWE error:', error);
+    
+    if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
+      setStatus('Signature rejected');
+      alert('You rejected the signature request. Please try again and sign the message to continue.');
+    } else {
+      setStatus('Authentication failed');
+      alert('Authentication failed:\n' + (error.message || error.toString()));
+    }
+    
+    setBtnText('Connect Wallet');
+    disableBtn(false);
+    throw error;
   }
 }
 
-/* =========================
-   📊 STATUS HELPER
-========================= */
-function setStatus(text, isLoading = false) {
-  const statusEl = document.getElementById("status");
-  statusEl.innerHTML = isLoading ? `<span class="loading">${text}</span>` : text;
-}
+/* Auto-detect if already in wallet browser */
+window.addEventListener('load', () => {
+  if (window.ethereum) {
+    console.log('✅ Wallet provider detected on page load');
+    setStatus('Wallet detected - ready to connect');
+  } else {
+    console.log('⚠️ No wallet provider detected');
+  }
+});
 </script>
+
 </body>
 </html>
