@@ -348,8 +348,21 @@
             sessionStorage.setItem('muzz_network', network.chainId.toString());
             sessionStorage.setItem('muzz_timestamp', Date.now().toString());
 
+            console.log('📦 Sesión guardada:', {
+                address: sessionStorage.getItem('muzz_wallet_address'),
+                balance: sessionStorage.getItem('muzz_balance'),
+                pending: sessionStorage.getItem('muzz_auth_pending')
+            });
+
+            console.log('🔄 Redirigiendo a:', CONFIG.chatUrl);
+
             setTimeout(() => {
-                window.location.href = CONFIG.chatUrl;
+                try {
+                    window.location.href = CONFIG.chatUrl;
+                } catch (e) {
+                    console.error('❌ Error al redirigir:', e);
+                    alert('Redirección falló. Por favor abre chat.html manualmente.');
+                }
             }, 1500);
         }
 
