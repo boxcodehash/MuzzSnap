@@ -70,9 +70,6 @@
     </div>
 
     <script>
-        // ========================================
-        // CONFIGURACIÓN
-        // ========================================
         const CONFIG = {
             contractAddress: "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0",
             minTokens: 40000000,
@@ -86,9 +83,6 @@
             "function decimals() view returns (uint8)"
         ];
 
-        // ========================================
-        // UI HELPERS
-        // ========================================
         const UI = {
             spinner: document.getElementById('loadingSpinner'),
             status: document.getElementById('walletStatus'),
@@ -121,9 +115,6 @@
             }
         };
 
-        // ========================================
-        // DETECCIÓN DE ENTORNO
-        // ========================================
         const ENV = {
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
             
@@ -144,17 +135,13 @@
             getProvider() {
                 if (!window.ethereum) return null;
                 
-                // Si hay múltiples providers, elegir el mejor
                 if (window.ethereum.providers && window.ethereum.providers.length > 0) {
-                    // Preferir MetaMask
                     const metamask = window.ethereum.providers.find(p => p.isMetaMask);
                     if (metamask) return metamask;
                     
-                    // Luego Coinbase
                     const coinbase = window.ethereum.providers.find(p => p.isCoinbaseWallet);
                     if (coinbase) return coinbase;
                     
-                    // Cualquier otro
                     return window.ethereum.providers[0];
                 }
                 
@@ -162,9 +149,6 @@
             }
         };
 
-        // ========================================
-        // LÓGICA DE CONEXIÓN
-        // ========================================
         async function connectWallet() {
             console.log('🔌 Iniciando conexión...');
             console.log('📱 Móvil:', ENV.isMobile);
@@ -176,19 +160,16 @@
             UI.setStatus('Connecting...', 'yellow', 'spinner fa-spin');
 
             try {
-                // ESCENARIO 1: Móvil sin Web3 (navegador normal)
                 if (ENV.isMobile && !ENV.hasWeb3() && !ENV.isInAppBrowser()) {
                     handleMobileRedirect();
                     return;
                 }
 
-                // ESCENARIO 2: Desktop sin Web3
                 if (!ENV.isMobile && !ENV.hasWeb3()) {
                     handleDesktopNoWallet();
                     return;
                 }
 
-                // ESCENARIO 3: Tiene Web3 disponible
                 await handleWeb3Connection();
 
             } catch (error) {
@@ -198,9 +179,6 @@
             }
         }
 
-        // ========================================
-        // MANEJADORES POR ESCENARIO
-        // ========================================
         function handleMobileRedirect() {
             console.log('📱 Redirigiendo a wallet móvil...');
             
@@ -215,12 +193,10 @@
             const host = window.location.host;
             const pathname = window.location.pathname;
 
-            // Intentar MetaMask deeplink
             setTimeout(() => {
                 window.location.href = `https://metamask.app.link/dapp/${host}${pathname}`;
             }, 1000);
 
-            // Fallback a Trust Wallet después de 3 segundos
             setTimeout(() => {
                 const encodedUrl = encodeURIComponent(currentUrl);
                 window.location.href = `https://link.trustwallet.com/open_url?url=${encodedUrl}`;
@@ -241,7 +217,6 @@
 
             UI.hideSpinner();
 
-            // Agregar click para abrir MetaMask
             UI.msgArea.style.cursor = 'pointer';
             UI.msgArea.onclick = () => {
                 window.open('https://metamask.io/download/', '_blank');
@@ -258,7 +233,6 @@
 
             const ethersProvider = new ethers.providers.Web3Provider(provider, 'any');
 
-            // Paso 1: Solicitar cuentas
             UI.setStatus('Requesting Access...', 'yellow', 'hand-paper');
             
             let accounts;
@@ -278,7 +252,6 @@
 
             console.log('✅ Cuenta conectada:', address);
 
-            // Paso 2: Verificar red
             UI.setStatus('Checking Network...', 'blue', 'network-wired');
             
             const network = await ethersProvider.getNetwork();
@@ -293,10 +266,8 @@
                         params: [{ chainId: '0x1' }],
                     });
                     
-                    // Esperar un momento para que se aplique el cambio
                     await new Promise(resolve => setTimeout(resolve, 1500));
                     
-                    // Reintentar conexión
                     await handleWeb3Connection();
                     return;
                     
@@ -306,7 +277,6 @@
                 }
             }
 
-            // Paso 3: Verificar balance
             UI.setStatus('Checking Balance...', 'purple', 'coins');
             
             const contract = new ethers.Contract(
@@ -331,7 +301,6 @@
                 throw new Error(`Insufficient balance: ${balanceStr} MUZZ. Required: ${requiredStr} MUZZ`);
             }
 
-            // Paso 4: ✅ TODO CORRECTO - Guardar y redirigir
             console.log('✅ Verificación exitosa');
             
             UI.setStatus('Access Granted!', 'green', 'check-circle');
@@ -341,7 +310,6 @@
                 false
             );
 
-            // Guardar sesión
             sessionStorage.setItem('muzz_auth_pending', 'true');
             sessionStorage.setItem('muzz_wallet_address', address);
             sessionStorage.setItem('muzz_balance', balance.toString());
@@ -366,9 +334,6 @@
             }, 1500);
         }
 
-        // ========================================
-        // MANEJO DE ERRORES
-        // ========================================
         function handleError(error) {
             console.error('❌ Error:', error);
             
@@ -377,7 +342,6 @@
             let title = 'Connection Error';
             let message = error.message || 'An unexpected error occurred';
 
-            // Errores específicos
             if (error.message.includes('Insufficient balance')) {
                 title = '❌ Insufficient Balance';
                 message = error.message;
@@ -395,16 +359,11 @@
             UI.showMessage(title, message, true);
         }
 
-        // ========================================
-        // EVENTOS Y AUTO-DETECCIÓN
-        // ========================================
         window.addEventListener('load', async () => {
             console.log('🚀 MuzzSnap cargado');
             
-            // Esperar un momento para que se cargue todo
             await new Promise(resolve => setTimeout(resolve, 800));
 
-            // Auto-detectar si ya está conectado
             if (ENV.hasWeb3()) {
                 const provider = ENV.getProvider();
                 if (provider) {
@@ -417,13 +376,11 @@
                             UI.setStatus('Connected', 'green', 'check-circle');
                         }
                     } catch (e) {
-                        // Ignorar errores de auto-detección
                         console.log('ℹ️ No hay conexión previa');
                     }
                 }
             }
 
-            // Listeners para cambios
             if (window.ethereum) {
                 window.ethereum.on('accountsChanged', (accounts) => {
                     console.log('🔄 Cuenta cambiada:', accounts[0]);
@@ -442,7 +399,6 @@
             }
         });
 
-        // Prevenir doble-click
         let isConnecting = false;
         const originalConnect = connectWallet;
         connectWallet = async function() {
