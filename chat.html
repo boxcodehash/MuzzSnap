@@ -97,7 +97,6 @@
       
       const dummyRef = useRef(null);
 
-      // ✅ FUNCIÓN NUEVA: Lee sesión de index.html
       const authenticateFromSession = async () => {
         console.log('🔍 Verificando sesión desde index.html...');
         
@@ -211,16 +210,13 @@
         }
       };
 
-      // ✅ MODIFICADO: Prioriza sesión de index.html
       useEffect(() => {
         const checkConnection = async () => {
             console.log('🚀 Chat.html iniciado');
             
-            // PRIORIDAD 1: Verificar sesión de index.html
             const sessionValid = await authenticateFromSession();
             if (sessionValid) return;
             
-            // PRIORIDAD 2: WalletConnect
             if(window.web3Modal && window.web3Modal.getIsConnected()) {
                 const provider = window.web3Modal.getWalletProvider();
                 if(provider) {
@@ -293,7 +289,6 @@
         setShowNewChannel(false);
       };
 
-      // ✅ MODIFICADO: Limpia sesión y vuelve a index.html
       const handleLogout = async () => {
           await auth.signOut();
           if(window.web3Modal) await window.web3Modal.disconnect();
