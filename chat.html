@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Enhanced Edition</title>
+  <title>MuzzSnap - Terminal 3D Edition</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -16,307 +16,298 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Orbitron:wght@700;900&family=Inter:wght@400;700&display=swap');
     
     :root { 
       --muzz-red: #ff0000; 
-      --deep-black: #000000; 
-      --panel-bg: #0a0a0a; 
+      --deep-black: #050505; 
+      --panel-bg: #0c0c0c; 
       --neon-green: #39ff14; 
-      --ryachu-gold: #ffcc00;
-      --border-color: rgba(255,255,255,0.08);
-      --hover-bg: rgba(255,255,255,0.03);
-    }
-
-    .light-theme {
-      --deep-black: #ffffff;
-      --panel-bg: #f8f9fa;
-      --border-color: rgba(0,0,0,0.08);
-      --hover-bg: rgba(0,0,0,0.03);
-      --text-primary: #1a1a1a;
-      --text-secondary: #666666;
-      --muzz-red: #0066ff;
-      --neon-green: #0066ff;
+      --ryachu-gold: #ffcc00; 
     }
     
+    * { box-sizing: border-box; }
+    
     body { 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-      background-color: var(--deep-black); 
+      font-family: 'Inter', sans-serif; 
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0f 100%);
       color: white; 
       overflow: hidden; 
       margin: 0;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      position: relative;
     }
 
-    .light-theme body {
-      color: var(--text-primary);
+    /* Animated Background Grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(255, 0, 0, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.15) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridMove 20s linear infinite;
+      opacity: 0.3;
+      z-index: 0;
     }
 
-    .panel-premium {
-      background: var(--panel-bg);
+    /* Floating Orbs */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 10%;
+      left: 5%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255,0,0,0.3) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(60px);
+      animation: floatOrb 10s ease-in-out infinite;
+      z-index: 0;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    @keyframes floatOrb {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(100px, 50px) scale(1.2); }
+    }
+
+    @keyframes borderGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.3), inset 0 0 20px rgba(255, 0, 0, 0.05); }
+      50% { box-shadow: 0 0 40px rgba(255, 0, 0, 0.6), inset 0 0 30px rgba(255, 0, 0, 0.1); }
+    }
+
+    @keyframes textGlow {
+      0%, 100% { text-shadow: 0 0 20px rgba(255, 0, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.4); }
+      50% { text-shadow: 0 0 30px rgba(255, 0, 0, 1), 0 0 60px rgba(255, 0, 0, 0.6); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+
+    .panel-3d {
+      background: rgba(12, 12, 12, 0.8);
       backdrop-filter: blur(20px);
-      border: 1px solid var(--border-color);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 2px rgba(255, 255, 255, 0.05),
+        0 0 0 1px rgba(255, 0, 0, 0.1);
+      border-radius: 24px;
+      position: relative;
+      animation: borderGlow 3s ease-in-out infinite;
+      transform-style: preserve-3d;
+      z-index: 1;
     }
 
-    .light-theme .panel-premium {
-      box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+    .panel-3d::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(135deg, rgba(255,0,0,0.2), transparent, rgba(255,0,0,0.1));
+      border-radius: 24px;
+      z-index: -1;
+      animation: shimmer 3s infinite;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .panel-3d:hover::before {
+      opacity: 1;
+    }
+
+    .logo-3d {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.5rem;
+      letter-spacing: -0.05em;
+      background: linear-gradient(135deg, #fff 0%, #ff0000 50%, #fff 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 3s ease infinite, textGlow 2s ease-in-out infinite;
+      text-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
 
     .ryachu-name {
       color: var(--ryachu-gold);
-      text-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
-      font-weight: 700;
+      text-shadow: 0 0 15px rgba(255, 204, 0, 0.8), 0 0 30px rgba(255, 204, 0, 0.4);
+      font-weight: 900;
+      animation: textGlow 2s ease-in-out infinite;
     }
 
-    .channel-btn-premium {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    .channel-btn-3d {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: slideIn 0.5s ease-out forwards;
+    }
+
+    .channel-btn-3d::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,0,0,0.2), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .channel-btn-3d:hover::after {
+      transform: translateX(100%);
+    }
+
+    .channel-btn-3d.active {
+      background: linear-gradient(135deg, rgba(255,0,0,0.2), rgba(0,0,0,0.4));
+      border: 2px solid rgba(255,0,0,0.6);
+      color: var(--muzz-red);
+      box-shadow: 0 0 20px rgba(255,0,0,0.3), inset 0 0 20px rgba(255,0,0,0.1);
+      transform: translateX(5px) scale(1.05);
+    }
+
+    .bubble-3d {
+      padding: 12px 18px;
+      border-radius: 20px;
+      margin-bottom: 6px;
+      max-width: 85%;
+      word-wrap: break-word;
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
+      transform-style: preserve-3d;
+    }
+
+    .bubble-3d::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      padding: 2px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .bubble-3d:hover::before {
+      opacity: 1;
+    }
+
+    .bubble-3d.me {
+      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+      box-shadow: 0 10px 30px rgba(255, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bubble-3d.other {
+      background: rgba(26, 26, 26, 0.8);
+      backdrop-filter: blur(10px);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .hacker-input {
+      font-family: 'Fira Code', monospace;
+      color: var(--neon-green) !important;
+      text-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+    }
+
+    .icon-glow {
+      filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.6));
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .send-btn-3d {
+      background: linear-gradient(135deg, #ff0000 0%, #990000 100%);
+      box-shadow: 
+        0 0 20px rgba(255, 0, 0, 0.4),
+        0 10px 20px rgba(0, 0, 0, 0.3),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
     }
 
-    .channel-btn-premium::before {
+    .send-btn-3d::before {
       content: '';
       position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 3px;
-      background: var(--muzz-red);
-      transform: scaleY(0);
-      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
     }
 
-    .channel-btn-premium.active::before {
-      transform: scaleY(1);
+    .send-btn-3d:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        0 0 30px rgba(255, 0, 0, 0.6),
+        0 15px 30px rgba(0, 0, 0, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
     }
 
-    .channel-btn-premium.active {
-      background: var(--hover-bg);
-      color: var(--muzz-red);
+    .send-btn-3d:hover::before {
+      transform: translateX(100%);
     }
 
-    .bubble-modern {
-      padding: 12px 16px;
-      border-radius: 20px;
-      margin-bottom: 2px;
-      max-width: 75%;
-      word-wrap: break-word;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      animation: slideIn 0.2s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .bubble-modern.me {
-      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
-      align-self: flex-end;
-      border-bottom-right-radius: 4px;
-      color: white;
-    }
-
-    .light-theme .bubble-modern.me {
-      background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
-    }
-
-    .bubble-modern.other {
-      background: rgba(255,255,255,0.05);
-      align-self: flex-start;
-      border-bottom-left-radius: 4px;
-      border: 1px solid var(--border-color);
-    }
-
-    .light-theme .bubble-modern.other {
-      background: #f0f2f5;
-      color: var(--text-primary);
-    }
-
-    .input-premium {
-      font-family: 'Inter', sans-serif;
-      transition: all 0.2s ease;
-    }
-
-    .input-premium:focus {
-      outline: none;
+    .send-btn-3d:active {
+      transform: scale(0.95);
     }
 
     .emoji-btn {
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      filter: grayscale(0.3);
-      opacity: 0.7;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: grayscale(1);
     }
 
     .emoji-btn:hover {
-      transform: scale(1.15);
-      filter: grayscale(0);
-      opacity: 1;
+      transform: scale(1.3) rotate(10deg);
+      filter: grayscale(0) drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
     }
 
-    .send-btn {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 2px 8px rgba(255,0,0,0.3);
+    .user-dot {
+      animation: float 2s ease-in-out infinite;
+      box-shadow: 0 0 10px currentColor;
     }
 
-    .send-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(255,0,0,0.4);
+    .loading-screen {
+      animation: fadeIn 0.5s ease-out;
     }
 
-    .send-btn:active {
-      transform: translateY(0);
-    }
-
-    .light-theme .send-btn {
-      box-shadow: 0 2px 8px rgba(0,102,255,0.3);
-    }
-
-    .light-theme .send-btn:hover {
-      box-shadow: 0 4px 12px rgba(0,102,255,0.4);
-    }
-
-    .theme-toggle {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: var(--hover-bg);
-      border: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .theme-toggle:hover {
-      background: var(--border-color);
-      transform: rotate(180deg);
-    }
-
-    ::-webkit-scrollbar { 
-      width: 6px; 
-      height: 6px;
-    }
-    
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { 
-      background: var(--muzz-red);
+      background: linear-gradient(180deg, var(--muzz-red), #990000); 
       border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
     }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #cc0000;
-    }
-
-    .online-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.5;
-      }
-    }
-
-    .message-group {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .username-label {
-      font-size: 11px;
-      font-weight: 600;
-      margin-left: 12px;
-      margin-bottom: 4px;
-      letter-spacing: 0.3px;
-    }
-
-    .light-theme .username-label {
-      color: var(--text-secondary);
-    }
-
-    .header-premium {
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-color);
-      background: rgba(255,255,255,0.02);
-    }
-
-    .light-theme .header-premium {
-      background: rgba(0,0,0,0.02);
-    }
-
-    .input-container {
-      background: rgba(255,255,255,0.03);
-      border: 1.5px solid var(--border-color);
-      border-radius: 24px;
-      transition: all 0.2s ease;
-    }
-
-    .input-container:focus-within {
-      border-color: var(--muzz-red);
-      background: rgba(255,255,255,0.05);
-    }
-
-    .light-theme .input-container {
-      background: white;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
-
-    .light-theme .input-container:focus-within {
-      border-color: var(--muzz-red);
-      box-shadow: 0 2px 8px rgba(0,102,255,0.1);
-    }
-
-    .disconnect-btn {
-      transition: all 0.2s ease;
-      border: 1px solid rgba(255,0,0,0.2);
-      color: #ff4444;
-    }
-
-    .disconnect-btn:hover {
-      background: rgba(255,0,0,0.1);
-      border-color: rgba(255,0,0,0.4);
-    }
-
-    .light-theme .disconnect-btn {
-      border-color: rgba(0,102,255,0.2);
-      color: var(--muzz-red);
-    }
-
-    .light-theme .disconnect-btn:hover {
-      background: rgba(0,102,255,0.05);
-      border-color: rgba(0,102,255,0.4);
-    }
-
-    .logo-container {
-      background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
-      box-shadow: 0 4px 16px rgba(255,0,0,0.3);
-    }
-
-    .light-theme .logo-container {
-      background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
-      box-shadow: 0 4px 16px rgba(0,102,255,0.2);
-    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muzz-red); }
   </style>
 </head>
 <body>
@@ -341,14 +332,13 @@
 
     const RYACHU_WALLET = "0x208157b5ec396759e8754058108ecf53e32392ff".toLowerCase();
     const ITSUKI_WALLET = "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f".toLowerCase();
-
-    const QUICK_EMOJIS = ["🔥", "🚀", "💎", "💻", "⚡", "🤖", "❤️", "👑"];
+    const QUICK_EMOJIS = ["🔥", "🚀", "💎", "💻", "⚡", "🤖", "🔴", "👑"];
 
     const CHANNELS = [
-      { id: "general", name: "GENERAL" },
-      { id: "spanish", name: "SPANISH" },
-      { id: "english", name: "ENGLISH" },
-      { id: "crypto", name: "CRYPTO" }
+      { id: "general", name: "GENERAL", icon: "fa-hashtag" },
+      { id: "spanish", name: "SPANISH", icon: "fa-language" },
+      { id: "english", name: "ENGLISH", icon: "fa-globe" },
+      { id: "crypto", name: "CRYPTO", icon: "fa-bitcoin-sign" }
     ];
 
     function App() {
@@ -358,12 +348,7 @@
       const [onlineUsers, setOnlineUsers] = useState([]);
       const [inputText, setInputText] = useState("");
       const [isMobileMenu, setIsMobileMenu] = useState(false);
-      const [isDarkTheme, setIsDarkTheme] = useState(true);
       const dummyRef = useRef(null);
-
-      useEffect(() => {
-        document.body.className = isDarkTheme ? '' : 'light-theme';
-      }, [isDarkTheme]);
 
       useEffect(() => {
         const wallet = sessionStorage.getItem('muzz_wallet_address');
@@ -442,89 +427,107 @@
       };
 
       if (!user) return (
-        <div className="h-screen flex flex-col items-center justify-center" style={{background: 'var(--deep-black)'}}>
-          <div className="logo-container w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
-            <i className="fas fa-ghost text-white text-2xl"></i>
+        <div className="loading-screen h-screen bg-gradient-to-br from-black via-red-950 to-black flex flex-col items-center justify-center">
+          <div className="icon-glow mb-6">
+            <i className="fas fa-ghost text-red-600 text-6xl"></i>
           </div>
-          <div className="text-sm font-medium" style={{color: 'var(--muzz-red)'}}>Loading...</div>
+          <div className="text-red-600 font-mono text-sm tracking-[0.4em] animate-pulse">
+            VALIDATING_ENCRYPTED_SESSION...
+          </div>
+          <div className="mt-4 flex gap-2">
+            <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+            <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+          </div>
         </div>
       );
 
       return (
-        <div className="flex h-screen p-3 lg:p-4 gap-3 overflow-hidden" style={{background: 'var(--deep-black)'}}>
+        <div className="flex h-screen p-2 lg:p-4 gap-4 overflow-hidden" style={{position: 'relative', zIndex: 1}}>
           
           {/* SIDEBAR */}
-          <aside className={`fixed lg:relative z-50 inset-y-0 left-0 w-72 panel-premium rounded-3xl p-6 flex flex-col transition-transform duration-300 ${isMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-            <div className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="logo-container w-10 h-10 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-ghost text-white text-sm"></i>
-                </div>
-                <h1 className="font-bold text-xl tracking-tight">MUZZ<span style={{color: 'var(--muzz-red)'}}>SNAP</span></h1>
+          <aside className={`fixed lg:relative z-50 inset-y-0 left-0 w-72 panel-3d p-6 flex flex-col transition-all duration-500 ${isMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <div className="mb-10 flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-900 rounded-2xl flex items-center justify-center icon-glow">
+                <i className="fas fa-ghost text-white text-xl"></i>
               </div>
-              <button onClick={() => setIsDarkTheme(!isDarkTheme)} className="theme-toggle">
-                <i className={`fas ${isDarkTheme ? 'fa-sun' : 'fa-moon'} text-sm`} style={{color: 'var(--muzz-red)'}}></i>
-              </button>
+              <h1 className="logo-3d">
+                MUZZ<span style={{color: '#ff0000'}}>SNAP</span>
+              </h1>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2">
-              <p className="text-[10px] font-semibold tracking-widest mb-4 uppercase opacity-50">Channels</p>
-              {CHANNELS.map(ch => (
+              <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mb-4 uppercase" style={{textShadow: '0 0 10px rgba(255,0,0,0.3)'}}>
+                Access_Channels
+              </p>
+              {CHANNELS.map((ch, idx) => (
                 <button 
                   key={ch.id} 
                   onClick={() => { setSelectedChannel(ch); setIsMobileMenu(false); }} 
-                  className={`channel-btn-premium w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium mb-1 ${selectedChannel.id === ch.id ? 'active' : 'opacity-60 hover:opacity-100'}`}
+                  className={`channel-btn-3d w-full flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-bold mb-2 transition-all ${selectedChannel.id === ch.id ? 'active' : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'}`}
+                  style={{animationDelay: `${idx * 0.1}s`}}
                 >
-                  <span style={{color: 'var(--muzz-red)'}}>#</span> {ch.name}
+                  <i className={`fas ${ch.icon} text-lg`}></i>
+                  <span>{ch.name}</span>
                 </button>
               ))}
 
-              <p className="text-[10px] font-semibold tracking-widest mt-8 mb-4 uppercase opacity-50">Online ({onlineUsers.length})</p>
-              <div className="space-y-2">
-                {onlineUsers.map((u, i) => (
-                  <div key={i} className={`flex items-center gap-3 text-xs px-3 py-2 rounded-lg ${u.isRyachu ? 'ryachu-name' : 'opacity-70'}`}>
-                    <div className={`online-indicator ${u.isRyachu ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
-                    <span className="font-medium">{u.username}</span>
-                  </div>
-                ))}
-              </div>
+              <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mt-10 mb-4 uppercase" style={{textShadow: '0 0 10px rgba(255,0,0,0.3)'}}>
+                Nodes_Online ({onlineUsers.length})
+              </p>
+              {onlineUsers.map((u, i) => (
+                <div key={i} className={`flex items-center gap-3 text-xs px-3 py-2 mb-1 rounded-lg hover:bg-white/5 transition-all ${u.isRyachu ? 'ryachu-name' : 'text-gray-400'}`}>
+                  <div className={`user-dot w-2 h-2 rounded-full ${u.isRyachu ? 'bg-yellow-400' : 'bg-green-500'}`} style={{animationDelay: `${i * 0.1}s`}}></div>
+                  <span className="font-bold">{u.username}</span>
+                </div>
+              ))}
             </div>
 
             <button 
               onClick={() => {sessionStorage.clear(); window.location.reload()}} 
-              className="disconnect-btn mt-6 w-full py-3 text-xs font-semibold rounded-xl uppercase tracking-wider"
+              className="mt-6 w-full py-3 text-xs font-bold border-2 border-red-900/50 text-red-600 rounded-xl uppercase tracking-wider hover:bg-red-900/20 hover:border-red-600 transition-all hover:scale-105"
+              style={{textShadow: '0 0 10px rgba(255,0,0,0.5)'}}
             >
+              <i className="fas fa-power-off mr-2"></i>
               Disconnect
             </button>
           </aside>
 
           {/* CHAT MAIN */}
-          <main className="flex-1 panel-premium rounded-3xl flex flex-col overflow-hidden">
-            <header className="header-premium h-16 flex items-center justify-between px-6">
+          <main className="flex-1 panel-3d flex flex-col overflow-hidden relative">
+            <header className="h-16 flex items-center justify-between px-8 bg-gradient-to-r from-black/40 to-red-900/20 backdrop-blur-xl border-b border-red-900/30">
               <div className="flex items-center gap-4">
-                <button onClick={() => setIsMobileMenu(true)} className="lg:hidden" style={{color: 'var(--muzz-red)'}}>
-                  <i className="fas fa-bars text-lg"></i>
+                <button onClick={() => setIsMobileMenu(true)} className="lg:hidden text-red-600 text-xl hover:scale-110 transition-transform">
+                  <i className="fas fa-bars"></i>
                 </button>
-                <h2 className="text-sm font-bold tracking-wide" style={{color: 'var(--muzz-red)'}}>#{selectedChannel.name}</h2>
+                <i className={`fas ${selectedChannel.icon} text-red-600 text-lg icon-glow`}></i>
+                <h2 className="text-base font-bold tracking-[0.3em] text-red-600" style={{textShadow: '0 0 20px rgba(255,0,0,0.5)'}}>
+                  #{selectedChannel.name}
+                </h2>
               </div>
-              <div className="text-[10px] font-medium opacity-50 tracking-wide">
-                {user.isRyachu ? "ADMIN" : `${user.address.slice(0,6)}...${user.address.slice(-4)}`}
+              <div className="text-[10px] font-mono text-gray-500 tracking-wider">
+                {user.isRyachu ? (
+                  <span className="ryachu-name flex items-center gap-2">
+                    <i className="fas fa-crown"></i> ROOT_ADMIN
+                  </span>
+                ) : (
+                  <span>ADDR: {user.address.slice(0,6)}...{user.address.slice(-4)}</span>
+                )}
               </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
-              {messages.map((msg, idx) => {
+            <div className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col">
+              {messages.map(msg => {
                 const isMe = msg.userId === user.uid;
-                const showUsername = idx === 0 || messages[idx - 1].userId !== msg.userId;
-                
                 return (
-                  <div key={msg.id} className={`message-group ${isMe ? 'items-end' : 'items-start'}`}>
-                    {!isMe && showUsername && (
-                      <span className={`username-label ${msg.isRyachu ? 'ryachu-name' : ''}`}>
+                  <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4`}>
+                    {!isMe && (
+                      <span className={`text-[10px] font-bold ml-2 mb-1 uppercase tracking-wider ${msg.isRyachu ? 'ryachu-name' : 'text-gray-500'}`}>
+                        {msg.isRyachu && <i className="fas fa-crown mr-1"></i>}
                         {msg.username}
                       </span>
                     )}
-                    <div className={`bubble-modern ${isMe ? 'me' : 'other'}`}>
+                    <div className={`bubble-3d ${isMe ? 'me' : 'other'}`}>
                       <p className="text-sm leading-relaxed">{msg.content}</p>
                     </div>
                   </div>
@@ -533,34 +536,32 @@
               <div ref={dummyRef}></div>
             </div>
 
-            <div className="p-4">
-              <div className="flex gap-2 mb-3 px-2">
+            <div className="p-5 bg-gradient-to-t from-black/60 to-transparent backdrop-blur-sm">
+              <div className="flex gap-3 mb-4 px-2 justify-center">
                 {QUICK_EMOJIS.map(emoji => (
                   <button 
                     key={emoji} 
                     onClick={() => setInputText(inputText + emoji)} 
-                    className="emoji-btn text-xl"
+                    className="emoji-btn text-2xl"
                   >
                     {emoji}
                   </button>
                 ))}
               </div>
 
-              <div className="input-container flex items-center gap-3 p-2 pl-5">
+              <div className="flex items-center bg-black/60 border-2 border-red-900/30 rounded-2xl p-2 pl-5 backdrop-blur-xl" style={{boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5), 0 0 20px rgba(255,0,0,0.1)'}}>
                 <input 
                   value={inputText} 
                   onChange={e => setInputText(e.target.value)} 
                   onKeyDown={e => e.key === 'Enter' && handleSend()} 
-                  placeholder="Type a message..." 
-                  className="input-premium flex-1 bg-transparent border-none text-sm"
-                  style={{color: isDarkTheme ? 'white' : 'var(--text-primary)'}}
+                  placeholder="Transmit encrypted message..." 
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-input placeholder-green-900" 
                 />
                 <button 
                   onClick={handleSend} 
-                  className="send-btn w-11 h-11 rounded-xl flex items-center justify-center"
-                  style={{background: 'var(--muzz-red)'}}
+                  className="send-btn-3d w-12 h-12 rounded-xl flex items-center justify-center ml-2"
                 >
-                  <i className="fas fa-paper-plane text-white text-sm"></i>
+                  <i className="fas fa-paper-plane text-sm"></i>
                 </button>
               </div>
             </div>
@@ -569,7 +570,8 @@
           {isMobileMenu && (
             <div 
               onClick={() => setIsMobileMenu(false)} 
-              className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+              className="fixed inset-0 bg-black/90 z-40 lg:hidden backdrop-blur-sm"
+              style={{animation: 'fadeIn 0.3s ease-out'}}
             ></div>
           )}
         </div>
