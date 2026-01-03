@@ -3,55 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Terminal God Edition</title>
+  <title>MuzzSnap - Terminal Fixed Edition</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@900&display=swap');
-    
-    :root { --muzz-red: #ff0000; --neon-green: #39ff14; --ryachu-gold: #ffcc00; }
+    :root { --muzz-red: #ff0000; }
     body { background: #050505; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; }
 
-    /* CRT Overlay */
     .crt::after {
       content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
       background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
       z-index: 100; background-size: 100% 3px, 2px 100%; pointer-events: none;
     }
 
-    .panel-god { 
-      background: rgba(15, 5, 5, 0.95); border: 1px solid rgba(255, 0, 0, 0.3);
-      box-shadow: 0 0 30px rgba(255, 0, 0, 0.2); backdrop-filter: blur(15px);
-    }
+    .panel-god { background: rgba(15, 5, 5, 0.95); border: 1px solid rgba(255, 0, 0, 0.3); backdrop-filter: blur(15px); }
+    .bubble-god { border-radius: 12px; padding: 10px 14px; margin: 4px 0; max-width: 80%; word-wrap: break-word; }
+    .bubble-god.me { background: linear-gradient(135deg, #ff0000 0%, #440000 100%); align-self: flex-end; }
+    .bubble-god.other { background: rgba(35, 35, 35, 0.8); align-self: flex-start; border: 1px solid rgba(255,255,255,0.05); }
 
-    .bubble-god { border-radius: 12px; padding: 12px; margin: 4px 0; max-width: 75%; border: 1px solid rgba(255,255,255,0.05); }
-    .bubble-god.me { background: linear-gradient(135deg, #ff0000 0%, #440000 100%); align-self: flex-end; box-shadow: 0 4px 15px rgba(255,0,0,0.2); }
-    .bubble-god.other { background: rgba(30, 30, 30, 0.8); align-self: flex-start; }
-
-    @keyframes glitch {
-      0% { transform: translate(0); }
-      20% { transform: translate(-2px, 2px); }
-      40% { transform: translate(-2px, -2px); }
-      60% { transform: translate(2px, 2px); }
-      80% { transform: translate(2px, -2px); }
-      100% { transform: translate(0); }
-    }
-    .logo-glitch:hover { animation: glitch 0.3s infinite; }
-    
-    .alert-banner { background: #ff0000; color: white; padding: 4px; text-align: center; font-size: 10px; font-weight: bold; animation: pulse 1s infinite; z-index: 50; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #ff0000; border-radius: 10px; }
+    .alert-banner { background: #ff0000; color: white; padding: 5px; text-align: center; font-size: 11px; font-weight: bold; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: #ff0000; }
   </style>
 </head>
 <body class="crt">
@@ -74,221 +59,139 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    const ADMINS = [
-      "0x208157b5ec396759e8754058108ecf53e32392ff", 
-      "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f"
-    ].map(a => a.toLowerCase());
-
-    const CHANNELS = [
-      { id: "spanish", name: "SPANISH", icon: "fa-language" },
-      { id: "english", name: "ENGLISH", icon: "fa-globe" }
-    ];
+    const RYACHU = "0x208157b5ec396759e8754058108ecf53e32392ff".toLowerCase();
+    const ITSUKI = "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f".toLowerCase();
 
     function App() {
       const [user, setUser] = useState(null);
-      const [activeChannel, setActiveChannel] = useState(CHANNELS[0]);
+      const [chan, setChan] = useState("spanish");
       const [messages, setMessages] = useState([]);
       const [users, setUsers] = useState([]);
       const [text, setText] = useState("");
-      const [systemAlert, setSystemAlert] = useState(null);
-      const [isAdminIndexOpen, setIsAdminIndexOpen] = useState(false);
+      const [alertMsg, setAlertMsg] = useState(null);
+      const [showIndex, setShowIndex] = useState(false);
       const scrollRef = useRef();
 
-      const play = (s) => {
-        const a = new Audio(s === 'm' ? 'https://www.soundjay.com/buttons/button-50.mp3' : 'https://www.soundjay.com/communication/typewriter-key-1.mp3');
-        a.volume = 0.1; a.play().catch(()=>{});
-      };
-
       const login = async () => {
-        if (!window.ethereum) return alert("MetaMask required");
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-          const addr = accounts[0].toLowerCase();
-          
-          auth.signInAnonymously().then(cred => {
-            const isGod = ADMINS.includes(addr);
-            let name = `Node_${addr.slice(-4)}`;
-            if (addr === "0x208157b5ec396759e8754058108ecf53e32392ff") name = "Ryachu";
-            if (addr === "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f") name = "Itsuki";
-
-            const data = {
-              uid: cred.user.uid,
-              wallet: addr,
-              name: name,
-              isGod: isGod,
-              color: isGod ? "#ffcc00" : "#ffffff"
-            };
-            db.ref(`presence/${cred.user.uid}`).set(data);
-            db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
-            setUser(data);
-          });
-        } catch (e) { console.error(e); }
+        if (!window.ethereum) return alert("Instala MetaMask");
+        const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const addr = accs[0].toLowerCase();
+        
+        auth.signInAnonymously().then(cred => {
+          const isGod = addr === RYACHU || addr === ITSUKI;
+          const name = addr === RYACHU ? "Ryachu" : addr === ITSUKI ? "Itsuki" : `Node_${addr.slice(-4)}`;
+          const userData = { uid: cred.user.uid, wallet: addr, name, isGod, color: isGod ? "#ffcc00" : "#ffffff" };
+          db.ref(`presence/${cred.user.uid}`).set(userData);
+          db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
+          setUser(userData);
+        });
       };
 
       useEffect(() => {
         if (!user) return;
-        const msgRef = db.ref('messages/' + activeChannel.id).limitToLast(40);
-        msgRef.on('value', s => {
-          const m = s.val();
-          if (m) play('m');
-          setMessages(m ? Object.keys(m).map(k => ({id:k, ...m[k]})) : []);
+        const ref = db.ref(`messages/${chan}`).limitToLast(50);
+        ref.on('value', s => {
+          const val = s.val();
+          setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
         });
         db.ref('presence').on('value', s => setUsers(s.val() ? Object.values(s.val()) : []));
-        db.ref('system_alert').on('value', s => setSystemAlert(s.val()));
-        return () => msgRef.off();
-      }, [user, activeChannel]);
+        db.ref('system_alert').on('value', s => setAlertMsg(s.val()));
+        return () => ref.off();
+      }, [user, chan]);
 
       useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-      const send = async () => {
+      const handleSend = async () => {
         if (!text.trim()) return;
-
         if (user.isGod) {
-          if (text === '/clear') {
-            await db.ref('messages/' + activeChannel.id).remove();
-            setText(""); return;
-          }
-          if (text.startsWith('/alert ')) {
-            await db.ref('system_alert').set(text.replace('/alert ', ''));
-            setText(""); return;
-          }
-          if (text === '/clearalert') {
-            await db.ref('system_alert').remove();
-            setText(""); return;
-          }
+          if (text === '/clear') return db.ref(`messages/${chan}`).remove().then(()=>setText(""));
+          if (text.startsWith('/alert ')) return db.ref('system_alert').set(text.replace('/alert ', '')).then(()=>setText(""));
+          if (text === '/clearalert') return db.ref('system_alert').remove().then(()=>setText(""));
         }
-
-        await db.ref('messages/' + activeChannel.id).push({
-          content: text,
-          name: user.name,
-          uid: user.uid,
-          color: user.color,
-          isGod: user.isGod,
-          time: Date.now()
+        await db.ref(`messages/${chan}`).push({
+          content: text, name: user.name, uid: user.uid, color: user.color, isGod: user.isGod, time: Date.now()
         });
         setText("");
       };
 
       if (!user) return (
-        <div className="h-screen flex flex-col items-center justify-center space-y-6">
-          <h1 className="logo-glitch font-black text-5xl text-red-600 tracking-tighter font-['Orbitron']">MUZZSNAP</h1>
-          <button onClick={login} className="px-10 py-4 border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white transition-all duration-300">
-            CONNECT_METAMASK
+        <div className="h-screen flex flex-col items-center justify-center bg-black font-['Orbitron']">
+          <h1 className="text-4xl text-red-600 mb-8 tracking-widest animate-pulse">MUZZSNAP</h1>
+          <button onClick={login} className="px-8 py-3 border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all font-bold">
+            CONNECT_NEURAL_LINK
           </button>
         </div>
       );
 
       return (
-        <div className="flex h-screen p-3 lg:p-6 gap-6 relative">
-          {/* SIDEBAR */}
-          <aside className="w-72 panel-god rounded-3xl p-6 flex flex-col">
-            <div className="mb-8 logo-glitch">
-              <h1 className="text-2xl font-black text-red-600 font-['Orbitron']">MUZZSNAP</h1>
-              <div className="h-0.5 w-12 bg-red-600 mt-1"></div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-6">
-              <div>
-                <p className="text-[10px] text-red-900 font-bold tracking-widest mb-3">SECTORS</p>
-                {CHANNELS.map(c => (
-                  <button key={c.id} onClick={() => setActiveChannel(c)} className={`w-full flex items-center gap-3 p-3 rounded-xl mb-1 transition-all ${activeChannel.id === c.id ? 'bg-red-600 text-white shadow-lg' : 'text-gray-500 hover:bg-white/5'}`}>
-                    <i className={`fas ${c.icon}`}></i> <span className="text-xs font-bold">{c.name}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div>
-                <p className="text-[10px] text-red-900 font-bold tracking-widest mb-3">ONLINE ({users.length})</p>
+        <div className="flex h-screen p-4 gap-4">
+          <aside className="w-64 panel-god rounded-2xl p-5 flex flex-col shrink-0">
+            <h1 className="text-xl font-black text-red-600 font-['Orbitron'] mb-6 tracking-tighter">MUZZSNAP</h1>
+            <div className="flex-1 overflow-y-auto space-y-4">
+              <section>
+                <p className="text-[10px] text-red-800 font-bold mb-2 tracking-widest uppercase">Sectors</p>
+                <button onClick={()=>setChan("spanish")} className={`w-full text-left p-2 rounded text-sm mb-1 ${chan==='spanish'?'bg-red-600 text-white':'text-gray-500 hover:bg-white/5'}`}># SPANISH</button>
+                <button onClick={()=>setChan("english")} className={`w-full text-left p-2 rounded text-sm ${chan==='english'?'bg-red-600 text-white':'text-gray-500 hover:bg-white/5'}`}># ENGLISH</button>
+              </section>
+              <section>
+                <p className="text-[10px] text-red-800 font-bold mb-2 tracking-widest uppercase">Units ({users.length})</p>
                 {users.map((u, i) => (
-                  <div key={i} className="flex items-center gap-2 mb-2">
-                    <span className={`w-1.5 h-1.5 rounded-full ${u.isGod ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></span>
-                    <span className="text-xs font-mono" style={{color: u.color}}>{u.isGod && '👑 '}{u.name}</span>
+                  <div key={i} className="text-[11px] mb-1 font-mono flex items-center gap-2">
+                    <span className={`w-1 h-1 rounded-full ${u.isGod?'bg-yellow-400':'bg-green-600'}`}></span>
+                    <span style={{color: u.color}}>{u.isGod && '👑 '}{u.name}</span>
                   </div>
                 ))}
-              </div>
+              </section>
             </div>
-
-            <div className="pt-4 border-t border-red-950 mt-4 space-y-2">
+            <div className="mt-4 pt-4 border-t border-red-950/50 space-y-2">
               {user.isGod && (
-                <button onClick={() => setIsAdminIndexOpen(true)} className="w-full py-2 bg-yellow-600/10 border border-yellow-600/30 text-yellow-600 rounded-lg text-[10px] font-bold uppercase hover:bg-yellow-600/20 transition-all">
-                  <i className="fas fa-terminal mr-2"></i> Admin Index
-                </button>
+                <button onClick={()=>setShowIndex(true)} className="w-full py-2 bg-yellow-600/10 border border-yellow-600/30 text-yellow-500 text-[10px] font-bold rounded">ADMIN_INDEX</button>
               )}
-              <button onClick={() => window.location.reload()} className="w-full py-2 border border-red-900/50 text-red-600 rounded-lg text-[10px] font-bold hover:bg-red-900/10">
-                LOGOUT
-              </button>
+              <button onClick={()=>window.location.reload()} className="w-full py-2 border border-red-900/40 text-red-700 text-[10px] font-bold rounded">DISCONNECT</button>
             </div>
           </aside>
 
-          {/* MAIN CHAT */}
-          <main className="flex-1 panel-god rounded-3xl flex flex-col overflow-hidden relative">
-            {systemAlert && <div className="alert-banner">SYSTEM_ALERT: {systemAlert}</div>}
-            
-            <header className="p-5 border-b border-red-950/30 flex justify-between items-center bg-white/5">
-              <h2 className="text-red-600 font-bold tracking-[0.3em]">#{activeChannel.name}</h2>
-              <span className="text-[9px] font-mono text-gray-500 uppercase tracking-tighter">{user.wallet}</span>
+          <main className="flex-1 panel-god rounded-2xl flex flex-col overflow-hidden">
+            {alertMsg && <div className="alert-banner uppercase tracking-widest">System Override: {alertMsg}</div>}
+            <header className="p-4 border-b border-red-950/30 bg-white/5 flex justify-between items-center">
+              <span className="font-bold text-red-600 tracking-widest uppercase">#{chan}</span>
+              <span className="text-[9px] font-mono text-gray-600">{user.wallet.slice(0,12)}...</span>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
               {messages.map(m => (
-                <div key={m.id} className={`flex flex-col mb-4 ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[10px] mb-1 font-bold" style={{color: m.color}}>{m.isGod && '👑 '}{m.name}</span>
-                  <div className={`bubble-god text-sm ${m.uid === user.uid ? 'me text-white' : 'other text-gray-300'}`}>
-                    {m.content}
-                  </div>
+                <div key={m.id} className={`flex flex-col mb-3 ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
+                  <span className="text-[9px] mb-1 font-bold" style={{color: m.color}}>{m.isGod && '👑 '}{m.name}</span>
+                  <div className={`bubble-god text-sm ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
                 </div>
               ))}
               <div ref={scrollRef}></div>
             </div>
 
-            <div className="p-6 bg-black/40">
-              <div className="flex items-center bg-black/80 border border-red-900/40 rounded-2xl p-2 pl-4">
-                <input 
-                  value={text} 
-                  onChange={e => { setText(e.target.value); play('k'); }} 
-                  onKeyDown={e => e.key === 'Enter' && send()}
-                  placeholder="Transmit message or command..." 
-                  className="flex-1 bg-transparent py-2 outline-none font-mono text-sm text-red-500 placeholder-red-900"
-                />
-                <button onClick={send} className="w-10 h-10 bg-red-600 rounded-xl hover:bg-red-500 transition-colors">
-                  <i className="fas fa-bolt text-white"></i>
-                </button>
+            <div className="p-4 bg-black/40">
+              <div className="flex gap-2 bg-black/60 border border-red-900/30 rounded-xl p-2 pl-4">
+                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder="Escribe un mensaje o comando..." className="flex-1 bg-transparent outline-none text-sm text-red-500 font-mono" />
+                <button onClick={handleSend} className="w-10 h-10 bg-red-600 rounded-lg hover:bg-red-500 transition-colors"><i className="fas fa-paper-plane"></i></button>
               </div>
             </div>
           </main>
 
-          {/* ADMIN INDEX MODAL */}
-          {isAdminIndexOpen && (
-            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-              <div className="panel-god max-w-sm w-full p-8 rounded-3xl border-2 border-yellow-600/50 relative">
-                <button onClick={() => setIsAdminIndexOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
-                  <i className="fas fa-times"></i>
-                </button>
-                <h2 className="font-['Orbitron'] text-yellow-500 text-lg mb-6 flex items-center gap-3">
-                  <i className="fas fa-crown"></i> ADMIN_COMMANDS
-                </h2>
-                <div className="space-y-3 font-mono text-[11px]">
-                  <div className="p-3 bg-white/5 rounded border border-white/10">
-                    <p className="text-yellow-500">/clear</p>
-                    <p className="text-gray-400">Borra historial del canal.</p>
-                  </div>
-                  <div className="p-3 bg-white/5 rounded border border-white/10">
-                    <p className="text-yellow-500">/alert [msj]</p>
-                    <p className="text-gray-400">Banner global parpadeante.</p>
-                  </div>
-                  <div className="p-3 bg-white/5 rounded border border-white/10">
-                    <p className="text-yellow-500">/clearalert</p>
-                    <p className="text-gray-400">Quita el banner global.</p>
-                  </div>
+          {showIndex && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4">
+              <div className="panel-god max-w-xs w-full p-6 rounded-2xl border border-yellow-600/50 relative">
+                <button onClick={()=>setShowIndex(false)} className="absolute top-4 right-4 text-gray-500"><i className="fas fa-times"></i></button>
+                <h2 className="text-yellow-500 font-['Orbitron'] mb-4">ADMIN_COMMANDS</h2>
+                <div className="space-y-3 font-mono text-[11px] text-gray-300">
+                  <p><span className="text-yellow-500">/clear</span> - Borra el chat.</p>
+                  <p><span className="text-yellow-500">/alert [msj]</span> - Banner global.</p>
+                  <p><span className="text-yellow-500">/clearalert</span> - Quita banner.</p>
                 </div>
-                <p className="mt-6 text-[9px] text-yellow-700 text-center uppercase">Root Access: Ryachu / Itsuki</p>
               </div>
             </div>
           )}
         </div>
       );
     }
-
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
