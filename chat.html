@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Final Edition</title>
+  <title>MuzzSnap Mobile</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -18,38 +17,25 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@900&display=swap');
     
-    :root { 
-      --bg-dark: radial-gradient(circle at center, #1a0505 0%, #050505 100%);
-    }
+    :root { --bg: #050505; --accent: #ff0000; }
+    body { background: var(--bg); color: #fff; font-family: 'Fira Code', monospace; margin: 0; overflow: hidden; height: 100vh; }
 
-    body { background: var(--bg-dark); color: #fff; font-family: 'Fira Code', monospace; margin: 0; overflow: hidden; }
-
-    .card-3d { 
-      backdrop-filter: blur(25px); 
-      background: rgba(12, 4, 4, 0.95); 
-      border: 1px solid rgba(255, 0, 0, 0.2); 
-      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-      border-radius: 28px;
-    }
-
-    .bubble-3d { border-radius: 18px; padding: 12px 18px; margin: 4px 0; max-width: 85%; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #990000); color: white; border: 1px solid rgba(255,255,255,0.1); }
-    .bubble-3d.other { background: #222; color: #eee; border: 1px solid rgba(255,255,255,0.05); }
-
-    .admin-glow { color: #ffcc00; text-shadow: 0 0 12px rgba(255, 204, 0, 0.6); font-weight: 900 !important; }
+    .glass { background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 0, 0, 0.15); }
+    .bubble { border-radius: 15px; padding: 10px 14px; max-width: 85%; font-size: 13px; line-height: 1.4; }
+    .bubble.me { background: linear-gradient(135deg, #ff0000, #800000); border-bottom-right-radius: 2px; }
+    .bubble.other { background: #1a1a1a; border-bottom-left-radius: 2px; }
     
-    .emoji-picker { 
-      position: absolute; bottom: 90px; right: 20px; width: 300px; height: 350px; 
-      overflow-y: auto; z-index: 200; padding: 15px; display: grid; 
-      grid-template-columns: repeat(6, 1fr); gap: 10px; font-size: 1.5rem;
-      background: rgba(10, 10, 10, 0.98); border: 1px solid #ff000044;
-    }
+    .admin-name { color: #ffcc00; text-shadow: 0 0 8px rgba(255, 204, 0, 0.4); font-weight: bold; }
+    
+    /* Scrollbar minimalista */
+    .msg-container::-webkit-scrollbar { width: 3px; }
+    .msg-container::-webkit-scrollbar-thumb { background: rgba(255,0,0,0.2); }
 
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #ff000044; border-radius: 10px; }
+    .loader-anim { animation: pulse 1.5s infinite; font-family: 'Orbitron'; letter-spacing: 3px; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
-    .loader-text { font-family: 'Orbitron', sans-serif; letter-spacing: 4px; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    /* Ajuste para evitar que el teclado móvil rompa el layout */
+    .app-wrapper { height: 100vh; height: -webkit-fill-available; display: flex; flex-direction: column; }
   </style>
 </head>
 <body>
@@ -74,181 +60,141 @@
 
     const RYACHU_HASH = "f501869e5d48a58ec2f92f988849b79410313f8d3885d51940bc27599c9339e0"; 
     const ITSUKI_HASH = "819c961c022883f3e18a8008e43e26458519e48c1e4c70308009696987c8801d";
-    
-    const EMOJI_LIST = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","👍","👎","👊","✌️","🔥","✨","🚀"];
+    const EMOJI_LIST = ["😀","😂","😍","🔥","🚀","✨","👍","🙏","💀","💎","👑","👀","💯"];
 
     function App() {
       const [user, setUser] = useState(null);
       const [loading, setLoading] = useState(true);
       const [chan, setChan] = useState("general");
       const [messages, setMessages] = useState([]);
-      const [users, setUsers] = useState([]);
+      const [showMenu, setShowMenu] = useState(false);
       const [text, setText] = useState("");
       const [showEmoji, setShowEmoji] = useState(false);
-      const [showAdminPanel, setShowAdminPanel] = useState(false);
       const scrollRef = useRef();
 
       const hashWallet = async (address) => {
         const msgUint8 = new TextEncoder().encode(address.toLowerCase().trim());
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
       };
 
-      // LOGIN AUTOMÁTICO
       useEffect(() => {
-        const initLogin = async () => {
-          if (!window.ethereum) {
-            alert("Please install MetaMask");
-            return;
-          }
+        const autoLogin = async () => {
+          if (!window.ethereum) return setLoading(false);
           try {
             const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
             const wallet = accs[0].toLowerCase().trim();
             const hashed = await hashWallet(wallet);
+            
+            const cred = await auth.signInAnonymously();
+            const isRyachu = hashed === RYACHU_HASH;
+            const isItsuki = hashed === ITSUKI_HASH;
+            const isGod = isRyachu || isItsuki;
+            const name = isRyachu ? "Ryachu" : (isItsuki ? "Itsuki" : `Node_${wallet.slice(-6)}`);
 
-            auth.signInAnonymously().then(async (cred) => {
-              const isRyachu = hashed === RYACHU_HASH;
-              const isItsuki = hashed === ITSUKI_HASH;
-              const isGod = isRyachu || isItsuki;
-              const name = isRyachu ? "Ryachu" : (isItsuki ? "Itsuki" : `Node_${wallet.slice(-6)}`);
-              
-              const userData = { uid: cred.user.uid, wallet, name, isGod };
-              await db.ref(`presence/${cred.user.uid}`).set(userData);
-              db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
-              
-              setUser(userData);
-              setTimeout(() => setLoading(false), 1500); // Pequeño delay para ver el mensaje de cifrado
-            });
-          } catch (e) {
-            console.error(e);
+            const userData = { uid: cred.user.uid, name, isGod, wallet };
+            await db.ref(`presence/${cred.user.uid}`).set(userData);
+            db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
+            
+            setUser(userData);
             setLoading(false);
-          }
+          } catch (e) { setLoading(false); }
         };
-        initLogin();
+        autoLogin();
       }, []);
 
       useEffect(() => {
         if (!user) return;
-        const mRef = db.ref(`messages/${chan}`).limitToLast(50);
+        const mRef = db.ref(`messages/${chan}`).limitToLast(40);
         mRef.on('value', s => {
           const val = s.val();
           setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
         });
-        const pRef = db.ref('presence');
-        pRef.on('value', s => setUsers(s.val() ? Object.values(s.val()) : []));
-        return () => { mRef.off(); pRef.off(); };
+        return () => mRef.off();
       }, [user, chan]);
 
       useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-      const handleLogout = async () => {
-        if (user) await db.ref(`presence/${user.uid}`).remove();
-        await auth.signOut();
-        window.location.reload();
-      };
-
-      const handleSend = async () => {
+      const sendMessage = async () => {
         if (!text.trim()) return;
         if (user.isGod && text === '/clear') {
           await db.ref(`messages/${chan}`).remove();
-          setText("");
-          return;
+        } else {
+          await db.ref(`messages/${chan}`).push({
+            content: text, name: user.name, uid: user.uid, isGod: user.isGod, time: Date.now()
+          });
         }
-        await db.ref(`messages/${chan}`).push({
-          content: text, name: user.name, uid: user.uid, isGod: user.isGod, time: Date.now()
-        });
         setText("");
         setShowEmoji(false);
       };
 
       if (loading) return (
-        <div className="h-screen flex flex-col items-center justify-center bg-black">
-          <div className="loader-text text-red-600 text-xl font-bold mb-2">ENCRYPTING CONNECTION...</div>
-          <div className="text-[10px] text-white/30 tracking-[0.5em] uppercase">MuzzSnap Protocol v2.0</div>
+        <div className="h-screen flex flex-col items-center justify-center p-10 text-center">
+          <div className="loader-anim text-red-600 font-bold text-sm mb-2">ENCRYPTING CONNECTION</div>
+          <div className="text-[10px] opacity-30">MuzzSnap v2.0 Protocol</div>
+        </div>
+      );
+
+      if (!user) return (
+        <div className="h-screen flex items-center justify-center p-6">
+          <button onClick={() => window.location.reload()} className="glass p-6 rounded-2xl border-red-600 text-red-600 font-bold">RECONNECT METAMASK</button>
         </div>
       );
 
       return (
-        <div className="flex h-screen p-4 gap-4 bg-transparent">
-          {/* SIDEBAR */}
-          <aside className="w-72 card-3d p-6 flex flex-col">
-            <h1 className="font-['Orbitron'] text-2xl font-black text-red-600 mb-10 tracking-tighter">MUZZSNAP</h1>
-            
-            <div className="flex-1 overflow-y-auto">
-              <p className="text-[10px] font-bold opacity-30 mb-4 tracking-widest uppercase">Channels</p>
+        <div className="app-wrapper">
+          {/* Header Móvil */}
+          <header className="h-14 glass flex items-center justify-between px-4 z-50">
+            <button onClick={() => setShowMenu(true)} className="text-red-600"><i className="fas fa-bars text-xl"></i></button>
+            <div className="font-['Orbitron'] text-sm font-black text-red-600 tracking-tighter">MUZZSNAP</div>
+            <div className="w-6"></div>
+          </header>
+
+          {/* Sidebar / Menú Lateral */}
+          <div className={`fixed inset-0 z-[100] transition-transform ${showMenu ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="absolute inset-0 bg-black/80" onClick={() => setShowMenu(false)}></div>
+            <aside className="absolute left-0 top-0 bottom-0 w-64 glass p-6 flex flex-col">
+              <h2 className="text-xs font-bold opacity-30 mb-6 uppercase tracking-widest">Sectors</h2>
               {['general', 'spanish'].map(c => (
-                <button key={c} onClick={()=>setChan(c)} className={`w-full text-left p-4 rounded-2xl text-xs mb-2 font-black transition-all ${chan===c ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' : 'opacity-40 hover:opacity-100 hover:bg-white/5'}`}># {c.toUpperCase()}</button>
+                <button key={c} onClick={() => { setChan(c); setShowMenu(false); }} className={`w-full text-left p-3 rounded-xl mb-2 text-xs font-bold ${chan === c ? 'bg-red-600' : 'opacity-50'}`}># {c.toUpperCase()}</button>
               ))}
-
-              <p className="text-[10px] font-bold opacity-30 mt-10 mb-4 tracking-widest uppercase">Online ({users.length})</p>
-              <div className="space-y-3">
-                {users.map((u, i) => (
-                  <div key={i} className={`text-[11px] font-mono flex items-center gap-2 ${u.isGod ? 'admin-glow' : 'opacity-70'}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${u.isGod ? 'bg-yellow-400 animate-pulse shadow-[0_0_10px_gold]' : 'bg-green-500'}`}></span>
-                    {u.isGod && '👑 '}{u.name}
-                  </div>
-                ))}
+              <div className="mt-auto">
+                <button onClick={() => window.location.reload()} className="text-[10px] opacity-30 font-bold uppercase">Terminate Session</button>
               </div>
-            </div>
+            </aside>
+          </div>
 
-            <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-3">
-              {user.isGod && (
-                <button onClick={()=>setShowAdminPanel(true)} className="w-full py-3 bg-yellow-500/10 border border-yellow-500/40 text-yellow-500 text-[10px] font-black rounded-xl tracking-widest hover:bg-yellow-500 hover:text-black transition-all">ADMIN_PANEL</button>
-              )}
-              <button onClick={handleLogout} className="w-full py-2 text-[9px] font-black opacity-20 hover:opacity-100 transition-opacity uppercase tracking-tighter">Terminate Session</button>
-            </div>
-          </aside>
-
-          {/* CHAT AREA */}
-          <main className="flex-1 card-3d flex flex-col overflow-hidden relative">
-            <header className="h-16 border-b border-white/5 flex items-center px-8 bg-white/5">
-              <span className="text-[11px] font-black text-red-600 tracking-[0.4em] uppercase">Link: {chan}</span>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-3" onClick={()=>setShowEmoji(false)}>
-              {messages.map(m => (
-                <div key={m.id} className={`flex flex-col ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className={`text-[10px] mb-1 px-2 ${m.isGod ? 'admin-glow' : 'opacity-40'}`}>{m.name}</span>
-                  <div className={`bubble-3d ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
-                </div>
-              ))}
-              <div ref={scrollRef}></div>
-            </div>
-
-            <div className="p-6 bg-black/40 relative">
-              {showEmoji && (
-                <div className="emoji-picker card-3d shadow-2xl border-red-600/20">
-                  {EMOJI_LIST.map(e => (
-                    <button key={e} onClick={()=>setText(text + e)} className="hover:scale-125 transition-transform p-1">{e}</button>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-3 bg-white/5 border border-white/10 rounded-2xl p-2 pl-5 focus-within:border-red-600/50 transition-all">
-                <button onClick={()=>setShowEmoji(!showEmoji)} className="text-gray-500 hover:text-red-500 transition-colors"><i className="far fa-face-smile text-xl"></i></button>
-                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter' && handleSend()} placeholder="Type message..." className="flex-1 bg-transparent outline-none text-sm text-white" />
-                <button onClick={handleSend} className="bg-red-600 w-12 h-12 rounded-xl flex items-center justify-center hover:bg-red-500 transition-all shadow-lg shadow-red-900/40"><i className="fas fa-paper-plane"></i></button>
+          {/* Contenedor de Mensajes */}
+          <main className="flex-1 overflow-y-auto p-4 space-y-4 msg-container">
+            <div className="text-center py-4 text-[9px] opacity-20 uppercase tracking-[0.4em]">Sector {chan} secured</div>
+            {messages.map(m => (
+              <div key={m.id} className={`flex flex-col ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
+                <span className={`text-[10px] mb-1 px-1 ${m.isGod ? 'admin-name' : 'opacity-30'}`}>{m.name}</span>
+                <div className={`bubble ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
               </div>
-            </div>
+            ))}
+            <div ref={scrollRef}></div>
           </main>
 
-          {/* ADMIN PANEL MODAL */}
-          {showAdminPanel && user.isGod && (
-            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/95 backdrop-blur-md">
-              <div className="card-3d max-w-sm w-full p-8 border-yellow-500/50">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-yellow-500 font-black tracking-widest text-xs">ROOT_ACCESS</h2>
-                  <button onClick={()=>setShowAdminPanel(false)} className="text-white/20 hover:text-white"><i className="fas fa-times"></i></button>
-                </div>
-                <div className="space-y-4">
-                  <div className="p-4 bg-yellow-500/5 border border-yellow-500/10 rounded-xl">
-                    <p className="text-yellow-500 font-bold text-[10px] mb-1">/clear</p>
-                    <p className="text-white/60 text-[10px]">Purge all message history in current link.</p>
-                  </div>
-                </div>
+          {/* Barra de Entrada */}
+          <footer className="p-3 glass relative">
+            {showEmoji && (
+              <div className="absolute bottom-full left-0 right-0 p-3 glass flex justify-center gap-4 border-b-0 rounded-t-2xl">
+                {EMOJI_LIST.map(e => <button key={e} onClick={() => setText(text + e)} className="text-xl">{e}</button>)}
               </div>
+            )}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowEmoji(!showEmoji)} className="w-10 h-10 flex items-center justify-center opacity-40"><i className="far fa-face-smile text-xl"></i></button>
+              <input 
+                value={text} 
+                onChange={e => setText(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                placeholder="Secure message..." 
+                className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm outline-none"
+              />
+              <button onClick={sendMessage} className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-900/40"><i className="fas fa-paper-plane text-xs"></i></button>
             </div>
-          )}
+          </footer>
         </div>
       );
     }
