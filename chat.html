@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Secure Edition</title>
+  <title>MuzzSnap - Direct Access</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -37,7 +37,6 @@
     .theme-light .bubble-3d.other { background: #fff; color: #0f172a; border: 1px solid #e2e8f0; }
 
     .admin-glow { color: #ffcc00; text-shadow: 0 0 8px rgba(255, 204, 0, 0.5); font-weight: 900 !important; }
-    
     .emoji-picker { position: absolute; bottom: 85px; right: 20px; width: 280px; height: 300px; overflow-y: auto; z-index: 200; border-radius: 20px; padding: 15px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 1.4rem; }
     
     .theme-toggle { width: 46px; height: 22px; background: #333; border-radius: 20px; position: relative; cursor: pointer; }
@@ -47,6 +46,8 @@
 
     .alert-banner { background: #ff0000; color: white; padding: 8px; text-align: center; font-size: 11px; font-weight: 900; animation: flash 1s infinite; z-index: 100; }
     @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    
+    .loader-container { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   </style>
 </head>
 <body class="theme-dark">
@@ -69,7 +70,6 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    // HASHES DE WALLETS (NADIE PUEDE VER LA DIRECCIÓN REAL)
     const RYACHU_HASH = "f501869e5d48a58ec2f92f988849b79410313f8d3885d51940bc27599c9339e0"; 
     const ITSUKI_HASH = "819c961c022883f3e18a8008e43e26458519e48c1e4c70308009696987c8801d";
 
@@ -86,6 +86,7 @@
       const [showAdminPanel, setShowAdminPanel] = useState(false);
       const [showEmoji, setShowEmoji] = useState(false);
       const [isMenuOpen, setIsMenuOpen] = useState(false);
+      const [loading, setLoading] = useState(true);
       const scrollRef = useRef();
 
       useEffect(() => {
@@ -93,37 +94,58 @@
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
       }, [isDark]);
 
-      // Función para hashear la wallet de forma segura
       const hashWallet = async (address) => {
-        const msgUint8 = new TextEncoder().encode(address.toLowerCase());
+        const msgUint8 = new TextEncoder().encode(address.toLowerCase().trim());
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       };
 
-      const login = async () => {
-        if (!window.ethereum) return alert("MetaMask required");
-        const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const wallet = accs[0].toLowerCase();
-        const hashed = await hashWallet(wallet);
+      // LOGIN AUTOMÁTICO AL CARGAR
+      useEffect(() => {
+        const autoLogin = async () => {
+          if (!window.ethereum) {
+            setLoading(false);
+            return alert("MetaMask required");
+          }
+          try {
+            const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const wallet = accs[0].toLowerCase().trim();
+            const hashed = await hashWallet(wallet);
 
-        // Limpieza de sesión previa
-        const snap = await db.ref('presence').orderByChild('wallet').equalTo(wallet).once('value');
-        if (snap.exists()) Object.keys(snap.val()).forEach(k => db.ref(`presence/${k}`).remove());
+            const snap = await db.ref('presence').orderByChild('wallet').equalTo(wallet).once('value');
+            if (snap.exists()) {
+              const updates = {};
+              Object.keys(snap.val()).forEach(k => updates[`presence/${k}`] = null);
+              await db.ref().update(updates);
+            }
 
-        auth.signInAnonymously().then(cred => {
-          const isRyachu = hashed === RYACHU_HASH;
-          const isItsuki = hashed === ITSUKI_HASH;
-          const isGod = isRyachu || isItsuki;
-          
-          const name = isRyachu ? "Ryachu" : isItsuki ? "Itsuki" : `Node_${wallet.slice(-4)}`;
-          const data = { uid: cred.user.uid, wallet, name, isGod, color: isGod ? "#ffcc00" : (isDark ? "#ffffff" : "#000000") };
-          
-          db.ref(`presence/${cred.user.uid}`).set(data);
-          db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
-          setUser(data);
-        });
-      };
+            auth.signInAnonymously().then(async (cred) => {
+              const isRyachu = hashed === RYACHU_HASH;
+              const isItsuki = hashed === ITSUKI_HASH;
+              const isGod = isRyachu || isItsuki;
+              
+              let finalName = isRyachu ? "Ryachu" : isItsuki ? "Itsuki" : `Node_${wallet.slice(-6)}`;
+              
+              const data = { 
+                uid: cred.user.uid, 
+                wallet, 
+                name: finalName, 
+                isGod, 
+                color: isGod ? "#ffcc00" : (isDark ? "#ffffff" : "#000000") 
+              };
+              
+              await db.ref(`presence/${cred.user.uid}`).set(data);
+              db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
+              setUser(data);
+              setLoading(false);
+            });
+          } catch (e) {
+            setLoading(false);
+          }
+        };
+        autoLogin();
+      }, []);
 
       useEffect(() => {
         if (!user) return;
@@ -155,12 +177,19 @@
         setShowEmoji(false);
       };
 
+      if (loading) return (
+        <div className="loader-container">
+          <div className="text-red-600 font-['Orbitron'] text-2xl animate-pulse font-black">MUZZSNAP_CONNECTING...</div>
+          <div className="mt-4 text-[10px] opacity-40 font-mono tracking-widest">VERIFYING_NEURAL_HASH</div>
+        </div>
+      );
+
       if (!user) return (
-        <div className="h-screen flex items-center justify-center p-6">
-          <div className="card-3d p-10 text-center max-w-sm w-full border-t-2 border-red-600/50">
-            <h1 className="font-['Orbitron'] text-4xl mb-10 font-black text-red-600 tracking-tighter">MUZZSNAP</h1>
-            <button onClick={login} className={`w-full py-4 border-2 font-black rounded-2xl transition-all ${isDark ? 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white' : 'border-black text-black hover:bg-black hover:text-white'}`}>INICIALIZAR</button>
-            <div className="mt-8 flex justify-center"><div className="theme-toggle" onClick={() => setIsDark(!isDark)}><div className="circle"></div></div></div>
+        <div className="h-screen flex items-center justify-center p-6 text-center">
+          <div className="card-3d p-8">
+            <h1 className="text-red-600 font-black mb-4">ERROR_DE_CONEXIÓN</h1>
+            <p className="text-xs opacity-50">Por favor, asegúrate de tener MetaMask desbloqueado y recarga la página.</p>
+            <button onClick={()=>window.location.reload()} className="mt-6 px-8 py-3 bg-red-600 text-white rounded-xl font-black text-xs">REINTENTAR</button>
           </div>
         </div>
       );
@@ -176,11 +205,11 @@
               <section>
                 <p className="text-[10px] font-black mb-4 opacity-40 uppercase tracking-[0.2em]">Sectores</p>
                 {['spanish', 'english'].map(c => (
-                  <button key={c} onClick={()=>{setChan(c); setIsMenuOpen(false);}} className={`w-full text-left p-4 rounded-2xl text-xs mb-2 capitalize font-black transition-all ${chan===c ? (isDark ? 'bg-red-600 text-white' : 'bg-black text-white') : 'opacity-40 hover:opacity-100'}`}># {c} Core</button>
+                  <button key={c} onClick={()=>{setChan(c); setIsMenuOpen(false);}} className={`w-full text-left p-4 rounded-2xl text-xs mb-2 capitalize font-black transition-all ${chan===c ? (isDark ? 'bg-red-600 text-white' : 'bg-black text-white') : 'opacity-40 hover:opacity-100'}`}># {c}</button>
                 ))}
               </section>
               <section>
-                <p className="text-[10px] font-black mb-4 opacity-40 uppercase tracking-[0.2em]">Unidades ({users.length})</p>
+                <p className="text-[10px] font-black mb-4 opacity-40 uppercase tracking-[0.2em]">Online ({users.length})</p>
                 <div className="space-y-3">
                   {users.map((u, i) => (
                     <div key={i} className="text-[11px] font-mono flex items-center gap-3">
@@ -200,7 +229,7 @@
           </aside>
 
           <main className="flex-1 card-3d flex flex-col overflow-hidden relative">
-            {alertMsg && <div className="alert-banner uppercase tracking-widest">!! ALERTA: {alertMsg} !!</div>}
+            {alertMsg && <div className="alert-banner uppercase tracking-widest">!! {alertMsg} !!</div>}
             <header className="h-16 p-5 border-b border-gray-500/10 flex justify-between items-center bg-black/5">
               <button onClick={() => setIsMenuOpen(true)} className="lg:hidden text-red-600 p-2"><i className="fas fa-bars"></i></button>
               <span className="font-black uppercase text-xs text-red-600 tracking-[0.3em]">{chan}_link</span>
@@ -227,7 +256,7 @@
               )}
               <div className={`flex gap-3 border rounded-2xl p-2 pl-4 transition-all ${isDark ? 'bg-black/60 border-white/10 shadow-inner' : 'bg-white border-gray-200'}`}>
                 <button onClick={()=>setShowEmoji(!showEmoji)} className="text-gray-400 hover:text-red-500 px-2 transition-colors"><i className="far fa-face-smile text-xl"></i></button>
-                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder="Transmitir datos..." className="flex-1 bg-transparent outline-none text-sm font-medium" />
+                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder="Escribe un mensaje..." className="flex-1 bg-transparent outline-none text-sm font-medium" />
                 <button onClick={handleSend} className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isDark ? 'bg-red-600' : 'bg-black text-white'}`}><i className="fas fa-bolt"></i></button>
               </div>
             </div>
@@ -239,18 +268,9 @@
                 <button onClick={()=>setShowAdminPanel(false)} className="absolute top-6 right-6 opacity-40 hover:opacity-100"><i className="fas fa-times text-xl"></i></button>
                 <h2 className="font-['Orbitron'] text-yellow-500 mb-8 text-center font-black tracking-widest text-lg">SECURITY_CONSOLE</h2>
                 <div className="space-y-4 font-mono text-[11px] text-gray-400">
-                  <div className="p-4 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
-                    <p className="text-yellow-500 font-bold mb-1 underline">/clear</p>
-                    <p>Wipe sector message history.</p>
-                  </div>
-                  <div className="p-4 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
-                    <p className="text-yellow-500 font-bold mb-1 underline">/alert [msg]</p>
-                    <p>Broadcast emergency banner.</p>
-                  </div>
-                  <div className="p-4 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
-                    <p className="text-yellow-500 font-bold mb-1 underline">/clearalert</p>
-                    <p>Kill active broadcast.</p>
-                  </div>
+                  <div className="p-3 bg-yellow-500/5 rounded-xl border border-yellow-500/10"><p className="text-yellow-500 font-bold">/clear</p><p>Limpia canal.</p></div>
+                  <div className="p-3 bg-yellow-500/5 rounded-xl border border-yellow-500/10"><p className="text-yellow-500 font-bold">/alert [msg]</p><p>Banner rojo.</p></div>
+                  <div className="p-3 bg-yellow-500/5 rounded-xl border border-yellow-500/10"><p className="text-yellow-500 font-bold">/clearalert</p><p>Quita banner.</p></div>
                 </div>
               </div>
             </div>
