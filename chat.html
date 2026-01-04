@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Single Session 3D</title>
+  <title>MuzzSnap - Secure Edition</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -20,27 +20,33 @@
     
     :root { 
       --bg-dark: radial-gradient(circle at center, #1a0505 0%, #050505 100%);
-      --bg-light: #f4f4f7;
+      --bg-light: #f1f5f9;
     }
 
     body.theme-dark { background: var(--bg-dark); color: #fff; }
-    body.theme-light { background: var(--bg-light); color: #000; }
+    body.theme-light { background: var(--bg-light); color: #0f172a; }
 
-    .card-3d { backdrop-filter: blur(20px); transition: all 0.4s ease; }
-    .theme-dark .card-3d { background: rgba(15, 5, 5, 0.9); border: 1px solid rgba(255, 0, 0, 0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .theme-light .card-3d { background: rgba(255, 255, 255, 0.9); border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+    .card-3d { backdrop-filter: blur(20px); transition: all 0.4s ease; border-radius: 28px; }
+    .theme-dark .card-3d { background: rgba(12, 4, 4, 0.95); border: 1px solid rgba(255, 0, 0, 0.2); box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
+    .theme-light .card-3d { background: rgba(255, 255, 255, 0.98); border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
 
-    .bubble-3d { border-radius: 16px; padding: 12px 16px; margin: 4px 0; max-width: 85%; font-size: 14px; line-height: 1.4; }
+    .bubble-3d { border-radius: 18px; padding: 12px 18px; margin: 4px 0; max-width: 85%; font-size: 14px; }
     .theme-dark .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #990000); color: white; }
-    .theme-dark .bubble-3d.other { background: #1e1e1e; color: #ddd; }
-    .theme-light .bubble-3d.me { background: #000; color: #fff; }
-    .theme-light .bubble-3d.other { background: #fff; color: #000; border: 1px solid #e2e8f0; }
+    .theme-dark .bubble-3d.other { background: #222; color: #eee; }
+    .theme-light .bubble-3d.me { background: #0f172a; color: #fff; }
+    .theme-light .bubble-3d.other { background: #fff; color: #0f172a; border: 1px solid #e2e8f0; }
 
-    .logo-3d { font-family: 'Orbitron', sans-serif; }
-    .theme-toggle { width: 44px; height: 22px; background: #333; border-radius: 20px; position: relative; cursor: pointer; }
+    .admin-glow { color: #ffcc00; text-shadow: 0 0 8px rgba(255, 204, 0, 0.5); font-weight: 900 !important; }
+    
+    .emoji-picker { position: absolute; bottom: 85px; right: 20px; width: 280px; height: 300px; overflow-y: auto; z-index: 200; border-radius: 20px; padding: 15px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 1.4rem; }
+    
+    .theme-toggle { width: 46px; height: 22px; background: #333; border-radius: 20px; position: relative; cursor: pointer; }
     .theme-toggle .circle { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 4px; transition: 0.3s; }
     .theme-light .theme-toggle { background: #ff0000; }
-    .theme-light .theme-toggle .circle { left: 24px; }
+    .theme-light .theme-toggle .circle { left: 26px; }
+
+    .alert-banner { background: #ff0000; color: white; padding: 8px; text-align: center; font-size: 11px; font-weight: 900; animation: flash 1s infinite; z-index: 100; }
+    @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
   </style>
 </head>
 <body class="theme-dark">
@@ -63,8 +69,11 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    const RYACHU = "0x208157b5ec396759e8754058108ecf53e32392ff".toLowerCase();
-    const ITSUKI = "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f".toLowerCase();
+    // HASHES DE WALLETS (NADIE PUEDE VER LA DIRECCIÓN REAL)
+    const RYACHU_HASH = "f501869e5d48a58ec2f92f988849b79410313f8d3885d51940bc27599c9339e0"; 
+    const ITSUKI_HASH = "819c961c022883f3e18a8008e43e26458519e48c1e4c70308009696987c8801d";
+
+    const EMOJI_LIST = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","👍","👎","👊","✌️","🔥","✨","🚀"];
 
     function App() {
       const [user, setUser] = useState(null);
@@ -73,6 +82,9 @@
       const [messages, setMessages] = useState([]);
       const [users, setUsers] = useState([]);
       const [text, setText] = useState("");
+      const [alertMsg, setAlertMsg] = useState(null);
+      const [showAdminPanel, setShowAdminPanel] = useState(false);
+      const [showEmoji, setShowEmoji] = useState(false);
       const [isMenuOpen, setIsMenuOpen] = useState(false);
       const scrollRef = useRef();
 
@@ -81,28 +93,31 @@
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
       }, [isDark]);
 
+      // Función para hashear la wallet de forma segura
+      const hashWallet = async (address) => {
+        const msgUint8 = new TextEncoder().encode(address.toLowerCase());
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      };
+
       const login = async () => {
         if (!window.ethereum) return alert("MetaMask required");
         const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const wallet = accs[0].toLowerCase();
+        const hashed = await hashWallet(wallet);
 
-        // --- LÓGICA ANTI-DUPLICADO ---
-        const presenceRef = db.ref('presence');
-        const snapshot = await presenceRef.orderByChild('wallet').equalTo(wallet).once('value');
-        
-        if (snapshot.exists()) {
-          const existingUsers = snapshot.val();
-          // Opcional: Podrías eliminar la sesión vieja automáticamente
-          Object.keys(existingUsers).forEach(key => {
-            db.ref(`presence/${key}`).remove();
-          });
-          console.log("Sesión previa cerrada.");
-        }
+        // Limpieza de sesión previa
+        const snap = await db.ref('presence').orderByChild('wallet').equalTo(wallet).once('value');
+        if (snap.exists()) Object.keys(snap.val()).forEach(k => db.ref(`presence/${k}`).remove());
 
         auth.signInAnonymously().then(cred => {
-          const isGod = wallet === RYACHU || wallet === ITSUKI;
-          const name = wallet === RYACHU ? "Ryachu" : wallet === ITSUKI ? "Itsuki" : `Node_${wallet.slice(-4)}`;
-          const data = { uid: cred.user.uid, wallet, name, isGod, color: isGod ? "#ffcc00" : (isDark ? "#fff" : "#000") };
+          const isRyachu = hashed === RYACHU_HASH;
+          const isItsuki = hashed === ITSUKI_HASH;
+          const isGod = isRyachu || isItsuki;
+          
+          const name = isRyachu ? "Ryachu" : isItsuki ? "Itsuki" : `Node_${wallet.slice(-4)}`;
+          const data = { uid: cred.user.uid, wallet, name, isGod, color: isGod ? "#ffcc00" : (isDark ? "#ffffff" : "#000000") };
           
           db.ref(`presence/${cred.user.uid}`).set(data);
           db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
@@ -110,116 +125,136 @@
         });
       };
 
-      // Escuchar si alguien nos saca (si entramos en otro browser con la misma wallet)
       useEffect(() => {
         if (!user) return;
-        const myPresence = db.ref(`presence/${user.uid}`);
-        myPresence.on('value', snap => {
-          if (!snap.exists() && user) {
-            alert("Sesión finalizada: Se detectó un nuevo ingreso con esta wallet.");
-            window.location.reload();
-          }
-        });
-        return () => myPresence.off();
-      }, [user]);
-
-      useEffect(() => {
-        if (!user) return;
-        const ref = db.ref(`messages/${chan}`).limitToLast(40);
-        ref.on('value', s => {
+        const pRef = db.ref(`presence/${user.uid}`);
+        pRef.on('value', snap => { if (!snap.exists()) window.location.reload(); });
+        db.ref('system_alert').on('value', s => setAlertMsg(s.val()));
+        const mRef = db.ref(`messages/${chan}`).limitToLast(45);
+        mRef.on('value', s => {
           const val = s.val();
           setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
         });
         db.ref('presence').on('value', s => setUsers(s.val() ? Object.values(s.val()) : []));
-        return () => ref.off();
+        return () => { mRef.off(); db.ref('system_alert').off(); pRef.off(); };
       }, [user, chan]);
 
       useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
       const handleSend = async () => {
         if (!text.trim()) return;
-        if (user.isGod && text === '/clear') return db.ref(`messages/${chan}`).remove().then(()=>setText(""));
+        if (user.isGod) {
+          if (text === '/clear') return db.ref(`messages/${chan}`).remove().then(()=>setText(""));
+          if (text.startsWith('/alert ')) return db.ref('system_alert').set(text.replace('/alert ', '')).then(()=>setText(""));
+          if (text === '/clearalert') return db.ref('system_alert').remove().then(()=>setText(""));
+        }
         await db.ref(`messages/${chan}`).push({
           content: text, name: user.name, uid: user.uid, color: user.isGod ? "#ffcc00" : (isDark ? "#fff" : "#000"), isGod: user.isGod, time: Date.now()
         });
         setText("");
+        setShowEmoji(false);
       };
 
       if (!user) return (
         <div className="h-screen flex items-center justify-center p-6">
-          <div className="card-3d p-10 rounded-3xl text-center max-w-sm w-full">
-            <h1 className="logo-3d text-3xl mb-8 font-black">MUZZSNAP</h1>
-            <button onClick={login} className={`w-full py-4 border font-bold rounded-xl transition-all ${isDark ? 'border-red-600 text-red-600 hover:bg-red-600' : 'border-black text-black hover:bg-black hover:text-white'}`}>
-              INICIAR SESIÓN
-            </button>
-            <div className="mt-8 flex items-center justify-center gap-4 opacity-60">
-              <i className="fas fa-moon text-xs"></i>
-              <div className="theme-toggle" onClick={() => setIsDark(!isDark)}><div className="circle"></div></div>
-              <i className="fas fa-sun text-xs"></i>
-            </div>
+          <div className="card-3d p-10 text-center max-w-sm w-full border-t-2 border-red-600/50">
+            <h1 className="font-['Orbitron'] text-4xl mb-10 font-black text-red-600 tracking-tighter">MUZZSNAP</h1>
+            <button onClick={login} className={`w-full py-4 border-2 font-black rounded-2xl transition-all ${isDark ? 'border-red-600 text-red-600 hover:bg-red-600 hover:text-white' : 'border-black text-black hover:bg-black hover:text-white'}`}>INICIALIZAR</button>
+            <div className="mt-8 flex justify-center"><div className="theme-toggle" onClick={() => setIsDark(!isDark)}><div className="circle"></div></div></div>
           </div>
         </div>
       );
 
       return (
-        <div className="flex h-screen overflow-hidden p-2 lg:p-6 gap-4 relative">
-          <aside className={`fixed lg:relative inset-y-0 left-0 z-[150] w-72 card-3d rounded-[30px] p-6 flex flex-col transition-all duration-500 ${isMenuOpen ? 'translate-x-4 opacity-100' : '-translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100'}`}>
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="logo-3d text-xl font-black">MUZZSNAP</h1>
+        <div className="flex h-screen overflow-hidden p-2 lg:p-4 gap-4">
+          <aside className={`fixed lg:relative inset-y-0 left-0 z-[150] w-72 card-3d p-6 flex flex-col transition-all duration-500 ${isMenuOpen ? 'translate-x-4 opacity-100' : '-translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100'}`}>
+            <div className="flex justify-between items-center mb-10">
+              <h1 className="font-['Orbitron'] text-xl font-black text-red-600">MUZZSNAP</h1>
               <div className="theme-toggle scale-75" onClick={() => setIsDark(!isDark)}><div className="circle"></div></div>
             </div>
-            
-            <div className="flex-1 overflow-y-auto space-y-6">
+            <div className="flex-1 overflow-y-auto space-y-8">
               <section>
-                <p className="text-[10px] font-black mb-4 tracking-widest opacity-40 uppercase">Sectores</p>
+                <p className="text-[10px] font-black mb-4 opacity-40 uppercase tracking-[0.2em]">Sectores</p>
                 {['spanish', 'english'].map(c => (
-                  <button key={c} onClick={()=>{setChan(c); setIsMenuOpen(false);}} className={`w-full text-left p-4 rounded-2xl text-xs mb-2 capitalize ${chan===c ? (isDark ? 'bg-red-600 text-white' : 'bg-black text-white') : 'opacity-50 hover:opacity-100'}`}>
-                    {c} Channel
-                  </button>
+                  <button key={c} onClick={()=>{setChan(c); setIsMenuOpen(false);}} className={`w-full text-left p-4 rounded-2xl text-xs mb-2 capitalize font-black transition-all ${chan===c ? (isDark ? 'bg-red-600 text-white' : 'bg-black text-white') : 'opacity-40 hover:opacity-100'}`}># {c} Core</button>
                 ))}
               </section>
-
               <section>
-                <p className="text-[10px] font-black mb-4 tracking-widest opacity-40 uppercase">Online ({users.length})</p>
+                <p className="text-[10px] font-black mb-4 opacity-40 uppercase tracking-[0.2em]">Unidades ({users.length})</p>
                 <div className="space-y-3">
                   {users.map((u, i) => (
                     <div key={i} className="text-[11px] font-mono flex items-center gap-3">
-                      <span className={`w-1.5 h-1.5 rounded-full ${u.isGod ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></span>
-                      <span className="font-bold truncate">{u.isGod && '👑 '}{u.name}</span>
+                      <span className={`w-2 h-2 rounded-full ${u.isGod ? 'bg-yellow-400 animate-pulse shadow-[0_0_8px_gold]' : 'bg-green-500'}`}></span>
+                      <span className={`truncate ${u.isGod ? 'admin-glow' : 'font-bold opacity-80'}`}>{u.isGod && '👑 '}{u.name}</span>
                     </div>
                   ))}
                 </div>
               </section>
             </div>
-            <button onClick={()=>window.location.reload()} className="mt-4 text-[10px] font-bold opacity-30 hover:opacity-100 uppercase tracking-tighter">Cerrar Sesión</button>
+            <div className="mt-6 pt-6 border-t border-gray-500/10 space-y-4">
+              {user.isGod && (
+                <button onClick={()=>setShowAdminPanel(true)} className="w-full py-3 bg-yellow-500/10 border border-yellow-500/40 text-yellow-500 text-[10px] font-black rounded-xl tracking-[0.2em]">ADMIN_INDEX</button>
+              )}
+              <button onClick={()=>window.location.reload()} className="w-full text-[9px] font-black opacity-20 uppercase hover:opacity-100">Desconectar</button>
+            </div>
           </aside>
 
-          <main className="flex-1 card-3d rounded-[30px] flex flex-col overflow-hidden relative">
-            <header className="h-16 p-5 border-b border-gray-500/10 flex justify-between items-center">
-              <button onClick={() => setIsMenuOpen(true)} className="lg:hidden w-10 h-10 card-3d rounded-xl flex items-center justify-center"><i className="fas fa-bars"></i></button>
-              <span className="font-black tracking-[0.2em] uppercase text-xs">Sector: {chan}</span>
+          <main className="flex-1 card-3d flex flex-col overflow-hidden relative">
+            {alertMsg && <div className="alert-banner uppercase tracking-widest">!! ALERTA: {alertMsg} !!</div>}
+            <header className="h-16 p-5 border-b border-gray-500/10 flex justify-between items-center bg-black/5">
+              <button onClick={() => setIsMenuOpen(true)} className="lg:hidden text-red-600 p-2"><i className="fas fa-bars"></i></button>
+              <span className="font-black uppercase text-xs text-red-600 tracking-[0.3em]">{chan}_link</span>
               <div className="w-10 lg:hidden"></div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4 lg:p-6 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col gap-1" onClick={()=>setShowEmoji(false)}>
               {messages.map(m => (
                 <div key={m.id} className={`flex flex-col mb-4 ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[9px] mb-1 font-bold opacity-40">{m.name}</span>
-                  <div className={`bubble-3d shadow-sm ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
+                  <span className={`text-[10px] mb-1 px-2 ${m.isGod ? 'admin-glow' : 'font-bold opacity-40'}`}>{m.isGod && '👑 '}{m.name}</span>
+                  <div className={`bubble-3d shadow-md ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
                 </div>
               ))}
               <div ref={scrollRef}></div>
             </div>
 
-            <div className="p-4 lg:p-6">
-              <div className={`flex gap-3 border rounded-2xl p-1.5 pl-5 ${isDark ? 'bg-black/40 border-white/10' : 'bg-white border-gray-200'}`}>
-                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder="Escribe un mensaje..." className="flex-1 bg-transparent outline-none text-sm font-medium" />
-                <button onClick={handleSend} className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDark ? 'bg-red-600 text-white' : 'bg-black text-white'}`}>
-                  <i className="fas fa-arrow-up text-xs"></i>
-                </button>
+            <div className="p-4 lg:p-6 bg-black/5 relative">
+              {showEmoji && (
+                <div className="emoji-picker card-3d border shadow-2xl">
+                  {EMOJI_LIST.map(e => (
+                    <button key={e} onClick={()=>setText(text + e)} className="hover:scale-125 transition-transform p-1">{e}</button>
+                  ))}
+                </div>
+              )}
+              <div className={`flex gap-3 border rounded-2xl p-2 pl-4 transition-all ${isDark ? 'bg-black/60 border-white/10 shadow-inner' : 'bg-white border-gray-200'}`}>
+                <button onClick={()=>setShowEmoji(!showEmoji)} className="text-gray-400 hover:text-red-500 px-2 transition-colors"><i className="far fa-face-smile text-xl"></i></button>
+                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder="Transmitir datos..." className="flex-1 bg-transparent outline-none text-sm font-medium" />
+                <button onClick={handleSend} className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isDark ? 'bg-red-600' : 'bg-black text-white'}`}><i className="fas fa-bolt"></i></button>
               </div>
             </div>
           </main>
+
+          {showAdminPanel && user.isGod && (
+            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/90 p-6 backdrop-blur-xl">
+              <div className="card-3d max-w-sm w-full p-8 relative border-yellow-500/50">
+                <button onClick={()=>setShowAdminPanel(false)} className="absolute top-6 right-6 opacity-40 hover:opacity-100"><i className="fas fa-times text-xl"></i></button>
+                <h2 className="font-['Orbitron'] text-yellow-500 mb-8 text-center font-black tracking-widest text-lg">SECURITY_CONSOLE</h2>
+                <div className="space-y-4 font-mono text-[11px] text-gray-400">
+                  <div className="p-4 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
+                    <p className="text-yellow-500 font-bold mb-1 underline">/clear</p>
+                    <p>Wipe sector message history.</p>
+                  </div>
+                  <div className="p-4 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
+                    <p className="text-yellow-500 font-bold mb-1 underline">/alert [msg]</p>
+                    <p>Broadcast emergency banner.</p>
+                  </div>
+                  <div className="p-4 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
+                    <p className="text-yellow-500 font-bold mb-1 underline">/clearalert</p>
+                    <p>Kill active broadcast.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
