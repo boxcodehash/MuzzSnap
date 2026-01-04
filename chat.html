@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Direct Access</title>
+  <title>MuzzSnap - Complete Edition</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -17,37 +17,14 @@
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Orbitron:wght@900&display=swap');
-    
-    :root { 
-      --bg-dark: radial-gradient(circle at center, #1a0505 0%, #050505 100%);
-      --bg-light: #f1f5f9;
-    }
-
-    body.theme-dark { background: var(--bg-dark); color: #fff; }
-    body.theme-light { background: var(--bg-light); color: #0f172a; }
-
-    .card-3d { backdrop-filter: blur(20px); transition: all 0.4s ease; border-radius: 28px; }
-    .theme-dark .card-3d { background: rgba(12, 4, 4, 0.95); border: 1px solid rgba(255, 0, 0, 0.2); box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
-    .theme-light .card-3d { background: rgba(255, 255, 255, 0.98); border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
-
+    :root { --bg-dark: radial-gradient(circle at center, #1a0505 0%, #050505 100%); }
+    body.theme-dark { background: var(--bg-dark); color: #fff; font-family: 'Fira Code', monospace; }
+    .card-3d { backdrop-filter: blur(20px); border-radius: 28px; background: rgba(12, 4, 4, 0.95); border: 1px solid rgba(255, 0, 0, 0.2); box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
     .bubble-3d { border-radius: 18px; padding: 12px 18px; margin: 4px 0; max-width: 85%; font-size: 14px; }
-    .theme-dark .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #990000); color: white; }
-    .theme-dark .bubble-3d.other { background: #222; color: #eee; }
-    .theme-light .bubble-3d.me { background: #0f172a; color: #fff; }
-    .theme-light .bubble-3d.other { background: #fff; color: #0f172a; border: 1px solid #e2e8f0; }
-
+    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #990000); color: white; }
+    .bubble-3d.other { background: #222; color: #eee; }
     .admin-glow { color: #ffcc00; text-shadow: 0 0 8px rgba(255, 204, 0, 0.5); font-weight: 900 !important; }
-    .emoji-picker { position: absolute; bottom: 85px; right: 20px; width: 280px; height: 300px; overflow-y: auto; z-index: 200; border-radius: 20px; padding: 15px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 1.4rem; }
-    
-    .theme-toggle { width: 46px; height: 22px; background: #333; border-radius: 20px; position: relative; cursor: pointer; }
-    .theme-toggle .circle { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 4px; transition: 0.3s; }
-    .theme-light .theme-toggle { background: #ff0000; }
-    .theme-light .theme-toggle .circle { left: 26px; }
-
-    .alert-banner { background: #ff0000; color: white; padding: 8px; text-align: center; font-size: 11px; font-weight: 900; animation: flash 1s infinite; z-index: 100; }
-    @keyframes flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-    
-    .loader-container { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .emoji-picker { position: absolute; bottom: 85px; right: 20px; width: 280px; height: 300px; overflow-y: auto; z-index: 200; border-radius: 20px; padding: 15px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; font-size: 1.4rem; background: #111; border: 1px solid #333; }
   </style>
 </head>
 <body class="theme-dark">
@@ -72,27 +49,18 @@
 
     const RYACHU_HASH = "f501869e5d48a58ec2f92f988849b79410313f8d3885d51940bc27599c9339e0"; 
     const ITSUKI_HASH = "819c961c022883f3e18a8008e43e26458519e48c1e4c70308009696987c8801d";
-
-    const EMOJI_LIST = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","👍","👎","👊","✌️","🔥","✨","🚀"];
+    
+    const EMOJI_LIST = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","🤚","🖐","✋","🖖","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦵","🦿","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁","👅","👄","💋","🩸"];
 
     function App() {
       const [user, setUser] = useState(null);
-      const [isDark, setIsDark] = useState(localStorage.getItem('theme') !== 'light');
       const [chan, setChan] = useState("spanish");
       const [messages, setMessages] = useState([]);
       const [users, setUsers] = useState([]);
       const [text, setText] = useState("");
-      const [alertMsg, setAlertMsg] = useState(null);
-      const [showAdminPanel, setShowAdminPanel] = useState(false);
       const [showEmoji, setShowEmoji] = useState(false);
-      const [isMenuOpen, setIsMenuOpen] = useState(false);
-      const [loading, setLoading] = useState(true);
+      const [showAdminPanel, setShowAdminPanel] = useState(false);
       const scrollRef = useRef();
-
-      useEffect(() => {
-        document.body.className = isDark ? "theme-dark" : "theme-light";
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      }, [isDark]);
 
       const hashWallet = async (address) => {
         const msgUint8 = new TextEncoder().encode(address.toLowerCase().trim());
@@ -101,176 +69,148 @@
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       };
 
-      // LOGIN AUTOMÁTICO AL CARGAR
-      useEffect(() => {
-        const autoLogin = async () => {
-          if (!window.ethereum) {
-            setLoading(false);
-            return alert("MetaMask required");
-          }
-          try {
-            const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const wallet = accs[0].toLowerCase().trim();
-            const hashed = await hashWallet(wallet);
+      const handleLogout = async () => {
+        if (user) {
+          await db.ref(`presence/${user.uid}`).remove();
+          await auth.signOut();
+        }
+        setUser(null);
+        window.location.reload();
+      };
 
-            const snap = await db.ref('presence').orderByChild('wallet').equalTo(wallet).once('value');
-            if (snap.exists()) {
-              const updates = {};
-              Object.keys(snap.val()).forEach(k => updates[`presence/${k}`] = null);
-              await db.ref().update(updates);
-            }
+      const login = async () => {
+        if (!window.ethereum) return alert("Instala MetaMask");
+        try {
+          const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const wallet = accs[0].toLowerCase().trim();
+          const hashed = await hashWallet(wallet);
 
-            auth.signInAnonymously().then(async (cred) => {
-              const isRyachu = hashed === RYACHU_HASH;
-              const isItsuki = hashed === ITSUKI_HASH;
-              const isGod = isRyachu || isItsuki;
-              
-              let finalName = isRyachu ? "Ryachu" : isItsuki ? "Itsuki" : `Node_${wallet.slice(-6)}`;
-              
-              const data = { 
-                uid: cred.user.uid, 
-                wallet, 
-                name: finalName, 
-                isGod, 
-                color: isGod ? "#ffcc00" : (isDark ? "#ffffff" : "#000000") 
-              };
-              
-              await db.ref(`presence/${cred.user.uid}`).set(data);
-              db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
-              setUser(data);
-              setLoading(false);
-            });
-          } catch (e) {
-            setLoading(false);
-          }
-        };
-        autoLogin();
-      }, []);
+          auth.signInAnonymously().then(async (cred) => {
+            const isRyachu = hashed === RYACHU_HASH;
+            const isItsuki = hashed === ITSUKI_HASH;
+            const isGod = isRyachu || isItsuki;
+            
+            const name = isRyachu ? "Ryachu" : (isItsuki ? "Itsuki" : `Node_${wallet.slice(-6)}`);
+            const userData = { uid: cred.user.uid, wallet, name, isGod };
+            
+            await db.ref(`presence/${cred.user.uid}`).set(userData);
+            db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
+            setUser(userData);
+          });
+        } catch (e) { console.error(e); }
+      };
 
       useEffect(() => {
         if (!user) return;
-        const pRef = db.ref(`presence/${user.uid}`);
-        pRef.on('value', snap => { if (!snap.exists()) window.location.reload(); });
-        db.ref('system_alert').on('value', s => setAlertMsg(s.val()));
-        const mRef = db.ref(`messages/${chan}`).limitToLast(45);
+        const mRef = db.ref(`messages/${chan}`);
         mRef.on('value', s => {
           const val = s.val();
           setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
         });
-        db.ref('presence').on('value', s => setUsers(s.val() ? Object.values(s.val()) : []));
-        return () => { mRef.off(); db.ref('system_alert').off(); pRef.off(); };
+        const pRef = db.ref('presence');
+        pRef.on('value', s => setUsers(s.val() ? Object.values(s.val()) : []));
+        return () => { mRef.off(); pRef.off(); };
       }, [user, chan]);
 
       useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
       const handleSend = async () => {
         if (!text.trim()) return;
-        if (user.isGod) {
-          if (text === '/clear') return db.ref(`messages/${chan}`).remove().then(()=>setText(""));
-          if (text.startsWith('/alert ')) return db.ref('system_alert').set(text.replace('/alert ', '')).then(()=>setText(""));
-          if (text === '/clearalert') return db.ref('system_alert').remove().then(()=>setText(""));
+        if (user.isGod && text === '/clear') {
+          await db.ref(`messages/${chan}`).remove();
+          setText("");
+          return;
         }
         await db.ref(`messages/${chan}`).push({
-          content: text, name: user.name, uid: user.uid, color: user.isGod ? "#ffcc00" : (isDark ? "#fff" : "#000"), isGod: user.isGod, time: Date.now()
+          content: text,
+          name: user.name,
+          uid: user.uid,
+          isGod: user.isGod,
+          time: Date.now()
         });
         setText("");
         setShowEmoji(false);
       };
 
-      if (loading) return (
-        <div className="loader-container">
-          <div className="text-red-600 font-['Orbitron'] text-2xl animate-pulse font-black">MUZZSNAP_CONNECTING...</div>
-          <div className="mt-4 text-[10px] opacity-40 font-mono tracking-widest">VERIFYING_NEURAL_HASH</div>
-        </div>
-      );
-
       if (!user) return (
-        <div className="h-screen flex items-center justify-center p-6 text-center">
-          <div className="card-3d p-8">
-            <h1 className="text-red-600 font-black mb-4">ERROR_DE_CONEXIÓN</h1>
-            <p className="text-xs opacity-50">Por favor, asegúrate de tener MetaMask desbloqueado y recarga la página.</p>
-            <button onClick={()=>window.location.reload()} className="mt-6 px-8 py-3 bg-red-600 text-white rounded-xl font-black text-xs">REINTENTAR</button>
+        <div className="h-screen flex items-center justify-center p-6">
+          <div className="card-3d p-10 text-center max-w-sm w-full border-t-2 border-red-600">
+            <h1 className="font-['Orbitron'] text-4xl mb-10 font-black text-red-600">MUZZSNAP</h1>
+            <button onClick={login} className="w-full py-4 border-2 border-red-600 text-red-600 font-black rounded-2xl hover:bg-red-600 hover:text-white transition-all">INICIALIZAR</button>
           </div>
         </div>
       );
 
       return (
-        <div className="flex h-screen overflow-hidden p-2 lg:p-4 gap-4">
-          <aside className={`fixed lg:relative inset-y-0 left-0 z-[150] w-72 card-3d p-6 flex flex-col transition-all duration-500 ${isMenuOpen ? 'translate-x-4 opacity-100' : '-translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100'}`}>
-            <div className="flex justify-between items-center mb-10">
-              <h1 className="font-['Orbitron'] text-xl font-black text-red-600">MUZZSNAP</h1>
-              <div className="theme-toggle scale-75" onClick={() => setIsDark(!isDark)}><div className="circle"></div></div>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-8">
-              <section>
-                <p className="text-[10px] font-black mb-4 opacity-40 uppercase tracking-[0.2em]">Sectores</p>
-                {['spanish', 'english'].map(c => (
-                  <button key={c} onClick={()=>{setChan(c); setIsMenuOpen(false);}} className={`w-full text-left p-4 rounded-2xl text-xs mb-2 capitalize font-black transition-all ${chan===c ? (isDark ? 'bg-red-600 text-white' : 'bg-black text-white') : 'opacity-40 hover:opacity-100'}`}># {c}</button>
+        <div className="flex h-screen p-4 gap-4">
+          <aside className="w-72 card-3d p-6 flex flex-col">
+            <h1 className="font-['Orbitron'] text-xl font-black text-red-600 mb-10">MUZZSNAP</h1>
+            <div className="flex-1 overflow-y-auto">
+              <p className="text-[10px] font-black opacity-40 mb-4 tracking-widest uppercase">Canales</p>
+              {['spanish', 'english'].map(c => (
+                <button key={c} onClick={()=>setChan(c)} className={`w-full text-left p-4 rounded-2xl text-xs mb-2 font-black transition-all ${chan===c ? 'bg-red-600 text-white' : 'opacity-40 hover:opacity-100'}`}># {c}</button>
+              ))}
+              <p className="text-[10px] font-black opacity-40 mt-8 mb-4 tracking-widest uppercase">Online ({users.length})</p>
+              <div className="space-y-3">
+                {users.map((u, i) => (
+                  <div key={i} className={`text-[11px] font-mono flex items-center gap-2 ${u.isGod ? 'admin-glow' : 'opacity-70'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${u.isGod ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></span>
+                    {u.isGod && '👑 '}{u.name}
+                  </div>
                 ))}
-              </section>
-              <section>
-                <p className="text-[10px] font-black mb-4 opacity-40 uppercase tracking-[0.2em]">Online ({users.length})</p>
-                <div className="space-y-3">
-                  {users.map((u, i) => (
-                    <div key={i} className="text-[11px] font-mono flex items-center gap-3">
-                      <span className={`w-2 h-2 rounded-full ${u.isGod ? 'bg-yellow-400 animate-pulse shadow-[0_0_8px_gold]' : 'bg-green-500'}`}></span>
-                      <span className={`truncate ${u.isGod ? 'admin-glow' : 'font-bold opacity-80'}`}>{u.isGod && '👑 '}{u.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              </div>
             </div>
-            <div className="mt-6 pt-6 border-t border-gray-500/10 space-y-4">
+            <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
               {user.isGod && (
-                <button onClick={()=>setShowAdminPanel(true)} className="w-full py-3 bg-yellow-500/10 border border-yellow-500/40 text-yellow-500 text-[10px] font-black rounded-xl tracking-[0.2em]">ADMIN_INDEX</button>
+                <button onClick={()=>setShowAdminPanel(true)} className="w-full py-3 bg-yellow-500/10 border border-yellow-500/40 text-yellow-500 text-[10px] font-black rounded-xl tracking-widest">ADMIN_PANEL</button>
               )}
-              <button onClick={()=>window.location.reload()} className="w-full text-[9px] font-black opacity-20 uppercase hover:opacity-100">Desconectar</button>
+              <button onClick={handleLogout} className="w-full text-[10px] font-black opacity-30 hover:opacity-100 transition-opacity uppercase tracking-tighter">Desconectar Sesión</button>
             </div>
           </aside>
 
           <main className="flex-1 card-3d flex flex-col overflow-hidden relative">
-            {alertMsg && <div className="alert-banner uppercase tracking-widest">!! {alertMsg} !!</div>}
-            <header className="h-16 p-5 border-b border-gray-500/10 flex justify-between items-center bg-black/5">
-              <button onClick={() => setIsMenuOpen(true)} className="lg:hidden text-red-600 p-2"><i className="fas fa-bars"></i></button>
-              <span className="font-black uppercase text-xs text-red-600 tracking-[0.3em]">{chan}_link</span>
-              <div className="w-10 lg:hidden"></div>
+            <header className="h-14 border-b border-white/5 flex items-center px-6">
+              <span className="text-[10px] font-black text-red-600 tracking-[0.3em] uppercase">Sector_{chan}</span>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col gap-1" onClick={()=>setShowEmoji(false)}>
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-3" onClick={()=>setShowEmoji(false)}>
               {messages.map(m => (
-                <div key={m.id} className={`flex flex-col mb-4 ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className={`text-[10px] mb-1 px-2 ${m.isGod ? 'admin-glow' : 'font-bold opacity-40'}`}>{m.isGod && '👑 '}{m.name}</span>
-                  <div className={`bubble-3d shadow-md ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
+                <div key={m.id} className={`flex flex-col ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
+                  <span className={`text-[10px] mb-1 px-2 ${m.isGod ? 'admin-glow' : 'opacity-40'}`}>{m.isGod && '👑 '}{m.name}</span>
+                  <div className={`bubble-3d ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
                 </div>
               ))}
               <div ref={scrollRef}></div>
             </div>
 
-            <div className="p-4 lg:p-6 bg-black/5 relative">
+            <div className="p-4 bg-black/40 relative">
               {showEmoji && (
-                <div className="emoji-picker card-3d border shadow-2xl">
+                <div className="emoji-picker card-3d shadow-2xl">
                   {EMOJI_LIST.map(e => (
-                    <button key={e} onClick={()=>setText(text + e)} className="hover:scale-125 transition-transform p-1">{e}</button>
+                    <button key={e} onClick={()=>setText(text + e)} className="hover:scale-125 transition-transform">{e}</button>
                   ))}
                 </div>
               )}
-              <div className={`flex gap-3 border rounded-2xl p-2 pl-4 transition-all ${isDark ? 'bg-black/60 border-white/10 shadow-inner' : 'bg-white border-gray-200'}`}>
-                <button onClick={()=>setShowEmoji(!showEmoji)} className="text-gray-400 hover:text-red-500 px-2 transition-colors"><i className="far fa-face-smile text-xl"></i></button>
-                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder="Escribe un mensaje..." className="flex-1 bg-transparent outline-none text-sm font-medium" />
-                <button onClick={handleSend} className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isDark ? 'bg-red-600' : 'bg-black text-white'}`}><i className="fas fa-bolt"></i></button>
+              <div className="flex gap-3 bg-white/5 border border-white/10 rounded-2xl p-2 pl-4">
+                <button onClick={()=>setShowEmoji(!showEmoji)} className="text-gray-500 hover:text-red-500 transition-colors"><i className="far fa-face-smile text-xl"></i></button>
+                <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter' && handleSend()} placeholder="Escribe un mensaje..." className="flex-1 bg-transparent outline-none text-sm" />
+                <button onClick={handleSend} className="bg-red-600 w-11 h-11 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i className="fas fa-paper-plane"></i></button>
               </div>
             </div>
           </main>
 
           {showAdminPanel && user.isGod && (
-            <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/90 p-6 backdrop-blur-xl">
-              <div className="card-3d max-w-sm w-full p-8 relative border-yellow-500/50">
-                <button onClick={()=>setShowAdminPanel(false)} className="absolute top-6 right-6 opacity-40 hover:opacity-100"><i className="fas fa-times text-xl"></i></button>
-                <h2 className="font-['Orbitron'] text-yellow-500 mb-8 text-center font-black tracking-widest text-lg">SECURITY_CONSOLE</h2>
-                <div className="space-y-4 font-mono text-[11px] text-gray-400">
-                  <div className="p-3 bg-yellow-500/5 rounded-xl border border-yellow-500/10"><p className="text-yellow-500 font-bold">/clear</p><p>Limpia canal.</p></div>
-                  <div className="p-3 bg-yellow-500/5 rounded-xl border border-yellow-500/10"><p className="text-yellow-500 font-bold">/alert [msg]</p><p>Banner rojo.</p></div>
-                  <div className="p-3 bg-yellow-500/5 rounded-xl border border-yellow-500/10"><p className="text-yellow-500 font-bold">/clearalert</p><p>Quita banner.</p></div>
+            <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
+              <div className="card-3d max-w-sm w-full p-8 border-yellow-500/50">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-yellow-500 font-black tracking-widest text-xs">SECURITY_CONSOLE</h2>
+                  <button onClick={()=>setShowAdminPanel(false)} className="text-white/20 hover:text-white"><i className="fas fa-times"></i></button>
+                </div>
+                <div className="space-y-4 text-[10px] text-white/60 font-mono">
+                  <div className="p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-xl">
+                    <p className="text-yellow-500 font-bold mb-1">/clear</p>
+                    <p>Borra todo el historial de este canal.</p>
+                  </div>
                 </div>
               </div>
             </div>
