@@ -215,8 +215,11 @@
     const auth = firebase.auth();
 
     // HASHES DE WALLETS ADMINISTRATIVAS (SHA-256)
-    const RYACHU_HASH = "f501869e5d48a58ec2f92f988849b79410313f8d3885d51940bc27599c9339e0"; 
-    const ITSUKI_HASH = "819c961c022883f3e18a8008e43e26458519e48c1e4c70308009696987c8801d";
+    // Para generar un nuevo hash: Abre consola y ejecuta login, copia el hash mostrado
+    const ADMIN_WALLETS = {
+      "f501869e5d48a58ec2f92f988849b79410313f8d3885d51940bc27599c9339e0": "Ryachu",
+      "819c961c022883f3e18a8008e43e26458519e48c1e4c70308009696987c8801d": "Itsuki"
+    };
 
     const EMOJI_LIST = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹️","😣","😖","😫","😩","🥺","😢","😭","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🤗","🤔","🤭","🤫","🤥","😶","😐","😑","😬","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","🤚","🖐️","✋","🖖","👌","🤌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","💪","🦾","🦿","🦵","🦶","👂","🦻","👃","🧠","🫀","🫁","🦷","🦴","👀","👁️","👅","👄","💋","🩸","❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","🔥","✨","💫","⭐","🌟","✴️","⚡","💥","💯","🚀","🎯","🎪","🎨","🎭","🎪","🎤","🎧","🎼","🎹","🥁","🎷","🎺","🎸","🪕","🎻","🎲","♟️","🎮","🕹️","🎰","🧩"];
 
@@ -258,6 +261,12 @@
           const wallet = accs[0].toLowerCase();
           const hashed = await hashWallet(wallet);
 
+          // DEBUG: Mostrar hash en consola para verificación
+          console.log("═══════════════════════════════════════");
+          console.log("🔐 WALLET HASH:", hashed);
+          console.log("📍 WALLET ADDRESS:", wallet);
+          console.log("═══════════════════════════════════════");
+
           // Limpieza de sesiones previas
           const snap = await db.ref('presence').orderByChild('wallet').equalTo(wallet).once('value');
           if (snap.exists()) {
@@ -267,11 +276,15 @@
 
           const cred = await auth.signInAnonymously();
           
-          const isRyachu = hashed === RYACHU_HASH;
-          const isItsuki = hashed === ITSUKI_HASH;
-          const isGod = isRyachu || isItsuki;
+          // Verificar si es administrador
+          const isGod = ADMIN_WALLETS.hasOwnProperty(hashed);
+          const adminName = ADMIN_WALLETS[hashed];
+          const name = adminName || `Node_${wallet.slice(-4)}`;
           
-          const name = isRyachu ? "Ryachu" : isItsuki ? "Itsuki" : `Node_${wallet.slice(-4)}`;
+          console.log("👑 ES ADMINISTRADOR:", isGod);
+          console.log("👤 NOMBRE ASIGNADO:", name);
+          console.log("═══════════════════════════════════════");
+          
           const userData = { 
             uid: cred.user.uid, 
             wallet, 
@@ -284,8 +297,17 @@
           await db.ref(`presence/${cred.user.uid}`).set(userData);
           db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
           setUser(userData);
+          
+          if (isGod) {
+            console.log("✅ PERMISOS DE ADMINISTRADOR ACTIVADOS");
+            console.log("📋 COMANDOS DISPONIBLES:");
+            console.log("   /clear - Limpiar chat del sector actual");
+            console.log("   /alert [mensaje] - Crear alerta global");
+            console.log("   /clearalert - Eliminar alerta global");
+            console.log("═══════════════════════════════════════");
+          }
         } catch (error) {
-          console.error("Error de autenticación:", error);
+          console.error("❌ Error de autenticación:", error);
           alert("Error al conectar con MetaMask");
         }
       };
@@ -332,38 +354,67 @@
         
         // Comandos de administrador (OCULTOS para usuarios normales)
         if (user.isGod) {
+          // Comando: Limpiar chat
           if (trimmed === '/clear') {
-            await db.ref(`messages/${chan}`).remove();
-            setText("");
-            return;
+            try {
+              await db.ref(`messages/${chan}`).remove();
+              setText("");
+              console.log(`✅ [${user.name}] Chat limpiado en sector: ${chan}`);
+              return;
+            } catch (error) {
+              console.error("❌ Error al limpiar chat:", error);
+              return;
+            }
           }
+          
+          // Comando: Crear alerta
           if (trimmed.startsWith('/alert ')) {
-            const msg = trimmed.replace('/alert ', '');
-            await db.ref('system_alert').set(msg);
-            setText("");
-            return;
+            try {
+              const msg = trimmed.substring(7).trim();
+              if (msg) {
+                await db.ref('system_alert').set(msg);
+                setText("");
+                console.log(`✅ [${user.name}] Alerta creada: "${msg}"`);
+                return;
+              }
+            } catch (error) {
+              console.error("❌ Error al crear alerta:", error);
+              return;
+            }
           }
+          
+          // Comando: Eliminar alerta
           if (trimmed === '/clearalert') {
-            await db.ref('system_alert').remove();
-            setText("");
-            return;
+            try {
+              await db.ref('system_alert').remove();
+              setText("");
+              console.log(`✅ [${user.name}] Alerta eliminada`);
+              return;
+            } catch (error) {
+              console.error("❌ Error al eliminar alerta:", error);
+              return;
+            }
           }
         }
         
         // Envío de mensaje normal
         try {
-          await db.ref(`messages/${chan}`).push({
+          const messageData = {
             content: trimmed, 
-            name: user.name, 
+            name: user.name, // Este es el nombre que se mostrará
             uid: user.uid, 
             color: user.isGod ? "#ffcc00" : (isDark ? "#fff" : "#000"), 
             isGod: user.isGod || false, 
             time: Date.now()
-          });
+          };
+          
+          console.log("📤 Enviando mensaje:", messageData);
+          
+          await db.ref(`messages/${chan}`).push(messageData);
           setText("");
           setShowEmoji(false);
         } catch (error) {
-          console.error("Error al enviar mensaje:", error);
+          console.error("❌ Error al enviar mensaje:", error);
           alert("Error al enviar el mensaje");
         }
       };
@@ -489,19 +540,25 @@
               className="flex-1 overflow-y-auto p-4 lg:p-8 flex flex-col gap-1 scroll-container" 
               onClick={() => setShowEmoji(false)}
             >
-              {messages.map(m => (
-                <div 
-                  key={m.id} 
-                  className={`flex flex-col mb-4 ${m.uid === user.uid ? 'items-end' : 'items-start'}`}
-                >
-                  <span className={`text-[10px] mb-1 px-2 ${m.isGod ? 'admin-glow' : 'font-bold opacity-40'}`}>
-                    {m.isGod && '👑 '}{m.name}
-                  </span>
-                  <div className={`bubble-3d shadow-md ${m.uid === user.uid ? 'me' : 'other'}`}>
-                    {m.content}
-                  </div>
+              {messages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center opacity-30">
+                  <p className="text-sm font-mono">No hay mensajes aún...</p>
                 </div>
-              ))}
+              ) : (
+                messages.map(m => (
+                  <div 
+                    key={m.id} 
+                    className={`flex flex-col mb-4 ${m.uid === user.uid ? 'items-end' : 'items-start'}`}
+                  >
+                    <span className={`text-[10px] mb-1 px-2 font-bold ${m.isGod ? 'admin-glow' : 'opacity-40'}`}>
+                      {m.isGod && '👑 '}{m.name || 'Unknown'}
+                    </span>
+                    <div className={`bubble-3d shadow-md ${m.uid === user.uid ? 'me' : 'other'}`}>
+                      {m.content}
+                    </div>
+                  </div>
+                ))
+              )}
               <div ref={scrollRef}></div>
             </div>
 
