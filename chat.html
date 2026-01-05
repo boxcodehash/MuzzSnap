@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Admin & Themes</title>
+  <title>MuzzSnap - Dynamic Edition</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -15,55 +15,117 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap');
     
     :root {
-      --bg-panel: rgba(20, 0, 0, 0.8);
       --accent: #ff0000;
-      --text-main: #ffffff;
-      --border: rgba(255, 0, 0, 0.3);
+      --bg-glow: rgba(139, 0, 0, 0.2);
     }
 
-    body.theme-light {
-      --bg-panel: rgba(255, 255, 255, 0.95);
-      --accent: #2563eb;
-      --text-main: #1f2937;
-      --border: rgba(0, 0, 0, 0.1);
-      background: #f3f4f6;
+    /* Temas Dinámicos */
+    body.theme-emerald { --accent: #10b981; --bg-glow: rgba(16, 185, 129, 0.2); }
+    body.theme-cobalt { --accent: #2563eb; --bg-glow: rgba(37, 99, 235, 0.2); }
+    body.theme-amethyst { --accent: #a855f7; --bg-glow: rgba(168, 85, 247, 0.2); }
+    body.theme-amber { --accent: #f59e0b; --bg-glow: rgba(245, 158, 11, 0.2); }
+
+    body { 
+      background-color: #050505; 
+      color: #fff; 
+      font-family: 'Rajdhani', sans-serif;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    body.theme-dark {
-      --bg-panel: rgba(15, 23, 42, 0.95);
-      --accent: #10b981;
-      --text-main: #f8fafc;
-      --border: rgba(255, 255, 255, 0.1);
-      background: #020617;
+    .cyber-grid {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, var(--bg-glow) 0%, #000 100%);
+      z-index: -1;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Rajdhani', sans-serif; transition: background 0.3s ease; height: 100vh; overflow: hidden; color: var(--text-main); }
-    
-    .cyber-bg { position: fixed; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(139,0,0,0.2) 0%, #000 100%); z-index: -1; }
-    body.theme-light .cyber-bg, body.theme-dark .cyber-bg { display: none; }
+    /* Sidebar Drawer */
+    .drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 280px;
+      background: rgba(10, 10, 10, 0.98);
+      border-right: 2px solid var(--accent);
+      z-index: 100;
+      transform: translateX(-100%);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 20px 0 50px rgba(0,0,0,0.8);
+    }
+    .drawer.open { transform: translateX(0); }
 
-    .sidebar, .chat-container { 
-      background: var(--bg-panel) !important; 
-      border: 2px solid var(--border) !important;
-      backdrop-filter: blur(10px);
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+      display: none;
+    }
+    .overlay.visible { display: block; }
+
+    /* Layout Chat */
+    .main-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
     }
 
-    .message-bubble.other { background: var(--border); color: var(--text-main); }
-    .message-bubble.me { background: var(--accent); color: #fff; }
+    .chat-window {
+      flex: 1;
+      background: rgba(15, 15, 15, 0.6);
+      border-left: 1px solid rgba(255,255,255,0.05);
+      border-right: 1px solid rgba(255,255,255,0.05);
+      overflow-y: auto;
+      padding: 20px;
+    }
 
-    .admin-glow { box-shadow: 0 0 15px var(--accent); border-color: var(--accent) !important; }
-    
-    /* Reutilización de clases anteriores para mantener el look */
-    .container-main { display: flex; height: 100vh; padding: 20px; gap: 20px; }
-    @media (max-width: 768px) { .container-main { padding: 10px; gap: 10px; } }
+    .message-bubble {
+      padding: 10px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      font-size: 15px;
+      position: relative;
+    }
+    .message-bubble.me { background: var(--accent); color: white; border-bottom-right-radius: 2px; }
+    .message-bubble.other { background: #222; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.1); }
+
+    /* Botones y UI */
+    .btn-cyber {
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: bold;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+    }
+    .btn-cyber:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
+
+    .nav-header {
+      padding: 15px 20px;
+      background: #000;
+      border-bottom: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    @media (max-width: 640px) {
+      .message-bubble { max-width: 90%; }
+      .nav-header h1 { font-size: 1.2rem; }
+    }
   </style>
 </head>
 <body>
-  <div class="cyber-bg"></div>
+  <div class="cyber-grid"></div>
   <div id="root"></div>
 
   <script type="text/babel">
@@ -88,27 +150,23 @@
       "819c961c022883f3e18a8008e43e26458519e48c1e4c70308009696987c8801d": "Itsuki"
     };
 
+    const THEMES = ['muzzle', 'emerald', 'cobalt', 'amethyst', 'amber'];
+
     function App() {
       const [user, setUser] = useState(null);
       const [chan, setChan] = useState("general");
       const [messages, setMessages] = useState([]);
-      const [users, setUsers] = useState([]);
       const [text, setText] = useState("");
-      const [theme, setTheme] = useState(localStorage.getItem('theme') || 'muzzle');
-      const [showAdminPanel, setShowAdminPanel] = useState(false);
+      const [drawerOpen, setDrawerOpen] = useState(false);
+      const [themeIdx, setThemeIdx] = useState(0);
       const [alertMsg, setAlertMsg] = useState(null);
-      
       const scrollRef = useRef();
 
-      useEffect(() => {
-        document.body.className = theme === 'muzzle' ? '' : `theme-${theme}`;
-        localStorage.setItem('theme', theme);
-      }, [theme]);
-
-      const hashWallet = async (address) => {
-        const msgUint8 = new TextEncoder().encode(address.toLowerCase());
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+      // Cambiar Temática
+      const cycleTheme = () => {
+        const next = (themeIdx + 1) % THEMES.length;
+        setThemeIdx(next);
+        document.body.className = next === 0 ? '' : `theme-${THEMES[next]}`;
       };
 
       const login = async () => {
@@ -116,20 +174,24 @@
         try {
           const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
           const wallet = accs[0].toLowerCase();
-          const hashed = await hashWallet(wallet);
-          const cred = await auth.signInAnonymously();
+          const msgUint8 = new TextEncoder().encode(wallet);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+          const hashed = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
           
+          const cred = await auth.signInAnonymously();
           const isGod = ADMIN_WALLETS.hasOwnProperty(hashed);
-          const userData = {
-            uid: cred.user.uid,
-            name: ADMIN_WALLETS[hashed] || `Node_${wallet.slice(-4)}`,
-            isGod,
-            wallet
-          };
+          const userData = { uid: cred.user.uid, name: ADMIN_WALLETS[hashed] || `Anon_${wallet.slice(-4)}`, isGod, wallet };
+          
           await db.ref(`presence/${cred.user.uid}`).set(userData);
           db.ref(`presence/${cred.user.uid}`).onDisconnect().remove();
           setUser(userData);
         } catch (e) { console.error(e); }
+      };
+
+      const disconnect = async () => {
+        if (user) await db.ref(`presence/${user.uid}`).remove();
+        auth.signOut();
+        window.location.reload();
       };
 
       useEffect(() => {
@@ -139,129 +201,104 @@
           const val = s.val();
           setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
         });
-        db.ref('presence').on('value', s => setUsers(s.val() ? Object.values(s.val()) : []));
         db.ref('system_alert').on('value', s => setAlertMsg(s.val()));
-        return () => { mRef.off(); db.ref('presence').off(); db.ref('system_alert').off(); };
+        return () => { mRef.off(); db.ref('system_alert').off(); };
       }, [user, chan]);
+
+      useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
       const handleSend = async () => {
         if (!text.trim()) return;
+        if (user.isGod && text === '/clear') { await db.ref(`messages/${chan}`).remove(); setText(""); return; }
         
-        // Comandos de Administrador
-        if (user.isGod) {
-          if (text === '/clear') { await db.ref(`messages/${chan}`).remove(); setText(""); return; }
-          if (text.startsWith('/alert ')) { await db.ref('system_alert').set(text.replace('/alert ', '')); setText(""); return; }
-          if (text === '/clearalert') { await db.ref('system_alert').remove(); setText(""); return; }
-        }
-
         await db.ref(`messages/${chan}`).push({
-          content: text,
-          name: user.name,
-          uid: user.uid,
-          isGod: user.isGod,
-          time: Date.now()
+          content: text, name: user.name, uid: user.uid, isGod: user.isGod, time: Date.now()
         });
         setText("");
       };
 
       if (!user) return (
-        <div className="flex h-screen items-center justify-center bg-black">
-          <button onClick={login} className="p-6 border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white transition">INICIAR SESIÓN NEURAL</button>
+        <div className="flex h-screen items-center justify-center p-6">
+          <div className="bg-black/80 border-2 border-red-600 p-10 rounded-3xl text-center max-w-sm w-full">
+            <h1 className="text-4xl font-black mb-8 tracking-tighter text-red-600">MUZZSNAP</h1>
+            <button onClick={login} className="w-full py-4 btn-cyber rounded-xl font-bold">Autenticar Wallet</button>
+          </div>
         </div>
       );
 
       return (
-        <div className="container-main">
-          <aside className="sidebar w-80 rounded-2xl p-6 flex flex-col">
-            <h1 className="text-2xl font-black mb-6 tracking-widest text-center" style={{color: 'var(--accent)'}}>MUZZSNAP</h1>
+        <div className="main-wrapper">
+          {/* Sidebar / Sub Menu */}
+          <div className={`overlay ${drawerOpen ? 'visible' : ''}`} onClick={() => setDrawerOpen(false)}></div>
+          <aside className={`drawer ${drawerOpen ? 'open' : ''} p-6 flex flex-col`}>
+            <div className="flex justify-between items-center mb-10">
+              <span className="font-bold text-xl" style={{color: 'var(--accent)'}}>MENÚ</span>
+              <button onClick={() => setDrawerOpen(false)}><i className="fas fa-times"></i></button>
+            </div>
             
-            <div className="mb-6">
-              <p className="text-[10px] opacity-50 uppercase mb-2">Temática</p>
-              <div className="grid grid-cols-3 gap-1">
-                {['light', 'dark', 'muzzle'].map(t => (
-                  <button key={t} onClick={() => setTheme(t)} className={`text-[9px] p-2 border ${theme === t ? 'border-red-500 bg-red-500/10' : 'border-white/10'}`}>{t.toUpperCase()}</button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-              <p className="text-[10px] opacity-50 uppercase mb-2">Sectores</p>
-              {['general', 'español', 'devs'].map(c => (
-                <button key={c} onClick={() => setChan(c)} className={`w-full text-left p-3 mb-1 rounded ${chan === c ? 'bg-red-500/20 text-red-500 font-bold' : ''}`}># {c}</button>
+            <nav className="space-y-2 flex-1">
+              <p className="text-[10px] opacity-40 uppercase font-bold mb-4">Canales de Datos</p>
+              {['general', 'español', 'mercado'].map(c => (
+                <button 
+                  key={c} 
+                  onClick={() => { setChan(c); setDrawerOpen(false); }}
+                  className={`w-full text-left p-4 rounded-xl transition ${chan === c ? 'bg-white/10 border-l-4' : 'hover:bg-white/5'}`}
+                  style={{borderColor: chan === c ? 'var(--accent)' : 'transparent'}}
+                >
+                  # {c.toUpperCase()}
+                </button>
               ))}
-              
-              <p className="text-[10px] opacity-50 uppercase mt-6 mb-2">Online ({users.length})</p>
-              {users.map((u, i) => (
-                <div key={i} className="text-sm py-1 flex items-center gap-2">
-                   <div className={`w-1.5 h-1.5 rounded-full ${u.isGod ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
-                   <span className={u.isGod ? 'text-yellow-400 font-bold' : ''}>{u.name}</span>
-                </div>
-              ))}
-            </div>
+            </nav>
 
-            {user.isGod && (
-              <button onClick={() => setShowAdminPanel(true)} className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500 text-yellow-500 text-xs font-bold rounded-lg hover:bg-yellow-500 hover:text-black transition">
-                <i className="fas fa-shield-alt mr-2"></i> CONSOLA ADMIN
+            <div className="pt-6 border-t border-white/10 space-y-3">
+              <button onClick={cycleTheme} className="w-full p-3 text-xs btn-cyber rounded-lg">
+                <i className="fas fa-palette mr-2"></i> Cambiar Estética
               </button>
-            )}
+              <button onClick={disconnect} className="w-full p-3 text-xs bg-red-900/20 text-red-500 font-bold border border-red-900/50 rounded-lg hover:bg-red-500 hover:text-black transition">
+                <i className="fas fa-power-off mr-2"></i> Desconectar
+              </button>
+            </div>
           </aside>
 
-          <main className="chat-container flex-1 rounded-2xl flex flex-col relative overflow-hidden">
-            {alertMsg && <div className="bg-red-600 text-white p-2 text-center text-xs font-bold animate-pulse">SISTEMA: {alertMsg}</div>}
-            
-            <div className="p-4 border-b border-white/10 flex justify-between">
-              <span className="font-bold opacity-70 uppercase tracking-tighter">Sector: {chan}</span>
-              {user.isGod && <span className="text-yellow-400 text-xs font-black">GOD_MODE_ACTIVE</span>}
-            </div>
+          {/* Chat Header */}
+          <header className="nav-header">
+            <button className="text-2xl" onClick={() => setDrawerOpen(true)}><i className="fas fa-bars"></i></button>
+            <h1 className="font-black text-xl tracking-widest" style={{color: 'var(--accent)'}}>MUZZSNAP // {chan}</h1>
+            <div className="w-8"></div> {/* Spacer */}
+          </header>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {alertMsg && <div className="bg-red-600 text-[10px] text-center font-bold p-1 animate-pulse uppercase tracking-widest">Alerta: {alertMsg}</div>}
+
+          {/* Chat Area */}
+          <div className="chat-window">
+            <div className="space-y-4">
               {messages.map(m => (
                 <div key={m.id} className={`flex flex-col ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className={`text-[10px] ${m.isGod ? 'text-yellow-400' : 'opacity-40'}`}>{m.name} {m.isGod && '👑'}</span>
-                  <div className={`message-bubble max-w-[70%] p-3 rounded-xl text-sm ${m.uid === user.uid ? 'me shadow-lg' : 'other'}`}>
+                  <span className="text-[10px] opacity-40 mb-1 px-1">{m.name} {m.isGod && '👑'}</span>
+                  <div className={`message-bubble ${m.uid === user.uid ? 'me shadow-lg' : 'other'}`}>
                     {m.content}
                   </div>
                 </div>
               ))}
               <div ref={scrollRef}></div>
             </div>
+          </div>
 
-            <div className="p-4 bg-black/20 border-t border-white/10">
-              <div className="flex gap-2">
-                <input 
-                  value={text} 
-                  onChange={e => setText(e.target.value)} 
-                  onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  placeholder={user.isGod ? "Escribe comando o mensaje..." : "Escribe un mensaje..."}
-                  className="flex-1 bg-transparent border border-white/10 rounded-xl p-3 outline-none focus:border-red-500"
-                />
-                <button onClick={handleSend} className="bg-red-600 text-white w-12 h-12 rounded-xl"><i className="fas fa-bolt"></i></button>
-              </div>
+          {/* Input Area */}
+          <footer className="p-4 bg-black border-t border-white/5">
+            <div className="flex gap-2 max-w-4xl mx-auto">
+              <input 
+                value={text} 
+                onChange={e => setText(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                placeholder="Introducir comando o mensaje..."
+                className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-4 outline-none focus:border-white/30 transition"
+              />
+              <button onClick={handleSend} className="w-14 h-14 rounded-2xl flex items-center justify-center transition" style={{background: 'var(--accent)'}}>
+                <i className="fas fa-paper-plane text-black"></i>
+              </button>
             </div>
-          </main>
-
-          {showAdminPanel && (
-            <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[1000] p-4" onClick={() => setShowAdminPanel(false)}>
-              <div className="bg-[#1a1a1a] border-2 border-yellow-500 p-8 rounded-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
-                <h2 className="text-yellow-500 font-black text-xl mb-4 tracking-tighter">COMANDOS DE NIVEL DIOS</h2>
-                <div className="space-y-4 text-sm text-white/70">
-                  <div className="bg-black/40 p-3 rounded">
-                    <p className="text-yellow-400 font-bold">/clear</p>
-                    <p className="text-[11px]">Borra todo el historial del canal actual.</p>
-                  </div>
-                  <div className="bg-black/40 p-3 rounded">
-                    <p className="text-yellow-400 font-bold">/alert [mensaje]</p>
-                    <p className="text-[11px]">Muestra un mensaje global de emergencia.</p>
-                  </div>
-                  <div className="bg-black/40 p-3 rounded">
-                    <p className="text-yellow-400 font-bold">/clearalert</p>
-                    <p className="text-[11px]">Elimina la alerta activa del sistema.</p>
-                  </div>
-                </div>
-                <button onClick={() => setShowAdminPanel(false)} className="w-full mt-6 p-3 bg-yellow-500 text-black font-bold rounded-lg">CERRAR CONSOLA</button>
-              </div>
-            </div>
-          )}
+          </footer>
         </div>
       );
     }
