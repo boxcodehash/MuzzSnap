@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Dynamic Edition</title>
+  <title>MuzzSnap - Security Edition</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -17,111 +17,30 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap');
     
-    :root {
-      --accent: #ff0000;
-      --bg-glow: rgba(139, 0, 0, 0.2);
-    }
-
-    /* Temas Dinámicos */
+    :root { --accent: #ff0000; --bg-glow: rgba(139, 0, 0, 0.2); }
     body.theme-emerald { --accent: #10b981; --bg-glow: rgba(16, 185, 129, 0.2); }
     body.theme-cobalt { --accent: #2563eb; --bg-glow: rgba(37, 99, 235, 0.2); }
     body.theme-amethyst { --accent: #a855f7; --bg-glow: rgba(168, 85, 247, 0.2); }
     body.theme-amber { --accent: #f59e0b; --bg-glow: rgba(245, 158, 11, 0.2); }
 
-    body { 
-      background-color: #050505; 
-      color: #fff; 
-      font-family: 'Rajdhani', sans-serif;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .cyber-grid {
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(circle at 50% 50%, var(--bg-glow) 0%, #000 100%);
-      z-index: -1;
-    }
-
-    /* Sidebar Drawer */
-    .drawer {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100%;
-      width: 280px;
-      background: rgba(10, 10, 10, 0.98);
-      border-right: 2px solid var(--accent);
-      z-index: 100;
-      transform: translateX(-100%);
-      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 20px 0 50px rgba(0,0,0,0.8);
-    }
+    body { background-color: #050505; color: #fff; font-family: 'Rajdhani', sans-serif; height: 100vh; overflow: hidden; }
+    .cyber-grid { position: fixed; inset: 0; background: radial-gradient(circle at 50% 50%, var(--bg-glow) 0%, #000 100%); z-index: -1; }
+    
+    .drawer { position: fixed; top: 0; left: 0; height: 100%; width: 280px; background: rgba(10, 10, 10, 0.98); border-right: 2px solid var(--accent); z-index: 100; transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 20px 0 50px rgba(0,0,0,0.8); }
     .drawer.open { transform: translateX(0); }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(4px);
-      z-index: 90;
-      display: none;
-    }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 90; display: none; }
     .overlay.visible { display: block; }
 
-    /* Layout Chat */
-    .main-wrapper {
-      max-width: 1200px;
-      margin: 0 auto;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .chat-window {
-      flex: 1;
-      background: rgba(15, 15, 15, 0.6);
-      border-left: 1px solid rgba(255,255,255,0.05);
-      border-right: 1px solid rgba(255,255,255,0.05);
-      overflow-y: auto;
-      padding: 20px;
-    }
-
-    .message-bubble {
-      padding: 10px 16px;
-      border-radius: 12px;
-      max-width: 85%;
-      font-size: 15px;
-      position: relative;
-    }
+    .main-wrapper { max-width: 1200px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; }
+    .chat-window { flex: 1; background: rgba(15, 15, 15, 0.6); overflow-y: auto; padding: 20px; }
+    .message-bubble { padding: 10px 16px; border-radius: 12px; max-width: 85%; font-size: 15px; }
     .message-bubble.me { background: var(--accent); color: white; border-bottom-right-radius: 2px; }
     .message-bubble.other { background: #222; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.1); }
 
-    /* Botones y UI */
-    .btn-cyber {
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      text-transform: uppercase;
-      font-weight: bold;
-      letter-spacing: 1px;
-      transition: all 0.3s;
-    }
+    .btn-cyber { border: 1px solid var(--accent); color: var(--accent); text-transform: uppercase; font-weight: bold; transition: all 0.3s; }
     .btn-cyber:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--accent); }
 
-    .nav-header {
-      padding: 15px 20px;
-      background: #000;
-      border-bottom: 2px solid var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    @media (max-width: 640px) {
-      .message-bubble { max-width: 90%; }
-      .nav-header h1 { font-size: 1.2rem; }
-    }
+    .nav-header { padding: 15px 20px; background: #000; border-bottom: 2px solid var(--accent); display: flex; align-items: center; justify-content: space-between; }
   </style>
 </head>
 <body>
@@ -156,13 +75,14 @@
       const [user, setUser] = useState(null);
       const [chan, setChan] = useState("general");
       const [messages, setMessages] = useState([]);
+      const [usersOnline, setUsersOnline] = useState({});
+      const [mutedUsers, setMutedUsers] = useState([]);
       const [text, setText] = useState("");
       const [drawerOpen, setDrawerOpen] = useState(false);
       const [themeIdx, setThemeIdx] = useState(0);
       const [alertMsg, setAlertMsg] = useState(null);
       const scrollRef = useRef();
 
-      // Cambiar Temática
       const cycleTheme = () => {
         const next = (themeIdx + 1) % THEMES.length;
         setThemeIdx(next);
@@ -174,8 +94,7 @@
         try {
           const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
           const wallet = accs[0].toLowerCase();
-          const msgUint8 = new TextEncoder().encode(wallet);
-          const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(wallet));
           const hashed = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
           
           const cred = await auth.signInAnonymously();
@@ -188,115 +107,132 @@
         } catch (e) { console.error(e); }
       };
 
-      const disconnect = async () => {
-        if (user) await db.ref(`presence/${user.uid}`).remove();
-        auth.signOut();
-        window.location.reload();
-      };
-
       useEffect(() => {
         if (!user) return;
+        
+        // Listener de Presencia (para Ban/Mute)
+        db.ref('presence').on('value', s => {
+          const val = s.val() || {};
+          setUsersOnline(val);
+          // Si el admin nos borró de presencia, somos expulsados
+          if (!val[user.uid]) window.location.reload();
+        });
+
+        // Listener de Muted Global (opcional, aquí lo manejamos por DB)
+        db.ref('muted').on('value', s => setMutedUsers(s.val() ? Object.values(s.val()) : []));
+
         const mRef = db.ref(`messages/${chan}`).limitToLast(50);
         mRef.on('value', s => {
           const val = s.val();
-          setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
+          if (val) {
+            const list = Object.keys(val).map(k => ({id:k, ...val[k]}));
+            // Filtrar mensajes de usuarios silenciados
+            setMessages(list.filter(m => !mutedUsers.includes(m.name)));
+          } else { setMessages([]); }
         });
+
         db.ref('system_alert').on('value', s => setAlertMsg(s.val()));
-        return () => { mRef.off(); db.ref('system_alert').off(); };
-      }, [user, chan]);
+        return () => { mRef.off(); db.ref('presence').off(); db.ref('system_alert').off(); db.ref('muted').off(); };
+      }, [user, chan, mutedUsers]);
 
       useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
       const handleSend = async () => {
-        if (!text.trim()) return;
-        if (user.isGod && text === '/clear') { await db.ref(`messages/${chan}`).remove(); setText(""); return; }
-        
+        const t = text.trim();
+        if (!t) return;
+
+        if (user.isGod) {
+          if (t === '/clear') { await db.ref(`messages/${chan}`).remove(); setText(""); return; }
+          if (t.startsWith('/alert ')) { await db.ref('system_alert').set(t.replace('/alert ', '')); setText(""); return; }
+          
+          // COMANDO BAN: /ban [nombre]
+          if (t.startsWith('/ban ')) {
+            const targetName = t.replace('/ban ', '').trim();
+            const target = Object.values(usersOnline).find(u => u.name === targetName);
+            if (target && !target.isGod) {
+              await db.ref(`presence/${target.uid}`).remove();
+              alert(`Usuario ${targetName} expulsado.`);
+            }
+            setText(""); return;
+          }
+
+          // COMANDO MUTE: /mute [nombre]
+          if (t.startsWith('/mute ')) {
+            const targetName = t.replace('/mute ', '').trim();
+            if (!ADMIN_WALLETS[targetName]) { // No mutear admins si el nombre coincide
+               await db.ref('muted').push(targetName);
+               alert(`Usuario ${targetName} silenciado globalmente.`);
+            }
+            setText(""); return;
+          }
+        }
+
         await db.ref(`messages/${chan}`).push({
-          content: text, name: user.name, uid: user.uid, isGod: user.isGod, time: Date.now()
+          content: t, name: user.name, uid: user.uid, isGod: user.isGod, time: Date.now()
         });
         setText("");
       };
 
       if (!user) return (
-        <div className="flex h-screen items-center justify-center p-6">
-          <div className="bg-black/80 border-2 border-red-600 p-10 rounded-3xl text-center max-w-sm w-full">
-            <h1 className="text-4xl font-black mb-8 tracking-tighter text-red-600">MUZZSNAP</h1>
-            <button onClick={login} className="w-full py-4 btn-cyber rounded-xl font-bold">Autenticar Wallet</button>
-          </div>
+        <div className="flex h-screen items-center justify-center p-6 bg-black">
+          <button onClick={login} className="px-10 py-4 btn-cyber rounded-xl font-black tracking-widest">INGRESAR SISTEMA</button>
         </div>
       );
 
       return (
         <div className="main-wrapper">
-          {/* Sidebar / Sub Menu */}
           <div className={`overlay ${drawerOpen ? 'visible' : ''}`} onClick={() => setDrawerOpen(false)}></div>
           <aside className={`drawer ${drawerOpen ? 'open' : ''} p-6 flex flex-col`}>
-            <div className="flex justify-between items-center mb-10">
-              <span className="font-bold text-xl" style={{color: 'var(--accent)'}}>MENÚ</span>
+            <div className="flex justify-between items-center mb-10 text-white/50">
+              <span className="font-bold uppercase tracking-tighter">Terminal_v4.2</span>
               <button onClick={() => setDrawerOpen(false)}><i className="fas fa-times"></i></button>
             </div>
             
-            <nav className="space-y-2 flex-1">
-              <p className="text-[10px] opacity-40 uppercase font-bold mb-4">Canales de Datos</p>
-              {['general', 'español', 'mercado'].map(c => (
-                <button 
-                  key={c} 
-                  onClick={() => { setChan(c); setDrawerOpen(false); }}
-                  className={`w-full text-left p-4 rounded-xl transition ${chan === c ? 'bg-white/10 border-l-4' : 'hover:bg-white/5'}`}
-                  style={{borderColor: chan === c ? 'var(--accent)' : 'transparent'}}
-                >
-                  # {c.toUpperCase()}
-                </button>
+            <nav className="space-y-2 flex-1 overflow-y-auto">
+              <p className="text-[10px] opacity-40 uppercase font-bold mb-4 tracking-widest">Sectores</p>
+              {['general', 'español', 'trading', 'devs'].map(c => (
+                <button key={c} onClick={() => {setChan(c); setDrawerOpen(false);}} className={`w-full text-left p-4 rounded-xl transition ${chan === c ? 'bg-white/5 border-l-4' : 'hover:bg-white/5 opacity-60'}`} style={{borderColor: chan === c ? 'var(--accent)' : 'transparent'}}># {c.toUpperCase()}</button>
+              ))}
+              
+              <p className="text-[10px] opacity-40 uppercase font-bold mt-8 mb-4 tracking-widest">Usuarios Online</p>
+              {Object.values(usersOnline).map((u, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm p-2 opacity-80">
+                  <div className={`w-2 h-2 rounded-full ${u.isGod ? 'bg-yellow-400' : 'bg-green-500'}`}></div>
+                  <span className={u.isGod ? 'text-yellow-400 font-bold' : ''}>{u.name}</span>
+                </div>
               ))}
             </nav>
 
             <div className="pt-6 border-t border-white/10 space-y-3">
-              <button onClick={cycleTheme} className="w-full p-3 text-xs btn-cyber rounded-lg">
-                <i className="fas fa-palette mr-2"></i> Cambiar Estética
-              </button>
-              <button onClick={disconnect} className="w-full p-3 text-xs bg-red-900/20 text-red-500 font-bold border border-red-900/50 rounded-lg hover:bg-red-500 hover:text-black transition">
-                <i className="fas fa-power-off mr-2"></i> Desconectar
-              </button>
+              <button onClick={cycleTheme} className="w-full p-3 text-xs btn-cyber rounded-lg"><i className="fas fa-sync-alt mr-2"></i> Cambiar Estética</button>
+              <button onClick={() => {auth.signOut(); window.location.reload();}} className="w-full p-3 text-xs bg-red-900/20 text-red-500 font-bold border border-red-900/40 rounded-lg hover:bg-red-500 hover:text-black transition">DESCONECTAR</button>
             </div>
           </aside>
 
-          {/* Chat Header */}
           <header className="nav-header">
             <button className="text-2xl" onClick={() => setDrawerOpen(true)}><i className="fas fa-bars"></i></button>
-            <h1 className="font-black text-xl tracking-widest" style={{color: 'var(--accent)'}}>MUZZSNAP // {chan}</h1>
-            <div className="w-8"></div> {/* Spacer */}
+            <h1 className="font-black text-xl" style={{color: 'var(--accent)'}}>MUZZSNAP // {chan}</h1>
+            <div className={`text-[10px] font-bold p-1 border ${user.isGod ? 'border-yellow-500 text-yellow-500' : 'border-white/20 opacity-30'}`}>{user.isGod ? 'GOD' : 'USER'}</div>
           </header>
 
-          {alertMsg && <div className="bg-red-600 text-[10px] text-center font-bold p-1 animate-pulse uppercase tracking-widest">Alerta: {alertMsg}</div>}
+          {alertMsg && <div className="bg-red-600 text-[10px] text-center font-bold p-1 animate-pulse uppercase tracking-widest">SISTEMA: {alertMsg}</div>}
 
-          {/* Chat Area */}
           <div className="chat-window">
-            <div className="space-y-4">
+            <div className="max-w-4xl mx-auto space-y-4">
               {messages.map(m => (
                 <div key={m.id} className={`flex flex-col ${m.uid === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[10px] opacity-40 mb-1 px-1">{m.name} {m.isGod && '👑'}</span>
-                  <div className={`message-bubble ${m.uid === user.uid ? 'me shadow-lg' : 'other'}`}>
-                    {m.content}
-                  </div>
+                  <span className={`text-[10px] mb-1 px-1 ${m.isGod ? 'text-yellow-400 font-bold' : 'opacity-40'}`}>{m.name} {m.isGod && '👑'}</span>
+                  <div className={`message-bubble ${m.uid === user.uid ? 'me' : 'other'}`}>{m.content}</div>
                 </div>
               ))}
               <div ref={scrollRef}></div>
             </div>
           </div>
 
-          {/* Input Area */}
           <footer className="p-4 bg-black border-t border-white/5">
             <div className="flex gap-2 max-w-4xl mx-auto">
-              <input 
-                value={text} 
-                onChange={e => setText(e.target.value)} 
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                placeholder="Introducir comando o mensaje..."
-                className="flex-1 bg-[#111] border border-white/10 rounded-2xl p-4 outline-none focus:border-white/30 transition"
-              />
-              <button onClick={handleSend} className="w-14 h-14 rounded-2xl flex items-center justify-center transition" style={{background: 'var(--accent)'}}>
-                <i className="fas fa-paper-plane text-black"></i>
-              </button>
+              <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder={user.isGod ? "Admin console active..." : "Transmitir datos..."} className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-white/20 transition"/>
+              <button onClick={handleSend} className="w-14 h-14 rounded-2xl flex items-center justify-center transition" style={{background: 'var(--accent)'}}><i className="fas fa-bolt text-black"></i></button>
             </div>
           </footer>
         </div>
