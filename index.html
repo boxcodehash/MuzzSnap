@@ -3,53 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MuzzSnap | Acceso Seguro</title>
+    <title>MuzzSnap | Acceso</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; background-color: #0a0a0a; }
-        .muzz-background {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: radial-gradient(circle at 10% 50%, rgba(100, 100, 100, 0.08) 0%, transparent 50%),
-                        radial-gradient(circle at 90% 80%, rgba(50, 50, 50, 0.1) 0%, transparent 60%);
-        }
-        #logoButton { cursor: pointer; transition: all 0.3s ease; }
-        #logoButton:hover { opacity: 0.9; transform: scale(1.02); }
-        .pulse-ring { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse-ring { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        body { font-family: 'Inter', sans-serif; background-color: #0a0a0a; color: white; }
+        .muzz-background { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at 10% 50%, rgba(100, 100, 100, 0.08) 0%, transparent 50%); }
+        #logoButton { cursor: pointer; transition: transform 0.3s ease; }
+        .pulse-ring { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
-<body class="p-4 text-white">
+<body class="p-4">
     <div class="muzz-background"></div>
 
-    <div id="statusContainer" class="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+    <div id="statusContainer" class="absolute top-4 right-4 z-20">
         <span id="walletStatus" class="py-2 px-4 text-xs font-medium text-gray-400 bg-gray-800 rounded-lg border border-gray-700">
             <i class="fas fa-circle text-gray-500 mr-1"></i> Desconectado
         </span>
     </div>
 
     <div class="relative z-10 flex flex-col items-center justify-center min-h-[80vh] max-w-sm mx-auto text-center">
-        <div id="logoButton" onclick="connectWallet()" class="mb-6 relative group">
-            <img id="muzzLogo" src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png/:/rs=w:1440,h:1440" 
-                 alt="MuzzSnap" class="w-40 h-40 rounded-2xl shadow-2xl group-hover:rotate-2 transition duration-500">
-            <div id="loadingSpinner" class="hidden absolute inset-0 flex items-center justify-center bg-black/60 rounded-2xl backdrop-blur-sm">
+        <div id="logoButton" onclick="connectWallet()" class="mb-6 relative">
+            <img id="muzzLogo" src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png" 
+                 alt="MuzzSnap" class="w-40 h-40 rounded-2xl shadow-2xl">
+            <div id="loadingSpinner" class="hidden absolute inset-0 flex items-center justify-center bg-black/60 rounded-2xl">
                 <i class="fas fa-spinner fa-spin text-4xl text-white"></i>
             </div>
         </div>
 
         <h1 class="text-4xl font-black mb-2 tracking-tight">MuzzSnap</h1>
-        <p class="text-xs text-gray-500 mb-8 tracking-widest uppercase">Chat Seguro Descentralizado<br>単なるアプリ以上のもの。</p>
+        <p class="text-xs text-gray-500 mb-8 uppercase tracking-widest">Chat Seguro Descentralizado</p>
 
-        <div id="messageArea" class="hidden w-full mb-8 p-4 bg-gray-900/80 border border-gray-800 rounded-xl backdrop-blur-md">
-            <p id="messageTitle" class="text-sm font-bold text-red-400 mb-1">Error</p>
-            <p id="messageText" class="text-xs text-gray-400 leading-relaxed">Descripción</p>
+        <div id="messageArea" class="hidden w-full mb-8 p-4 bg-red-900/20 border border-red-800/50 rounded-xl">
+            <p id="messageTitle" class="text-sm font-bold text-red-400 mb-1">Aviso</p>
+            <p id="messageText" class="text-xs text-gray-400"></p>
         </div>
 
-        <p class="text-xs text-gray-600 pulse-ring mt-4">Toca el logo para firmar y entrar<br>ロゴをクリックして署名して入室</p>
-
-        <footer class="mt-16 text-[10px] text-gray-700 font-mono">MuzzSnap 2025&trade; &bull; By.Ryachu</footer>
+        <p class="text-xs text-gray-600 pulse-ring">Toca el logo para abrir tu Wallet<br>ロゴをクリックしてウォレットを開く</p>
     </div>
 
     <script>
@@ -62,99 +55,59 @@
 
         const ERC20_ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
 
-        const UI = {
-            spinner: document.getElementById('loadingSpinner'),
-            status: document.getElementById('walletStatus'),
-            msgArea: document.getElementById('messageArea'),
-            msgTitle: document.getElementById('messageTitle'),
-            msgText: document.getElementById('messageText'),
-            setStatus(text, color, icon) {
-                this.status.innerHTML = `<i class="fas fa-${icon} text-${color}-500 mr-1"></i> ${text}`;
-                this.status.className = `py-2 px-4 text-xs font-medium rounded-lg border bg-gray-900 border-${color}-700 text-${color}-400`;
-            },
-            showMessage(title, text, isError = true) {
-                this.msgArea.classList.remove('hidden');
-                this.msgTitle.textContent = title;
-                this.msgTitle.className = `text-sm font-bold mb-1 ${isError ? 'text-red-400' : 'text-green-400'}`;
-                this.msgText.textContent = text;
-            }
-        };
-
         async function connectWallet() {
-            UI.msgArea.classList.add('hidden');
-            UI.spinner.classList.remove('hidden');
-            UI.setStatus('Conectando...', 'yellow', 'spinner fa-spin');
+            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+            const hasWeb3 = typeof window.ethereum !== 'undefined';
+            
+            document.getElementById('loadingSpinner').classList.remove('hidden');
 
             try {
-                // DETECCIÓN MÓVIL: Si no hay window.ethereum, intentamos saltar a la App
-                if (!window.ethereum) {
-                    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-                    if (isMobile) {
-                        const dappUrl = window.location.href.split('://')[1];
-                        window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
-                        return;
-                    }
-                    throw new Error('No se detectó ninguna Wallet. Instala MetaMask.');
+                // LÓGICA DE REDIRECCIÓN MÓVIL (Deep Linking)
+                if (isMobile && !hasWeb3) {
+                    const dappUrl = window.location.host + window.location.pathname;
+                    
+                    // Intento 1: MetaMask
+                    window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
+                    
+                    // Intento 2: Trust Wallet (si no abre MM en 2.5 seg)
+                    setTimeout(() => {
+                        window.location.href = `https://link.trustwallet.com/open_url?url=${encodeURIComponent(window.location.href)}`;
+                    }, 2500);
+                    return;
                 }
+
+                // CONEXIÓN WEB3 (Navegador PC o Navegador interno de Wallet)
+                if (!hasWeb3) throw new Error("Wallet no detectada. Instala MetaMask o Trust Wallet.");
 
                 const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
                 await provider.send("eth_requestAccounts", []);
                 const signer = provider.getSigner();
                 const address = await signer.getAddress();
 
-                // 1. Verificar Red
-                const network = await provider.getNetwork();
-                if (network.chainId !== CONFIG.requiredChainId) {
-                    UI.setStatus('Cambiando Red...', 'blue', 'network-wired');
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x1' }],
-                        });
-                    } catch (e) { throw new Error('Cambia a la red Ethereum Mainnet.'); }
-                }
+                // 1. Firma obligatoria para el chat
+                const signature = await signer.signMessage(`MuzzSnap Login: ${address}`);
 
-                // 2. Verificar Balance MUZZ
-                UI.setStatus('Verificando MUZZ...', 'purple', 'coins');
+                // 2. Verificación de Balance
                 const contract = new ethers.Contract(CONFIG.contractAddress, ERC20_ABI, provider);
-                const [balance, decimals] = await Promise.all([
-                    contract.balanceOf(address),
-                    contract.decimals()
-                ]);
+                const balance = await contract.balanceOf(address);
+                const decimals = await contract.decimals();
                 const total = parseFloat(ethers.utils.formatUnits(balance, decimals));
 
-                if (total < CONFIG.minTokens) {
-                    throw new Error(`Necesitas ${CONFIG.minTokens.toLocaleString()} MUZZ. Tienes: ${Math.floor(total).toLocaleString()}`);
-                }
+                if (total < CONFIG.minTokens) throw new Error(`Mínimo 40M MUZZ requeridos.`);
 
-                // 3. FIRMA DE AUTORIZACIÓN (Regreso automático al navegador)
-                UI.setStatus('Firma requerida...', 'orange', 'pen-nib');
-                const message = `MuzzSnap Login\nWallet: ${address}\nNonce: ${Date.now()}`;
-                const signature = await signer.signMessage(message);
-
-                // Guardar datos y entrar
+                // Guardar sesión y entrar
                 sessionStorage.setItem('muzz_wallet', address);
                 sessionStorage.setItem('muzz_sig', signature);
-                
-                UI.setStatus('¡Autorizado!', 'green', 'check-circle');
-                UI.showMessage('Éxito', 'Entrando al chat seguro...', false);
-                
-                setTimeout(() => { window.location.href = CONFIG.chatUrl; }, 1200);
+                window.location.href = CONFIG.chatUrl;
 
             } catch (err) {
-                UI.setStatus('Error', 'red', 'exclamation-circle');
-                UI.showMessage('Error de Conexión', err.message);
+                const msgArea = document.getElementById('messageArea');
+                msgArea.classList.remove('hidden');
+                document.getElementById('messageText').textContent = err.message;
             } finally {
-                UI.spinner.classList.add('hidden');
+                document.getElementById('loadingSpinner').classList.add('hidden');
             }
         }
-
-        // Reconexión automática al volver de la App móvil
-        window.addEventListener('load', () => {
-            if (window.ethereum && window.ethereum.selectedAddress) {
-                UI.setStatus('Wallet Lista', 'green', 'check-circle');
-            }
-        });
     </script>
 </body>
 </html>
