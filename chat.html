@@ -17,12 +17,16 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&display=swap');
     :root { --muzz-red: #ff0000; --deep-black: #050505; --panel-bg: #0c0c0c; --neon-green: #39ff14; --ryachu-gold: #ffcc00; }
+    
     body { font-family: 'Inter', sans-serif; background-color: var(--deep-black); color: white; overflow: hidden; margin: 0; }
-    .panel-3d { background: var(--panel-bg); border: 1px solid rgba(255,0,0,0.1); }
+    .panel-3d { background: var(--panel-bg); border: 1px solid rgba(255,0,0,0.1); box-shadow: 10px 10px 20px rgba(0,0,0,0.5); }
     .ryachu-name { color: var(--ryachu-gold); text-shadow: 0 0 10px rgba(255, 204, 0, 0.5); font-weight: 800; }
-    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #990000); align-self: flex-end; border-radius: 18px 18px 2px 18px; }
-    .bubble-3d.other { background: #1a1a1a; align-self: flex-start; border-radius: 18px 18px 18px 2px; border: 1px solid rgba(255,255,255,0.05); }
+    .bubble-3d { padding: 10px 15px; border-radius: 18px; margin-bottom: 4px; max-width: 85%; word-wrap: break-word; }
+    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #990000); align-self: flex-end; border-bottom-right-radius: 2px; }
+    .bubble-3d.other { background: #1a1a1a; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid rgba(255,255,255,0.05); }
     .hacker-input { font-family: 'Fira Code', monospace; color: var(--neon-green) !important; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--muzz-red); }
   </style>
 </head>
 <body>
@@ -47,6 +51,7 @@
     function App() {
       const [user, setUser] = useState(null);
       const [messages, setMessages] = useState([]);
+      const [pinnedMsg, setPinnedMsg] = useState("");
       const [inputText, setInputText] = useState("");
       const [lastSent, setLastSent] = useState(0);
       const [error, setError] = useState("");
@@ -58,26 +63,22 @@
 
         firebase.auth().signInAnonymously().then((userCredential) => {
           const uid = userCredential.user.uid;
-          let finalUsername = "";
-          let isWalletUser = false;
-
-          // Detectar si es Guest o Wallet
-          if (sessionData.startsWith('guest_')) {
-            finalUsername = sessionData.replace('guest_', '');
-            isWalletUser = false;
-          } else {
-            finalUsername = `Node_${sessionData.slice(-4)}`; // Últimos 4 dígitos
-            isWalletUser = true;
-          }
-
+          const isWallet = !sessionData.startsWith('guest_');
+          
+          // Username: 4 dígitos si es wallet, o el nombre si es guest
+          let finalUsername = isWallet ? `Node_${sessionData.slice(-4)}` : sessionData.replace('guest_', '');
+          
           const userData = { 
             username: finalUsername, 
             uid: uid, 
-            isWallet: isWalletUser,
+            isWallet: isWallet,
             isRyachu: (sessionData.toLowerCase() === "0x208157b5ec396759e8754058108ecf53e32392ff") 
           };
           
           setUser(userData);
+
+          // Escuchar mensaje fijado y mensajes de chat
+          database.ref('settings/pinned').on('value', snap => setPinnedMsg(snap.val()));
           database.ref('messages/general').limitToLast(50).on('value', snap => {
             const data = snap.val();
             setMessages(data ? Object.keys(data).map(k => ({ id: k, ...data[k] })) : []);
@@ -89,28 +90,37 @@
 
       const handleSend = async () => {
         if (!inputText.trim()) return;
-        const now = Date.now();
 
-        // REGLAS PARA USUARIOS SIN WALLET
+        // COMANDOS DE ADMINISTRADOR
+        if (inputText.startsWith("/") && user.isRyachu) {
+          if (inputText.startsWith("/pin ")) {
+            await database.ref('settings/pinned').set(inputText.replace("/pin ", ""));
+          } else if (inputText === "/clear") {
+            await database.ref('messages/general').remove();
+          } else if (inputText === "/unpin") {
+            await database.ref('settings/pinned').remove();
+          }
+          setInputText("");
+          return;
+        }
+
+        // REGLAS DE SEGURIDAD PARA GUESTS
         if (!user.isWallet) {
-          // 1. Timer de 3 segundos
+          const now = Date.now();
+          // Timer 3s
           if (now - lastSent < 3000) {
             setError("COOLDOWN: 3s Required");
             setTimeout(() => setError(""), 2000);
             return;
           }
-
-          // 2. Bloqueo de URLs/Links
-          const urlPattern = /(https?:\/\/|www\.|[a-z0-9]+\.[a-z]{2,})/gi;
-          if (urlPattern.test(inputText)) {
-            setError("RESTRICTED: Links not allowed");
+          // Bloqueo Links
+          if (/(https?:\/\/|www\.|[a-z0-9]+\.[a-z]{2,})/gi.test(inputText)) {
+            setError("RESTRICTED: Links Forbidden");
             return;
           }
-
-          // 3. Bloqueo de Emojis
-          const emojiPattern = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/u;
-          if (emojiPattern.test(inputText)) {
-            setError("RESTRICTED: Emojis not allowed");
+          // Bloqueo Emojis
+          if (/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}]/u.test(inputText)) {
+            setError("RESTRICTED: Emojis Forbidden");
             return;
           }
         }
@@ -123,28 +133,41 @@
           timestamp: firebase.database.ServerValue.TIMESTAMP
         });
 
-        setLastSent(now);
+        setLastSent(Date.now());
         setInputText("");
         setError("");
       };
 
-      if (!user) return <div className="h-screen bg-black flex items-center justify-center text-red-600 font-mono">LOADING_SESSION...</div>;
+      if (!user) return <div className="h-screen bg-black flex items-center justify-center text-red-600 font-mono italic">INITIALIZING_SECURE_NODE...</div>;
 
       return (
-        <div className="flex h-screen bg-[#050505] p-2 overflow-hidden font-inter">
-          <main className="flex-1 panel-3d rounded-3xl flex flex-col overflow-hidden">
+        <div className="flex h-screen bg-[#050505] p-2 lg:p-4 overflow-hidden">
+          <main className="flex-1 panel-3d rounded-3xl flex flex-col overflow-hidden relative border border-white/5">
+            
+            {/* PINNED MESSAGE BANNER */}
+            {pinnedMsg && (
+              <div className="bg-red-600/10 border-b border-red-600/30 p-2 flex items-center gap-3 px-6">
+                <i className="fas fa-thumbtack text-red-600 text-[10px] animate-pulse"></i>
+                <div className="text-[10px] font-bold tracking-widest text-red-500 uppercase overflow-hidden whitespace-nowrap">
+                  {pinnedMsg}
+                </div>
+              </div>
+            )}
+
             <header className="h-14 flex items-center justify-between px-6 bg-white/5 border-b border-white/5">
-              <h2 className="text-xs font-bold tracking-widest text-red-600 uppercase">
-                {user.isWallet ? "● ENCRYPTED_LINK" : "○ GUEST_ACCESS"}
-              </h2>
-              <div className="text-[10px] font-mono text-gray-500">{error || user.username}</div>
+              <h2 className="text-[10px] font-bold tracking-[0.3em] text-red-600 uppercase italic">MuzzSnap // Terminal</h2>
+              <div className="text-[9px] font-mono text-gray-500 uppercase">
+                {error || (user.isRyachu ? "ROOT_ADMIN" : user.username)}
+              </div>
             </header>
 
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
               {messages.map(msg => (
                 <div key={msg.id} className={`flex flex-col ${msg.userId === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className={`text-[9px] mb-1 px-2 ${msg.isRyachu ? 'ryachu-name' : 'text-gray-600'}`}>{msg.username}</span>
-                  <div className={`p-3 max-w-[80%] text-[13px] bubble-3d ${msg.userId === user.uid ? 'me' : 'other'}`}>
+                  <span className={`text-[9px] mb-1 px-2 ${msg.isRyachu ? 'ryachu-name' : 'text-gray-600 font-bold'}`}>
+                    {msg.isRyachu && <i className="fas fa-crown mr-1"></i>}{msg.username}
+                  </span>
+                  <div className={`bubble-3d text-[13px] ${msg.userId === user.uid ? 'me' : 'other'}`}>
                     {msg.content}
                   </div>
                 </div>
@@ -158,10 +181,10 @@
                   value={inputText} 
                   onChange={e => setInputText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  placeholder={user.isWallet ? "Transmit message..." : "No links/emojis allowed..."} 
+                  placeholder={user.isRyachu ? "Enter Admin Command..." : "Transmit data..."} 
                   className="flex-1 bg-transparent border-none focus:ring-0 text-xs hacker-input px-3"
                 />
-                <button onClick={handleSend} className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+                <button onClick={handleSend} className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center hover:bg-red-500 transition-colors">
                   <i className="fas fa-paper-plane text-[10px]"></i>
                 </button>
               </div>
