@@ -1,259 +1,177 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>MuzzSnap – 3D Web3 Chat</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MuzzSnap - Terminal Edition</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-<script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap');
-
-:root {
-  --accent: #ff0000;
-  --bg: #000;
-  --text: #fff;
-  --glass: rgba(20,0,0,0.6);
-  --input-bg: rgba(255,255,255,0.05);
-}
-
-body.light-theme {
-  --bg: #ffffff;
-  --text: #000000;
-  --glass: rgba(240,240,240,0.9);
-  --input-bg: rgba(0,0,0,0.05);
-}
-
-body { 
-    background: var(--bg); 
-    color: var(--text); 
-    font-family: 'Rajdhani', sans-serif; 
-    height: 100vh; 
-    overflow: hidden; 
-    transition: background 0.3s, color 0.3s;
-}
-
-.chat-3d-card {
-    background: var(--glass);
-    backdrop-filter: blur(20px);
-    border-radius: 25px;
-    border: 1px solid var(--accent);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-}
-
-.message-bubble {
-    padding: 12px 16px;
-    border-radius: 18px;
-    max-width: 80%;
-    position: relative;
-    word-wrap: break-word;
-}
-
-.message-bubble.me { 
-    background: var(--accent); 
-    color: white; 
-    box-shadow: 0 4px 15px var(--accent);
-}
-
-.message-bubble.other { 
-    background: var(--input-bg);
-    border: 1px solid rgba(128,128,128,0.2);
-}
-
-/* Contenedor del selector de emojis */
-.emoji-container {
-    position: absolute;
-    bottom: 90px;
-    right: 20px;
-    z-index: 1000;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-</style>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&display=swap');
+    :root { --muzz-red: #ff0000; --deep-black: #050505; --panel-bg: #0c0c0c; --neon-green: #39ff14; --ryachu-gold: #ffcc00; }
+    body { font-family: 'Inter', sans-serif; background-color: var(--deep-black); color: white; overflow: hidden; margin: 0; }
+    .panel-3d { background: var(--panel-bg); border: 1px solid rgba(255,0,0,0.1); }
+    .ryachu-name { color: var(--ryachu-gold); text-shadow: 0 0 10px rgba(255, 204, 0, 0.5); font-weight: 800; }
+    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #990000); align-self: flex-end; border-radius: 18px 18px 2px 18px; }
+    .bubble-3d.other { background: #1a1a1a; align-self: flex-start; border-radius: 18px 18px 18px 2px; border: 1px solid rgba(255,255,255,0.05); }
+    .hacker-input { font-family: 'Fira Code', monospace; color: var(--neon-green) !important; }
+  </style>
 </head>
-
 <body>
-<div id="root"></div>
+  <div id="root"></div>
 
-<script type="text/babel">
-const { useState, useEffect, useRef } = React;
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
 
-firebase.initializeApp({
-  apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
-  authDomain: "pulsari.firebaseapp.com",
-  databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
-  projectId: "pulsari"
-});
-const db = firebase.database();
-
-const ADMIN_WALLET = "0xTU_DIRECCION_AQUI".toLowerCase();
-
-function App() {
-  const [user, setUser] = useState(null);
-  const [text, setText] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [channel, setChannel] = useState("general");
-  const [theme, setTheme] = useState("dark");
-  const [showPicker, setShowPicker] = useState(false);
-  const scrollRef = useRef();
-  const pickerRef = useRef();
-
-  useEffect(() => {
-    const savedWallet = sessionStorage.getItem('muzz_wallet');
-    const savedSig = sessionStorage.getItem('muzz_sig');
-    if (!savedWallet || !savedSig) return window.location.replace('index.html');
-
-    setUser({ 
-        wallet: savedWallet, 
-        isAdmin: savedWallet.toLowerCase() === ADMIN_WALLET 
-    });
-  }, []);
-
-  useEffect(() => {
-    if(!user) return;
-    const ref = db.ref(`messages/${channel}`).limitToLast(50);
-    ref.on("value", s => {
-      const v = s.val() || {};
-      setMessages(Object.keys(v).map(k => ({ id: k, ...v[k] })));
-    });
-    return () => ref.off();
-  }, [user, channel]);
-
-  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages]);
-
-  // Cerrar picker al hacer click fuera
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowPicker(false);
+    const firebaseConfig = {
+      apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
+      authDomain: "pulsari.firebaseapp.com",
+      databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
+      projectId: "pulsari",
+      storageBucket: "pulsari.firebasestorage.app",
+      messagingSenderId: "824306321233",
+      appId: "1:824306321233:web:2c9bfa02170a17d560b570"
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
-  const send = async () => {
-    if (!text.trim()) return;
-    await db.ref(`messages/${channel}`).push({
-      content: text,
-      wallet: user.wallet,
-      time: Date.now(),
-      isAdmin: user.isAdmin
-    });
-    setText("");
-    setShowPicker(false);
-  };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
-  const deleteMsg = (id) => { if(user.isAdmin) db.ref(`messages/${channel}/${id}`).remove(); };
+    function App() {
+      const [user, setUser] = useState(null);
+      const [messages, setMessages] = useState([]);
+      const [inputText, setInputText] = useState("");
+      const [lastSent, setLastSent] = useState(0);
+      const [error, setError] = useState("");
+      const dummyRef = useRef(null);
 
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    document.body.className = newTheme === "light" ? "light-theme" : "";
-  };
+      useEffect(() => {
+        const sessionData = sessionStorage.getItem('muzz_wallet_address');
+        if (!sessionData) { window.location.href = 'login.html'; return; }
 
-  const onEmojiSelect = (emoji) => {
-    setText(text + emoji.native);
-  };
+        firebase.auth().signInAnonymously().then((userCredential) => {
+          const uid = userCredential.user.uid;
+          let finalUsername = "";
+          let isWalletUser = false;
 
-  if(!user) return null;
+          // Detectar si es Guest o Wallet
+          if (sessionData.startsWith('guest_')) {
+            finalUsername = sessionData.replace('guest_', '');
+            isWalletUser = false;
+          } else {
+            finalUsername = `Node_${sessionData.slice(-4)}`; // Últimos 4 dígitos
+            isWalletUser = true;
+          }
 
-  return (
-    <div className="h-screen flex flex-col p-4 md:p-6 lg:p-10">
-      
-      {/* Header superior */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <div className="flex bg-black/20 p-1 rounded-2xl border border-white/5">
-          <button onClick={() => setChannel("general")} className={`px-5 py-2 rounded-xl text-sm font-bold transition ${channel === 'general' ? 'bg-red-600 text-white' : 'opacity-50'}`}># GENERAL</button>
-          <button onClick={() => setChannel("español")} className={`px-5 py-2 rounded-xl text-sm font-bold transition ${channel === 'español' ? 'bg-red-600 text-white' : 'opacity-50'}`}># ESPAÑOL</button>
-        </div>
-        
-        <div className="flex gap-4 items-center">
-          <button onClick={toggleTheme} className="w-10 h-10 rounded-full border border-red-600/30 flex items-center justify-center">
-            <i className={`fas fa-${theme === 'dark' ? 'sun' : 'moon'}`}></i>
-          </button>
-          <div className="hidden sm:block text-right">
-            <p className="text-[10px] opacity-40 leading-none uppercase tracking-tighter">Connected Wallet</p>
-            <p className="text-xs font-mono font-bold text-red-500">{user.wallet.slice(0,6)}...{user.wallet.slice(-4)}</p>
-          </div>
-          <button onClick={() => {sessionStorage.clear(); window.location.replace('index.html');}} className="text-red-500 text-xl ml-2"><i className="fas fa-power-off"></i></button>
-        </div>
-      </div>
+          const userData = { 
+            username: finalUsername, 
+            uid: uid, 
+            isWallet: isWalletUser,
+            isRyachu: (sessionData.toLowerCase() === "0x208157b5ec396759e8754058108ecf53e32392ff") 
+          };
+          
+          setUser(userData);
+          database.ref('messages/general').limitToLast(50).on('value', snap => {
+            const data = snap.val();
+            setMessages(data ? Object.keys(data).map(k => ({ id: k, ...data[k] })) : []);
+          });
+        });
+      }, []);
 
-      {/* Area del Chat */}
-      <div className="chat-3d-card flex-1 flex flex-col p-4 md:p-6 overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-          {messages.map(m => (
-            <div key={m.id} className={`flex flex-col ${m.wallet === user.wallet ? 'items-end' : 'items-start'}`}>
-              <div className={`message-bubble group ${m.wallet === user.wallet ? 'me' : 'other'}`}>
-                <div className="flex justify-between items-center gap-4 mb-1">
-                  <span className="text-[9px] font-bold opacity-70 uppercase tracking-widest">
-                    {m.isAdmin && <i className="fas fa-shield-alt mr-1 text-yellow-400"></i>}
-                    {m.wallet.slice(-6)}
-                  </span>
+      useEffect(() => { dummyRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+      const handleSend = async () => {
+        if (!inputText.trim()) return;
+        const now = Date.now();
+
+        // REGLAS PARA USUARIOS SIN WALLET
+        if (!user.isWallet) {
+          // 1. Timer de 3 segundos
+          if (now - lastSent < 3000) {
+            setError("COOLDOWN: 3s Required");
+            setTimeout(() => setError(""), 2000);
+            return;
+          }
+
+          // 2. Bloqueo de URLs/Links
+          const urlPattern = /(https?:\/\/|www\.|[a-z0-9]+\.[a-z]{2,})/gi;
+          if (urlPattern.test(inputText)) {
+            setError("RESTRICTED: Links not allowed");
+            return;
+          }
+
+          // 3. Bloqueo de Emojis
+          const emojiPattern = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/u;
+          if (emojiPattern.test(inputText)) {
+            setError("RESTRICTED: Emojis not allowed");
+            return;
+          }
+        }
+
+        await database.ref('messages/general').push({
+          content: inputText,
+          userId: user.uid,
+          username: user.username,
+          isRyachu: user.isRyachu,
+          timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        setLastSent(now);
+        setInputText("");
+        setError("");
+      };
+
+      if (!user) return <div className="h-screen bg-black flex items-center justify-center text-red-600 font-mono">LOADING_SESSION...</div>;
+
+      return (
+        <div className="flex h-screen bg-[#050505] p-2 overflow-hidden font-inter">
+          <main className="flex-1 panel-3d rounded-3xl flex flex-col overflow-hidden">
+            <header className="h-14 flex items-center justify-between px-6 bg-white/5 border-b border-white/5">
+              <h2 className="text-xs font-bold tracking-widest text-red-600 uppercase">
+                {user.isWallet ? "● ENCRYPTED_LINK" : "○ GUEST_ACCESS"}
+              </h2>
+              <div className="text-[10px] font-mono text-gray-500">{error || user.username}</div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+              {messages.map(msg => (
+                <div key={msg.id} className={`flex flex-col ${msg.userId === user.uid ? 'items-end' : 'items-start'}`}>
+                  <span className={`text-[9px] mb-1 px-2 ${msg.isRyachu ? 'ryachu-name' : 'text-gray-600'}`}>{msg.username}</span>
+                  <div className={`p-3 max-w-[80%] text-[13px] bubble-3d ${msg.userId === user.uid ? 'me' : 'other'}`}>
+                    {msg.content}
+                  </div>
                 </div>
-                <p className="text-sm md:text-base leading-relaxed">{m.content}</p>
-                {user.isAdmin && (
-                  <button onClick={() => deleteMsg(m.id)} className="absolute -left-8 top-1/2 -translate-y-1/2 text-red-500 opacity-0 group-hover:opacity-100 transition">
-                    <i className="fas fa-trash-alt"></i>
-                  </button>
-                )}
-              </div>
-              <span className="text-[8px] opacity-30 mt-1 px-2">{new Date(m.time).toLocaleTimeString()}</span>
+              ))}
+              <div ref={dummyRef}></div>
             </div>
-          ))}
-          <div ref={scrollRef}></div>
+
+            <div className="p-4 bg-black/40 border-t border-white/5">
+              <div className="flex items-center bg-black/60 rounded-2xl p-2 border border-red-900/20">
+                <input 
+                  value={inputText} 
+                  onChange={e => setInputText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend()}
+                  placeholder={user.isWallet ? "Transmit message..." : "No links/emojis allowed..."} 
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-xs hacker-input px-3"
+                />
+                <button onClick={handleSend} className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+                  <i className="fas fa-paper-plane text-[10px]"></i>
+                </button>
+              </div>
+            </div>
+          </main>
         </div>
+      );
+    }
 
-        {/* Picker de Emojis */}
-        {showPicker && (
-          <div className="emoji-container" ref={pickerRef}>
-            <em-emoji-picker 
-                data-reveal-token="false"
-                onEmojiSelect={onEmojiSelect}
-                theme={theme}
-                set="apple"
-            ></em-emoji-picker>
-          </div>
-        )}
-
-        {/* Input con Iconos */}
-        <div className="flex gap-3 mt-6 items-center bg-black/20 p-2 rounded-2xl border border-white/5">
-          <button 
-            onClick={() => setShowPicker(!showPicker)} 
-            className={`w-10 h-10 rounded-xl transition ${showPicker ? 'text-red-500 bg-red-500/10' : 'opacity-40 hover:opacity-100'}`}
-          >
-            <i className="far fa-smile text-xl"></i>
-          </button>
-          
-          <input 
-            className="flex-1 bg-transparent p-2 focus:outline-none text-sm md:text-base"
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && send()}
-            placeholder="Escribe tu mensaje..."
-          />
-          
-          <button onClick={send} className="w-12 h-12 bg-red-600 text-white rounded-xl shadow-lg shadow-red-600/20 hover:scale-105 active:scale-95 transition">
-            <i className="fas fa-paper-plane"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
