@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MuzzSnap - P2P Social Engine</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
+    :root { --muzz-red: #ff0000; }
+    html, body { height: 100dvh; overflow: hidden; margin: 0; background: #050505; color: white; font-family: 'Inter', sans-serif; }
+    .hacker-font { font-family: 'Fira Code', monospace; }
+    .custom-scroll::-webkit-scrollbar { width: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--muzz-red); }
+    .post-card { border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s; }
+    .post-card:active { background: rgba(255, 0, 0, 0.05); }
+    .thread-line { width: 2px; background: linear-gradient(to bottom, var(--muzz-red), transparent); margin-left: 15px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const DB_KEY = "muzz_p2p_feed";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
+      databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
+      projectId: "pulsari"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    function App() {
+      const [user, setUser] = useState(null);
+      const [posts, setPosts] = useState([]);
+      const [newPost, setNewPost] = useState("");
+      const [activeThread, setActiveThread] = useState(null);
+      const [replyText, setReplyText] = useState("");
+
+      useEffect(() => {
+        const sessionData = sessionStorage.getItem('muzz_wallet_address');
+        if (!sessionData) { window.location.href = 'login.html'; return; }
+        const name = sessionData.startsWith('guest_') ? sessionData.replace('guest_', '') : `Node_${sessionData.slice(-4)}`;
+        setUser({ username: name, uid: sessionData });
+
+        const localData = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
+        // Regla de las 24h: Mantiene si es reciente o si tiene interacción
+        const survivors = localData.filter(p => (Date.now() - p.timestamp) < 86400000 || (p.likes || 0) > 0 || (p.replies || []).length > 0);
+        setPosts(survivors.sort((a,b) => b.timestamp - a.timestamp));
+
+        // Sync Listener (Relay)
+        database.ref('feed_relay').on('child_added', snap => {
+          const data = snap.val();
+          if (data.isLikeUpdate) handleRemoteLike(data);
+          else if (data.isReply) handleRemoteReply(data);
+          else savePostLocally(data);
+        });
+      }, []);
+
+      const savePostLocally = (post) => {
+        setPosts(prev => {
+          if (prev.find(p => p.id === post.id)) return prev;
+          const updated = [post, ...prev].slice(0, 100);
+          localStorage.setItem(DB_KEY, JSON.stringify(updated));
+          return updated;
+        });
+      };
+
+      const handleLike = (postId) => {
+        const updated = posts.map(p => {
+          if (p.id === postId) {
+            const newCount = (p.likes || 0) + 1;
+            // Emitir actualización de like a la red
+            database.ref('feed_relay').push({ postId, newCount, isLikeUpdate: true });
+            return { ...p, likes: newCount };
+          }
+          return p;
+        });
+        setPosts(updated);
+        localStorage.setItem(DB_KEY, JSON.stringify(updated));
+      };
+
+      const handleRemoteLike = (data) => {
+        setPosts(prev => {
+          const updated = prev.map(p => p.id === data.postId ? { ...p, likes: data.newCount } : p);
+          localStorage.setItem(DB_KEY, JSON.stringify(updated));
+          return updated;
+        });
+      };
+
+      const handleBroadcast = () => {
+        if (!newPost.trim()) return;
+        const postObj = { id: 'p_'+Date.now(), username: user.username, content: newPost, timestamp: Date.now(), likes: 0, replies: [] };
+        savePostLocally(postObj);
+        database.ref('feed_relay').push(postObj);
+        setNewPost("");
+      };
+
+      const sendReply = (parentId) => {
+        if (!replyText.trim()) return;
+        const replyObj = { id: 'r_'+Date.now(), parentId, username: user.username, content: replyText, timestamp: Date.now(), isReply: true };
+        
+        handleRemoteReply(replyObj); // Actualiza local
+        database.ref('feed_relay').push(replyObj); // Sincroniza
+        setReplyText("");
+        // Si estamos en la vista de hilo, actualizamos el estado para ver la respuesta inmediatamente
+        if(activeThread) {
+            setActiveThread(prev => ({...prev, replies: [...(prev.replies || []), replyObj]}));
+        }
+      };
+
+      const handleRemoteReply = (reply) => {
+        setPosts(prev => {
+          const updated = prev.map(p => {
+            if (p.id === reply.parentId && !p.replies?.find(r => r.id === reply.id)) {
+              return { ...p, replies: [...(p.replies || []), reply] };
+            }
+            return p;
+          });
+          localStorage.setItem(DB_KEY, JSON.stringify(updated));
+          return updated;
+        });
+      };
+
+      if (!user) return null;
+
+      return (
+        <div className="flex flex-col h-full max-w-2xl mx-auto border-x border-white/10 bg-black overflow-hidden relative">
+          
+          <header className="p-4 border-b border-white/10 flex items-center justify-between bg-black/90 backdrop-blur-md sticky top-0 z-20">
+            <button onClick={() => window.location.href='chat.html'} className="text-red-600 text-lg"><i className="fas fa-terminal"></i></button>
+            <h1 className="font-orbitron font-black text-[10px] tracking-[0.4em] text-red-600">MUZZ_FEED</h1>
+            <div className="w-2 h-2 bg-red-600 rounded-full shadow-[0_0_10px_#ff0000]"></div>
+          </header>
+
+          <div className="flex-1 overflow-y-auto custom-scroll pb-24">
+            {!activeThread && (
+              <div className="p-4 border-b border-white/10 bg-white/5">
+                <textarea value={newPost} onChange={e => setNewPost(e.target.value)} placeholder="¿Algún dato para la red?" className="w-full bg-transparent border-none focus:ring-0 text-sm hacker-font h-16 resize-none" />
+                <div className="flex justify-end mt-2"><button onClick={handleBroadcast} className="bg-red-600 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-600/20">Broadcast</button></div>
+              </div>
+            )}
+
+            {posts.map(post => (
+              <div key={post.id} className="post-card p-4 hover:bg-white/[0.02]">
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-red-600/10 border border-red-600/30 flex items-center justify-center text-red-600 font-black text-xs">{post.username[0]}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[11px] font-black text-red-500 uppercase tracking-tighter">{post.username}</span>
+                      <span className="text-[9px] text-gray-600">{new Date(post.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-sm text-gray-300 mb-4 leading-relaxed">{post.content}</p>
+                    <div className="flex gap-8">
+                      {/* BOTÓN LIKE CON CONTADOR */}
+                      <button onClick={() => handleLike(post.id)} className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-all group">
+                        <i className={`${(post.likes || 0) > 0 ? 'fas text-red-600' : 'far'} fa-heart group-hover:scale-125`}></i> 
+                        <span className="text-xs font-black hacker-font">{post.likes || 0}</span>
+                      </button>
+                      
+                      {/* BOTÓN COMENTAR CON CONTADOR */}
+                      <button onClick={() => setActiveThread(post)} className="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-all group">
+                        <i className="far fa-comment group-hover:scale-125"></i> 
+                        <span className="text-xs font-black hacker-font">{(post.replies || []).length}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* HILO DE RESPUESTAS */}
+          {activeThread && (
+            <div className="absolute inset-0 z-50 bg-[#050505] flex flex-col animate-in slide-in-from-right duration-300">
+              <header className="p-4 border-b border-white/10 flex items-center gap-4 bg-black">
+                <button onClick={() => setActiveThread(null)} className="w-10 h-10 rounded-full hover:bg-white/5 flex items-center justify-center"><i className="fas fa-chevron-left"></i></button>
+                <span className="text-xs font-black uppercase tracking-widest">Thread_View</span>
+              </header>
+              <div className="flex-1 overflow-y-auto p-4 custom-scroll">
+                <div className="mb-8 p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <span className="text-[10px] text-red-500 font-black uppercase">{activeThread.username}</span>
+                  <p className="text-base mt-2 text-white">{activeThread.content}</p>
+                </div>
+                <div className="space-y-6">
+                  {(activeThread.replies || []).map(r => (
+                    <div key={r.id} className="flex gap-4">
+                      <div className="thread-line"></div>
+                      <div className="flex-1 bg-white/[0.02] p-3 rounded-xl border border-white/5">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase">{r.username}</span>
+                        <p className="text-sm text-gray-300 mt-1">{r.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-4 bg-black/80 border-t border-white/10">
+                <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-2 pl-4 border border-white/5 focus-within:border-red-600/50 transition-all">
+                  <input value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Añadir respuesta al nodo..." className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-font" />
+                  <button onClick={() => sendReply(activeThread.id)} className="bg-red-600 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/20 active:scale-90 transition-transform"><i className="fas fa-paper-plane text-xs"></i></button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <nav className="fixed bottom-0 w-full p-4 border-t border-white/10 bg-black/90 flex justify-around lg:hidden z-30">
+            <button onClick={() => window.location.href='chat.html'} className="text-gray-500 text-xl"><i className="fas fa-terminal"></i></button>
+            <button className="text-red-600 text-xl"><i className="fas fa-rss"></i></button>
+          </nav>
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
