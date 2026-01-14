@@ -1,215 +1,86 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>MuzzSnap | P2P Node</title>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <meta charset="UTF-8">
+    <title>MuzzSnap | Social</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="muzz-core.js"></script>
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono&display=swap');
-    :root { --bg: #000; --border: #1a1a1a; --accent: #ff0000; }
-    body { background: var(--bg); color: #e7e9ea; font-family: 'Inter', sans-serif; font-size: 13px; height: 100dvh; margin: 0; overflow: hidden; }
-    .app-container { display: grid; grid-template-columns: 240px 1fr 300px; height: 100dvh; max-width: 1250px; margin: 0 auto; }
-    @media (max-width: 1024px) { .app-container { grid-template-columns: 1fr; } .hide-mobile { display: none; } }
-    .feed-border { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
-    .custom-scroll::-webkit-scrollbar { width: 0px; }
-    .vault-status { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: #0a0a0a; border: 1px solid #222; color: #555; }
-    .post-anim { animation: slideIn 0.3s ease-out; }
-    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
+    <style>
+        :root { --bg: #000; --border: #2f3336; }
+        body { background: var(--bg); color: #e7e9ea; font-family: 'Inter', sans-serif; overflow: hidden; }
+        /* Anti-inspección visual */
+        body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+    </style>
 </head>
 <body>
-  <div id="root"></div>
+    <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-    // CONFIGURACIÓN PUENTE (FIREBASE)
-    const firebaseConfig = {
-      apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
-      authDomain: "pulsari.firebaseapp.com",
-      databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
-      projectId: "pulsari",
-      databaseURL: "https://pulsari-default-rtdb.firebaseio.com"
-    };
+        function App() {
+            const [posts, setPosts] = useState([]);
+            const [inputText, setInputText] = useState("");
 
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+            useEffect(() => {
+                // Cargar datos iniciales usando el motor protegido
+                setPosts(loadFromVault());
 
-    // CLAVE DE ENCRIPTACIÓN LOCAL (AES)
-    const VAULT_KEY = "muzz_p2p_secure_key_x99";
+                // Sincronizar con el puente P2P
+                syncBridge((newPost) => {
+                    setPosts(prev => {
+                        if (prev.find(p => p.id === newPost.id)) return prev;
+                        const updated = [newPost, ...prev].slice(0, 50);
+                        saveToVault(updated); // Guardar encriptado
+                        return updated;
+                    });
+                });
+            }, []);
 
-    function App() {
-      const [posts, setPosts] = useState([]);
-      const [inputText, setInputText] = useState("");
-      const [user, setUser] = useState({ name: "Node_Guest", address: "0x0" });
+            const handlePost = () => {
+                const address = sessionStorage.getItem('muzz_wallet_address') || "0x000";
+                database.ref('p2p_relay').push({
+                    id: "m_" + Date.now(),
+                    content: inputText,
+                    username: `Node_${address.slice(-4)}`,
+                    address: address,
+                    timestamp: Date.now()
+                });
+                setInputText("");
+            };
 
-      useEffect(() => {
-        // Inicializar Usuario
-        const address = sessionStorage.getItem('muzz_wallet_address') || "0x0000";
-        setUser({ address, name: `Node_${address.slice(-4)}` });
-
-        // 1. CARGAR NODO LOCAL (DESENCRIPTAR)
-        const savedVault = localStorage.getItem('muzz_vault');
-        let initialData = [];
-        if (savedVault) {
-          try {
-            const bytes = CryptoJS.AES.decrypt(savedVault, VAULT_KEY);
-            initialData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-            setPosts(initialData);
-          } catch (e) { console.error("Vault Access Denied"); }
-        }
-
-        // 2. ESCUCHAR PUENTE (FIREBASE) Y SINCRONIZAR
-        const bridgeRef = database.ref('p2p_relay');
-        bridgeRef.on('child_added', snap => {
-          const incoming = snap.val();
-          const now = Date.now();
-          
-          // TTL 24 HORAS EN EL PUENTE
-          if (now - incoming.timestamp < 24 * 60 * 60 * 1000) {
-            syncNode(incoming);
-          } else {
-            // Limpieza automática del puente
-            database.ref(`p2p_relay/${snap.key}`).remove();
-          }
-        });
-
-        return () => bridgeRef.off();
-      }, []);
-
-      const syncNode = (newPost) => {
-        setPosts(prev => {
-          if (prev.find(p => p.id === newPost.id)) return prev;
-          const updated = [newPost, ...prev].slice(0, 50); // Mantenemos 50 posts por nodo
-          
-          // ENCRIPTAR Y GUARDAR EN LOCAL STORAGE
-          const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(updated), VAULT_KEY).toString();
-          localStorage.setItem('muzz_vault', ciphertext);
-          
-          return updated;
-        });
-      };
-
-      const broadcast = () => {
-        if (!inputText.trim()) return;
-        const postData = {
-          id: "msg_" + Math.random().toString(36).substr(2, 9),
-          content: inputText,
-          username: user.name,
-          address: user.address,
-          timestamp: Date.now()
-        };
-        // Enviamos al puente para que otros nodos lo vean
-        database.ref('p2p_relay').push(postData);
-        setInputText("");
-      };
-
-      return (
-        <div className="app-container">
-          {/* BARRA LATERAL IZQUIERDA */}
-          <aside className="hide-mobile flex flex-col p-6 border-r border-[#1a1a1a]">
-            <div className="mb-10 flex items-center gap-2">
-              <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center">
-                <i className="fas fa-network-wired text-[10px] text-white"></i>
-              </div>
-              <span className="font-bold tracking-tighter text-sm uppercase">MUZZSNAP</span>
-            </div>
-            
-            <nav className="space-y-2 flex-1">
-              <button onClick={() => window.location.href='chat.html'} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-900 transition text-zinc-500">
-                <i className="fas fa-terminal text-xs"></i> Terminal Chat
-              </button>
-              <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-zinc-900 text-white font-bold border border-zinc-800">
-                <i className="fas fa-rss text-xs text-red-600"></i> Social Node
-              </button>
-            </nav>
-
-            <div className="bg-[#0a0a0a] p-4 rounded-2xl border border-[#1a1a1a]">
-              <p className="text-[9px] text-zinc-600 uppercase font-bold mb-2">Node Encryption</p>
-              <div className="flex items-center gap-2 text-green-500 font-mono text-[10px]">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                AES-256 ACTIVE
-              </div>
-            </div>
-          </aside>
-
-          {/* CONTENIDO PRINCIPAL */}
-          <main className="feed-border flex flex-col bg-black">
-            <header className="h-14 flex items-center px-4 border-b border-[#1a1a1a] justify-between">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">P2P Broadcast</span>
-              <div className="vault-status font-mono">Vault: {posts.length} Packets</div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto custom-scroll p-4">
-              {/* COMPOSER */}
-              <div className="bg-[#050505] p-4 rounded-2xl border border-[#1a1a1a] mb-8">
-                <textarea 
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Escribe algo encriptado..." 
-                  className="w-full bg-transparent border-none focus:ring-0 text-sm resize-none h-16"
-                ></textarea>
-                <div className="flex justify-end border-t border-[#1a1a1a] pt-3 mt-2">
-                  <button onClick={broadcast} className="bg-red-600 hover:bg-red-700 text-white px-6 py-1.5 rounded-full text-[11px] font-black uppercase transition-all">
-                    Transmitir
-                  </button>
-                </div>
-              </div>
-
-              {/* FEED */}
-              <div className="space-y-4">
-                {posts.map(post => (
-                  <article key={post.id} className="post-anim p-4 rounded-2xl border border-[#1a1a1a] bg-[#050505] hover:border-zinc-800 transition-colors">
-                    <div className="flex gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-zinc-800 to-black flex items-center justify-center border border-[#222]">
-                        <i className="fas fa-user-secret text-[10px] text-zinc-500"></i>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-bold text-[12px]">{post.username}</span>
-                          <span className="text-[9px] font-mono text-zinc-600">#{post.id.slice(-4)}</span>
-                        </div>
-                        <p className="text-zinc-400 text-[13px] leading-relaxed mb-3">
-                          {post.content}
-                        </p>
-                        <div className="flex gap-4 text-[10px] text-zinc-700 font-bold uppercase">
-                          <span><i className="far fa-clock mr-1"></i> {new Date(post.timestamp).toLocaleTimeString()}</span>
-                          <span className="text-red-900/50">● P2P_VERIFIED</span>
-                        </div>
-                      </div>
+            return (
+                <div className="max-w-[600px] mx-auto border-x border-[#2f3336] h-screen flex flex-col">
+                    <header className="p-4 border-b border-[#2f3336] font-bold text-xl">MuzzSnap Node</header>
+                    <div className="p-4 border-b border-[#2f3336]">
+                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full bg-transparent border-none text-lg resize-none" placeholder="¿Qué hay en el lazo?" />
+                        <button onClick={handlePost} className="bg-red-600 px-6 py-2 rounded-full font-bold float-right">Transmitir</button>
                     </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </main>
+                    <div className="flex-1 overflow-y-auto">
+                        {posts.map(p => (
+                            <div key={p.id} className="p-4 border-b border-[#2f3336] animate-pulse-once">
+                                <div className="font-bold text-sm text-gray-500">@{p.address.slice(-4)}</div>
+                                <div className="text-[15px]">{p.content}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 
-          {/* BARRA DERECHA */}
-          <aside className="hide-mobile p-6 flex flex-col gap-6">
-            <div className="p-4 rounded-2xl bg-zinc-900/20 border border-zinc-800/50">
-              <h4 className="text-[10px] font-bold text-red-600 uppercase mb-3">Manual del Nodo</h4>
-              <p className="text-[11px] text-zinc-500 leading-relaxed italic">
-                "Firebase es solo el puente. Los datos vuelan, tu dispositivo los atrapa y los encripta. Después de 24 horas, el puente se limpia, pero tu nodo conserva la memoria."
-              </p>
-            </div>
-          </aside>
-        </div>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+        // Bloqueo de teclas básicas de inspección
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 's' || e.key === 'i')) e.preventDefault();
+        });
+    </script>
 </body>
 </html>
