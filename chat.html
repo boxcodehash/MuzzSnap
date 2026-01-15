@@ -114,6 +114,9 @@
       const [selectedChannel, setSelectedChannel] = useState(CHANNELS[0]);
       const [isMobileMenu, setIsMobileMenu] = useState(false);
       const [showUserActions, setShowUserActions] = useState(null);
+      const [pinMode, setPinMode] = useState(false);
+      const [showBanPanel, setShowBanPanel] = useState(false);
+      const [showMutePanel, setShowMutePanel] = useState(false);
       const dummyRef = useRef(null);
 
       const toggleTheme = () => {
@@ -168,6 +171,14 @@
           alert("Estás silenciado temporalmente");
           return;
         }
+        
+        if (pinMode && isAdmin) {
+          database.ref('settings/pinned').set(inputText);
+          setPinMode(false);
+          setInputText("");
+          return;
+        }
+        
         database.ref('messages/' + selectedChannel.id).push({
           content: inputText, username: user.username, role: user.role, userId: user.uid,
           timestamp: Date.now()
@@ -181,20 +192,26 @@
             database.ref('messages/'+selectedChannel.id).remove();
           }
         },
-        setPin: () => { 
-          const msg = prompt("Mensaje fijado:", pinnedMsg); 
-          if(msg !== null) database.ref('settings/pinned').set(msg); 
+        enablePinMode: () => {
+          setPinMode(true);
+          setInputText("");
         },
         removePin: () => database.ref('settings/pinned').remove(),
-        kickUser: (userId) => {
-          if(confirm("¿Expulsar este usuario?")) {
+        openBanPanel: () => setShowBanPanel(true),
+        openMutePanel: () => setShowMutePanel(true),
+        banUser: (userId, username) => {
+          if(confirm(`¿Banear permanentemente a ${username}?`)) {
+            database.ref(`banned/${userId}`).set(true);
             database.ref(`status/${userId}`).remove();
           }
+          setShowBanPanel(false);
         },
-        muteUser: (userId) => {
-          const muteUntil = Date.now() + 60000; // 1 minuto
+        muteUser: (userId, username) => {
+          const muteUntil = Date.now() + 60000;
           database.ref(`muted/${userId}`).set(muteUntil);
           setTimeout(() => database.ref(`muted/${userId}`).remove(), 60000);
+          alert(`${username} ha sido silenciado por 1 minuto`);
+          setShowMutePanel(false);
         }
       };
 
@@ -215,14 +232,27 @@
               {isAdmin && (
                 <div>
                   <p className="text-[9px] text-red-600 font-bold tracking-[0.3em] mb-4 uppercase">Admin Console</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={adminActions.setPin} className="admin-btn">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <button onClick={adminActions.enablePinMode} className="admin-btn">
                       <i className="fas fa-thumbtack mr-1"></i> FIJAR
                     </button>
                     <button onClick={adminActions.clearChat} className="admin-btn">
                       <i className="fas fa-trash mr-1"></i> LIMPIAR
                     </button>
                   </div>
+                  <details className="bg-red-600/5 border border-red-600/20 rounded-lg">
+                    <summary className="cursor-pointer px-3 py-2 text-[9px] font-bold text-red-500 uppercase tracking-wider">
+                      Moderación ▼
+                    </summary>
+                    <div className="p-3 space-y-2 border-t border-red-600/20">
+                      <button onClick={() => adminActions.openBanPanel()} className="w-full admin-btn text-left">
+                        <i className="fas fa-user-slash mr-2"></i> Banear Usuario
+                      </button>
+                      <button onClick={() => adminActions.openMutePanel()} className="w-full admin-btn text-left">
+                        <i className="fas fa-volume-mute mr-2"></i> Mutear 1min
+                      </button>
+                    </div>
+                  </details>
                 </div>
               )}
 
@@ -240,21 +270,11 @@
                 <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mb-4 uppercase">Online — {onlineUsers.length}</p>
                 <div className="space-y-3">
                   {onlineUsers.map((u, i) => (
-                    <div key={i} className="flex items-center gap-3 px-2 group relative">
+                    <div key={i} className="flex items-center gap-3 px-2">
                       <span className="online-indicator"></span>
                       <span className={`text-[11px] truncate font-bold uppercase flex-1 ${u.role === 'ryachu' ? 'ryachu-name' : u.role === 'itsuki' ? 'itsuki-name' : 'text-gray-400'}`}>
                         {u.role === 'ryachu' && '👑 '}{u.role === 'itsuki' && '💎 '}{u.username}
                       </span>
-                      {isAdmin && u.role !== 'ryachu' && u.role !== 'itsuki' && (
-                        <div className="opacity-0 group-hover:opacity-100 flex gap-1">
-                          <button onClick={() => adminActions.muteUser(u.uid)} className="text-[8px] text-yellow-500 hover:text-yellow-300" title="Mute 1min">
-                            <i className="fas fa-volume-mute"></i>
-                          </button>
-                          <button onClick={() => adminActions.kickUser(u.uid)} className="text-[8px] text-red-500 hover:text-red-300" title="Expulsar">
-                            <i className="fas fa-ban"></i>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -307,6 +327,52 @@
             </div>
 
             <div className={`p-4 md:p-6 ${isDark ? 'bg-black/40' : 'bg-gray-50'} border-t border-white/5 flex-shrink-0`}>
+              {pinMode && (
+                <div className="mb-3 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-500 text-xs font-bold flex items-center gap-2">
+                  <i className="fas fa-thumbtack animate-pulse"></i>
+                  MODO FIJAR MENSAJE ACTIVADO - Escribe y envía
+                  <button onClick={() => setPinMode(false)} className="ml-auto text-yellow-500 hover:text-yellow-300">
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              )}
+
+              {showBanPanel && (
+                <div className="mb-3 panel-3d border border-red-600/30 p-4 max-h-48 overflow-y-auto custom-scroll">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-xs font-bold text-red-500 uppercase">Seleccionar usuario para banear</p>
+                    <button onClick={() => setShowBanPanel(false)} className="text-gray-500 hover:text-red-500">
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                  {onlineUsers.filter(u => u.role !== 'ryachu' && u.role !== 'itsuki').map(u => (
+                    <button key={u.uid} onClick={() => adminActions.banUser(u.uid, u.username)} 
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-red-600/10 rounded mb-1 flex items-center gap-2">
+                      <i className="fas fa-user-slash text-red-500"></i>
+                      <span className="font-bold">{u.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {showMutePanel && (
+                <div className="mb-3 panel-3d border border-yellow-600/30 p-4 max-h-48 overflow-y-auto custom-scroll">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-xs font-bold text-yellow-500 uppercase">Seleccionar usuario para mutear</p>
+                    <button onClick={() => setShowMutePanel(false)} className="text-gray-500 hover:text-yellow-500">
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                  {onlineUsers.filter(u => u.role !== 'ryachu' && u.role !== 'itsuki').map(u => (
+                    <button key={u.uid} onClick={() => adminActions.muteUser(u.uid, u.username)} 
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-600/10 rounded mb-1 flex items-center gap-2">
+                      <i className="fas fa-volume-mute text-yellow-500"></i>
+                      <span className="font-bold">{u.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {showEmoji && (
                 <div className={`mb-4 panel-3d border border-red-600/20 overflow-hidden shadow-2xl h-auto flex-shrink-0`}>
                   <div className="flex bg-black/10 border-b border-white/5 overflow-x-auto custom-scroll">
@@ -326,11 +392,13 @@
                   value={inputText} 
                   onChange={e => setInputText(e.target.value)} 
                   onKeyDown={e => e.key === 'Enter' && handleSend()} 
-                  placeholder={mutedUsers[user.uid] && mutedUsers[user.uid] > Date.now() ? "Estás silenciado..." : "Transmit message..."} 
+                  placeholder={pinMode ? "Escribe el mensaje a fijar..." : mutedUsers[user.uid] && mutedUsers[user.uid] > Date.now() ? "Estás silenciado..." : "Transmit message..."} 
                   disabled={mutedUsers[user.uid] && mutedUsers[user.uid] > Date.now()}
                   className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-input" 
                 />
-                <button onClick={handleSend} className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center hover:bg-red-500 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,0,0,0.3)]"><i className="fas fa-paper-plane text-white"></i></button>
+                <button onClick={handleSend} className={`w-12 h-12 ${pinMode ? 'bg-yellow-600' : 'bg-red-600'} rounded-xl flex items-center justify-center hover:bg-red-500 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,0,0,0.3)]`}>
+                  <i className={`fas ${pinMode ? 'fa-thumbtack' : 'fa-paper-plane'} text-white`}></i>
+                </button>
               </div>
             </div>
           </main>
