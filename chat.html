@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Original Logic Fixed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>MuzzSnap - Minimalist Edition</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -15,60 +15,86 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@600;900&display=swap');
     
-    body { 
+    /* Configuración Base */
+    html, body { 
       background-color: #000; 
-      color: #fff; 
+      color: #e0e0e0; 
       margin: 0; 
       font-family: 'Fira Code', monospace;
-      overflow-x: hidden; /* Evita el desborde lateral */
+      font-size: 13px; /* Tamaño de letra reducido */
+      height: 100%;
+      overflow: hidden;
     }
 
-    /* Forzar visibilidad del texto en el input */
-    input[type="text"] {
-      color: white !important;
-      background: rgba(255,255,255,0.05) !important;
-    }
-
-    .bubble-3d {
-      padding: 12px 16px;
-      border-radius: 15px;
-      margin-bottom: 10px;
-      max-width: 90%; /* Ajuste para que no se salga en móviles pequeños */
-      word-wrap: break-word;
-    }
-
-    .me { background: #ff0000; align-self: flex-end; }
-    .other { background: #1a1a1a; align-self: flex-start; border: 1px solid #333; }
-
-    /* Divisor de fecha original */
-    .date-separator {
+    /* Contenedor Principal */
+    .app-viewport {
       display: flex;
-      align-items: center;
-      text-align: center;
-      margin: 20px 0;
-      color: #444;
-      font-size: 10px;
-      font-family: 'Orbitron', sans-serif;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 450px; /* Ancho más compacto */
+      margin: 0 auto;
+      background: #000;
+      border-left: 1px solid #111;
+      border-right: 1px solid #111;
     }
-    .date-separator::before, .date-separator::after {
-      content: ''; flex: 1; border-bottom: 1px solid #222;
-    }
-    .date-separator::before { margin-right: 10px; }
-    .date-separator::after { margin-left: 10px; }
 
-    .emoji-panel {
-      background: #0a0a0a;
-      border: 1px solid #222;
-      position: absolute;
-      bottom: 70px;
-      width: 95%;
-      left: 2.5%;
-      z-index: 100;
-      max-height: 250px;
+    /* Burbujas de Chat Estilo Compacto */
+    .bubble {
+      padding: 8px 12px;
+      border-radius: 12px;
+      margin-bottom: 4px;
+      max-width: 85%;
+      word-wrap: break-word;
+      line-height: 1.4;
+      font-size: 12.5px;
+    }
+    .me { background: #ff0000; color: #fff; border-bottom-right-radius: 2px; }
+    .other { background: #121212; border: 1px solid #222; color: #ccc; border-bottom-left-radius: 2px; }
+
+    /* Divisor de Fecha Minimalista */
+    .date-divider {
+      display: flex; align-items: center; text-align: center;
+      margin: 20px 0; color: #333; font-size: 9px;
+      font-family: 'Orbitron', sans-serif; letter-spacing: 1px;
+    }
+    .date-divider::before, .date-divider::after { content: ''; flex: 1; border-bottom: 1px solid #111; }
+    .date-divider::before { margin-right: 10px; }
+    .date-divider::after { margin-left: 10px; }
+
+    /* Input y Controles */
+    .input-box {
+      background: transparent;
+      border: none;
+      color: white !important;
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+    }
+
+    .emoji-drawer {
+      background: #080808;
+      border-top: 1px solid #111;
+      max-height: 150px;
       overflow-y: auto;
-      border-radius: 10px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 10px;
+    }
+
+    /* Scrollbars invisibles */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    
+    .edit-btn {
+      font-size: 9px;
+      color: #ff0000;
+      opacity: 0.6;
+      margin-left: 6px;
+      text-transform: uppercase;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -88,11 +114,7 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const EMOJI_DATA = {
-      "CARAS": ["😊","😂","😉","😍","😘","😛","😅","😢","😭","😠","😈","👽"],
-      "MANOS": ["👍","👎","👌","✌️","👏","👋","🙏","💪"],
-      "EXTRAS": ["❤️","🔥","⭐","🚀","💻","🎮","⚽","🍕"]
-    };
+    const EMOJIS = ["😊","😂","😉","😍","😅","😢","😭","😠","👍","👎","👌","🔥","❤️","⭐","🚀","💻"];
 
     function App() {
       const [user, setUser] = useState(null);
@@ -103,10 +125,10 @@
       const scrollRef = useRef(null);
 
       useEffect(() => {
-        const address = sessionStorage.getItem('muzz_wallet_address') || "Anon_" + Math.floor(Math.random()*99);
+        const addr = sessionStorage.getItem('muzz_wallet_address') || "User_" + Math.floor(Math.random()*99);
         firebase.auth().signInAnonymously().then(res => {
-          setUser({ uid: res.user.uid, name: address });
-          database.ref('messages/general').limitToLast(50).on('value', snap => {
+          setUser({ uid: res.user.uid, name: addr.length > 10 ? addr.slice(-4) : addr });
+          database.ref('messages/general').limitToLast(40).on('value', snap => {
             const val = snap.val();
             setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
           });
@@ -127,43 +149,40 @@
             content: inputText, userId: user.uid, username: user.name, timestamp: Date.now()
           });
         }
-        setInputText("");
-        setShowEmoji(false);
+        setInputText(""); setShowEmoji(false);
       };
 
       const formatDate = (ts) => new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 
-      if (!user) return <div className="p-10 text-red-600 font-orbitron">CARGANDO...</div>;
+      if (!user) return <div className="h-full flex items-center justify-center text-red-600 text-xs font-orbitron">INITIALIZING...</div>;
 
       return (
-        <div className="flex flex-col h-screen max-w-2xl mx-auto bg-black border-x border-white/5">
-          {/* Header */}
-          <div className="p-4 border-b border-white/10 flex justify-between items-center">
-            <h1 className="font-orbitron font-black text-red-600 italic">MUZZSNAP</h1>
-            <span className="text-[10px] opacity-50 uppercase">{user.name}</span>
+        <div className="app-viewport">
+          {/* Header Minimalista */}
+          <div className="p-3 border-b border-white/5 flex justify-between items-center bg-black/80 backdrop-blur-md">
+            <span className="font-orbitron font-black text-red-600 text-[11px] tracking-widest">MUZZSNAP</span>
+            <span className="text-[9px] text-gray-600 font-bold uppercase">{user.name}</span>
           </div>
 
-          {/* Mensajes */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col">
+          {/* Chat */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 no-scrollbar flex flex-col">
             {messages.map((msg, i) => {
               const isMe = msg.userId === user.uid;
-              const prevMsg = messages[i-1];
-              const showDate = !prevMsg || formatDate(msg.timestamp) !== formatDate(prevMsg.timestamp);
+              const showDate = !messages[i-1] || formatDate(msg.timestamp) !== formatDate(messages[i-1].timestamp);
 
               return (
-                <div key={msg.id} className="flex flex-col">
-                  {showDate && <div className="date-separator uppercase">{formatDate(msg.timestamp)}</div>}
-                  
-                  <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[9px] font-bold text-gray-500 uppercase">{msg.username}</span>
+                <div key={msg.id}>
+                  {showDate && <div className="date-divider">{formatDate(msg.timestamp).toUpperCase()}</div>}
+                  <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3`}>
+                    <div className="flex items-center mb-1">
+                      <span className="text-[9px] text-gray-700 font-bold uppercase tracking-tighter">{msg.username}</span>
                       {isMe && (
-                        <button onClick={() => { setEditingId(msg.id); setInputText(msg.content); }} className="text-[9px] text-red-500 underline">EDITAR</button>
+                        <button onClick={() => { setEditingId(msg.id); setInputText(msg.content); }} className="edit-btn">Edit</button>
                       )}
                     </div>
-                    <div className={`bubble-3d ${isMe ? 'me' : 'other'}`}>
+                    <div className={`bubble ${isMe ? 'me' : 'other'}`}>
                       {msg.content}
-                      {msg.edited && <div className="text-[8px] opacity-30 text-right mt-1 italic">editado</div>}
+                      {msg.edited && <span className="block text-[8px] opacity-40 text-right mt-1 font-bold italic">MOD</span>}
                     </div>
                   </div>
                 </div>
@@ -171,38 +190,31 @@
             })}
           </div>
 
-          {/* Selector Emojis */}
+          {/* Panel Emoji */}
           {showEmoji && (
-            <div className="emoji-panel p-3">
-              {Object.keys(EMOJI_DATA).map(cat => (
-                <div key={cat} className="mb-2">
-                  <div className="text-[9px] text-gray-600 mb-1">{cat}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {EMOJI_DATA[cat].map(e => (
-                      <span key={e} onClick={() => setInputText(inputText + e)} className="text-xl cursor-pointer">{e}</span>
-                    ))}
-                  </div>
-                </div>
+            <div className="emoji-drawer no-scrollbar">
+              {EMOJIS.map(e => (
+                <span key={e} onClick={() => setInputText(inputText + e)} className="text-lg cursor-pointer text-center">{e}</span>
               ))}
             </div>
           )}
 
-          {/* Input Fijo */}
-          <div className="p-4 bg-black border-t border-white/10 relative">
-            {editingId && <div className="text-[9px] text-red-500 mb-1">MODO EDICIÓN ACTIVO</div>}
-            <div className="flex gap-2">
-              <button onClick={() => setShowEmoji(!showEmoji)} className="text-gray-500 text-xl px-2">😊</button>
+          {/* Footer Input */}
+          <div className="p-3 bg-[#050505] border-t border-white/5 pb-6 sm:pb-3">
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${editingId ? 'border border-red-900/50' : 'bg-white/5'}`}>
+              <button onClick={() => setShowEmoji(!showEmoji)} className="text-gray-600 hover:text-white transition-colors">
+                <i className="far fa-smile"></i>
+              </button>
               <input 
-                type="text" 
+                type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                className="flex-1 rounded-full px-4 py-2 outline-none"
-                placeholder="Escribir..."
-                autoFocus
+                className="input-box"
+                placeholder={editingId ? "Editando mensaje..." : "Mensaje..."}
               />
-              <button onClick={handleSend} className="bg-red-600 px-4 py-2 rounded-full font-bold">
-                <i className={editingId ? "fas fa-check" : "fas fa-paper-plane"}></i>
+              <button onClick={handleSend} className="text-red-600 px-2 active:scale-90 transition-transform">
+                <i className={`fas ${editingId ? 'fa-check' : 'fa-paper-plane'}`}></i>
               </button>
             </div>
           </div>
