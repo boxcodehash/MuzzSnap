@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>MuzzSnap - Mobile Optimized</title>
+  <title>MuzzSnap Multiplatform</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -17,71 +17,59 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
     
-    :root { --muzz-red: #ff0000; }
+    :root { --app-height: 100%; }
 
-    /* Evita el scroll horizontal y ajusta a altura real de móvil */
     html, body { 
-      height: 100%; 
-      margin: 0; 
-      padding: 0; 
-      overflow: hidden; 
-      background: #050505; 
-      color: white;
-      position: fixed; /* Evita rebotes de scroll en iOS */
-      width: 100%;
+      margin: 0; padding: 0; width: 100%; height: var(--app-height);
+      overflow: hidden; background: #050505; 
     }
 
-    .panel-3d { 
-      background: #0c0c0c; 
-      border: 1px solid rgba(255,0,0,0.15); 
-      display: flex; 
-      flex-direction: column; 
+    /* Contenedor Responsivo: 100% en móvil, centrado en Desktop */
+    .main-wrapper {
+      max-width: 500px; /* Ancho ideal tipo app */
+      margin: 0 auto;
       height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+      border-left: 1px solid #111;
+      border-right: 1px solid #111;
+      position: relative;
     }
 
-    .bubble-3d { 
-      padding: 10px 14px; 
-      border-radius: 18px; 
-      font-size: 14px; 
-      max-width: 85%; 
-      word-wrap: break-word; /* Evita que el texto largo rompa el diseño */
+    .bubble {
+      max-width: 85%; padding: 12px 16px; border-radius: 20px;
+      font-size: 14px; line-height: 1.4; position: relative;
+      word-wrap: break-word;
     }
-    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #b30000); align-self: flex-end; border-bottom-right-radius: 4px; }
-    .bubble-3d.other { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .me { background: linear-gradient(135deg, #ff0000, #990000); color: white; border-bottom-right-radius: 4px; }
+    .other { background: #1a1a1a; border: 1px solid #333; border-bottom-left-radius: 4px; }
 
-    .date-divider {
-      display: flex; align-items: center; text-align: center; margin: 24px 0;
-      font-size: 9px; font-family: 'Orbitron', sans-serif; color: #555; letter-spacing: 2px;
+    .date-tag {
+      display: flex; align-items: center; margin: 25px 0;
+      font-family: 'Orbitron', sans-serif; font-size: 9px; color: #444; letter-spacing: 2px;
     }
-    .date-divider::before, .date-divider::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255,0,0,0.1); }
-    .date-divider::before { margin-right: 15px; }
-    .date-divider::after { margin-left: 15px; }
+    .date-tag::before, .date-tag::after { content: ''; flex: 1; height: 1px; background: #111; }
+    .date-tag::before { margin-right: 15px; }
+    .date-tag::after { margin-left: 15px; }
 
-    /* Botón de editar siempre visible en móvil para el autor */
-    .edit-trigger {
-      font-size: 10px;
-      color: #ff6666;
-      margin-right: 8px;
-      padding: 4px;
-      cursor: pointer;
+    /* Botón de edición discreto */
+    .edit-pill {
+      font-size: 9px; background: #222; color: #888;
+      padding: 2px 8px; border-radius: 6px; margin-left: 10px;
+      text-transform: uppercase; cursor: pointer; transition: all 0.2s;
     }
+    .edit-pill:hover { background: #333; color: #fff; }
 
-    .custom-scroll::-webkit-scrollbar { width: 3px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: var(--muzz-red); }
-
-    /* Ajuste para teclados de móvil */
-    .input-area {
-      padding-bottom: env(safe-area-inset-bottom, 16px);
-    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
-  <div id="root" class="h-full w-full"></div>
+  <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
-    
-    // Configuración Firebase
+
     const firebaseConfig = {
       apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
       authDomain: "pulsari.firebaseapp.com",
@@ -100,22 +88,20 @@
       const scrollRef = useRef(null);
 
       useEffect(() => {
-        const sessionData = sessionStorage.getItem('muzz_wallet_address') || "Guest_" + Math.floor(Math.random() * 1000);
-        
-        firebase.auth().signInAnonymously().then((res) => {
-          const userData = {
-            uid: res.user.uid,
-            username: sessionData.includes('0x') ? `Node_${sessionData.slice(-4)}` : sessionData
-          };
-          setUser(userData);
+        const setHeight = () => document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+        window.addEventListener('resize', setHeight);
+        setHeight();
+
+        const session = sessionStorage.getItem('muzz_wallet_address') || "Guest";
+        firebase.auth().signInAnonymously().then(res => {
+          setUser({ uid: res.user.uid, name: session.includes('0x') ? `Node_${session.slice(-4)}` : session });
           
-          // Escuchar mensajes
-          const msgRef = database.ref('messages/general').limitToLast(50);
-          msgRef.on('value', snap => {
-            const val = snap.val();
-            setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
+          database.ref('messages/general').limitToLast(50).on('value', snap => {
+            const data = snap.val();
+            setMessages(data ? Object.keys(data).map(k => ({id:k, ...data[k]})) : []);
           });
         });
+        return () => window.removeEventListener('resize', setHeight);
       }, []);
 
       useEffect(() => {
@@ -124,66 +110,54 @@
 
       const handleSend = () => {
         if (!inputText.trim()) return;
-
         if (editingId) {
-          database.ref(`messages/general/${editingId}`).update({
-            content: inputText,
-            edited: true
-          });
+          database.ref(`messages/general/${editingId}`).update({ content: inputText, edited: true });
           setEditingId(null);
         } else {
           database.ref('messages/general').push({
-            content: inputText,
-            username: user.username,
-            userId: user.uid,
-            timestamp: Date.now()
+            content: inputText, userId: user.uid, username: user.name, timestamp: Date.now()
           });
         }
         setInputText("");
       };
 
-      const startEdit = (msg) => {
-        setEditingId(msg.id);
-        setInputText(msg.content);
-      };
+      const formatDate = (ts) => new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
-      const formatDate = (ts) => {
-        return new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-      };
-
-      if (!user) return <div className="h-full flex items-center justify-center text-red-600 font-orbitron animate-pulse">CONNECTING...</div>;
+      if (!user) return <div className="h-full w-full flex items-center justify-center bg-black text-red-600 font-orbitron">SYNCING...</div>;
 
       return (
-        <div className="flex flex-col h-full w-full max-w-md mx-auto panel-3d border-none sm:border-solid">
+        <div className="main-wrapper">
           {/* Header */}
-          <header className="p-4 border-b border-white/10 flex justify-between items-center bg-black/50 backdrop-blur-md">
-            <h1 className="font-orbitron font-black text-sm tracking-tighter text-red-600">MUZZSNAP <span className="text-white opacity-50 text-[10px]">v2.1</span></h1>
-            <span className="text-[9px] bg-red-600/20 text-red-500 px-2 py-1 rounded border border-red-600/30 uppercase font-bold">Online</span>
+          <header className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-black/50 backdrop-blur-md">
+            <h1 className="font-orbitron font-black text-red-600 tracking-tighter italic">MUZZSNAP</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Active</span>
+            </div>
           </header>
 
-          {/* Área de Chat */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 custom-scroll">
+          {/* Chat con segregación por día */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 no-scrollbar">
             {messages.map((msg, i) => {
               const isMe = msg.userId === user.uid;
               const showDate = !messages[i-1] || formatDate(msg.timestamp) !== formatDate(messages[i-1].timestamp);
               
               return (
-                <div key={msg.id}>
-                  {showDate && <div className="date-divider uppercase">{formatDate(msg.timestamp)}</div>}
+                <div key={msg.id} className="mb-5">
+                  {showDate && <div className="date-tag uppercase">{formatDate(msg.timestamp)}</div>}
                   
-                  <div className={`flex flex-col mb-4 ${isMe ? 'items-end' : 'items-start'}`}>
-                    <div className="flex items-center mb-1 px-1">
+                  <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    <div className="flex items-center mb-1.5 px-1">
+                      <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">{msg.username}</span>
                       {isMe && (
-                        <button onClick={() => startEdit(msg)} className="edit-trigger">
-                          <i className="fas fa-edit"></i>
-                        </button>
+                        <div onClick={() => { setEditingId(msg.id); setInputText(msg.content); }} className="edit-pill">
+                          Editar
+                        </div>
                       )}
-                      <span className="text-[10px] font-bold text-gray-500 uppercase">{msg.username}</span>
                     </div>
-                    
-                    <div className={`bubble-3d shadow-lg ${isMe ? 'me' : 'other'}`}>
+                    <div className={`bubble shadow-xl ${isMe ? 'me' : 'other'}`}>
                       {msg.content}
-                      {msg.edited && <div className="text-[8px] opacity-40 text-right mt-1 italic">(editado)</div>}
+                      {msg.edited && <div className="text-[8px] opacity-40 text-right mt-1 italic font-bold">EDITADO</div>}
                     </div>
                   </div>
                 </div>
@@ -192,26 +166,30 @@
           </div>
 
           {/* Input Fijo Abajo */}
-          <div className="input-area p-4 bg-black/80 border-t border-white/5 backdrop-blur-xl">
+          <footer className="p-4 bg-black border-t border-white/5 pb-8 sm:pb-4">
             {editingId && (
-              <div className="flex justify-between items-center mb-2 px-3 py-2 bg-red-600/10 border border-red-600/20 rounded-lg">
-                <span className="text-[9px] text-red-500 font-bold uppercase">Editando mensaje seleccionado</span>
-                <button onClick={() => {setEditingId(null); setInputText("");}} className="text-red-500 text-xs">✕</button>
+              <div className="flex justify-between items-center mb-2 px-3 py-1 bg-red-950/30 border border-red-900/50 rounded-lg">
+                <span className="text-[9px] text-red-500 font-bold uppercase tracking-widest">Editando mensaje</span>
+                <button onClick={() => {setEditingId(null); setInputText("");}} className="text-red-500 text-xs px-2">✕</button>
               </div>
             )}
-            <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1.5 focus-within:border-red-600/40">
+            <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1.5 focus-within:border-red-600/50 transition-all">
               <input 
-                value={inputText} 
-                onChange={e => setInputText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
-                placeholder="Escribe aquí..."
-                className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-3 h-10 outline-none"
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Escribe un mensaje..."
+                className="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 outline-none"
               />
-              <button onClick={handleSend} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${editingId ? 'bg-blue-600 shadow-blue-900' : 'bg-red-600 shadow-red-900 shadow-lg'}`}>
-                <i className={`fas ${editingId ? 'fa-check' : 'fa-paper-plane'} text-xs`}></i>
+              <button 
+                onClick={handleSend}
+                className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center hover:bg-red-500 transition-colors shadow-lg shadow-red-900/20"
+              >
+                <i className={`fas ${editingId ? 'fa-check' : 'fa-paper-plane'} text-white text-xs`}></i>
               </button>
             </div>
-          </div>
+          </footer>
         </div>
       );
     }
