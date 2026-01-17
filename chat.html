@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>MuzzSnap Original Scale</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MuzzSnap</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -15,206 +15,433 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&family=Orbitron:wght@400;900&display=swap');
     
-    /* RESTAURACIÓN DE TAMAÑOS ORIGINALES */
-    body { 
-      background-color: #000; 
-      color: #fff; 
-      margin: 0; 
-      font-family: 'Fira Code', monospace; 
-      overflow-x: hidden;
-    }
+    :root { --muzz-red: #ff0000; --ryachu-gold: #ffcc00; --itsuki-blue: #00d4ff; }
 
-    .bubble-3d {
-      padding: 15px 20px; /* Tamaño original */
-      border-radius: 20px;
-      margin-bottom: 12px;
-      max-width: 85%;
-      word-wrap: break-word;
-      font-size: 16px; /* Tamaño de fuente original */
-    }
+    html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
 
-    .me { background: #ff0000; align-self: flex-end; }
-    .other { background: #1a1a1a; align-self: flex-start; border: 1px solid #333; }
+    body.dark-theme { background: #050505; color: white; }
+    body.light-theme { background: #f0f2f5; color: #1a1a1a; }
 
-    /* Corrección de Margen Mobile: asegura que nada se salga */
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      padding: 15px;
-      width: 100%;
-      box-sizing: border-box;
-    }
+    .panel-3d { border-radius: 24px; transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%; }
+    .dark-theme .panel-3d { background: #0c0c0c; border: 1px solid rgba(255,0,0,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    .light-theme .panel-3d { background: #ffffff; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
 
-    /* Fecha original funcional */
-    .date-separator {
-      display: flex;
-      align-items: center;
-      text-align: center;
-      margin: 30px 0;
-      color: #444;
-      font-size: 12px;
-      font-family: 'Orbitron', sans-serif;
-    }
-    .date-separator::before, .date-separator::after {
-      content: ''; flex: 1; border-bottom: 1px solid #222;
-    }
-    .date-separator::before { margin-right: 15px; }
-    .date-separator::after { margin-left: 15px; }
+    .bubble-3d { padding: 12px 16px; border-radius: 20px; font-size: 14px; max-width: 85%; line-height: 1.4; position: relative; }
+    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #b30000); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .dark-theme .bubble-3d.other { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.05); }
+    .light-theme .bubble-3d.other { background: #ffffff; border: 1px solid #e0e0e0; color: black; }
+    .bubble-3d.muted { opacity: 0.5; }
 
-    /* Input Corregido para Mobile (Color y Foco) */
-    input[type="text"] {
-      color: white !important;
-      background: #111 !important;
-      font-size: 16px !important; /* Evita zoom automático en iPhone */
-      border: 1px solid #333;
-      border-radius: 30px;
-      padding: 12px 20px;
-      width: 100%;
-      outline: none;
-    }
+    .ryachu-name { color: var(--ryachu-gold); font-weight: 800; }
+    .itsuki-name { color: var(--itsuki-blue); font-weight: 800; }
 
-    .emoji-panel {
-      background: #0c0c0c;
-      border: 1px solid #222;
-      border-radius: 15px;
-      position: absolute;
-      bottom: 90px;
-      width: 90%;
-      left: 5%;
-      z-index: 100;
-      max-height: 200px;
-      overflow-y: auto;
+    .hacker-input { font-family: 'Fira Code', monospace; }
+    .dark-theme .hacker-input { color: #39ff14 !important; }
+
+    .emoji-window { max-height: 180px; overflow-y: auto; display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; padding: 15px; }
+    .emoji-btn { font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; display: flex; justify-content: center; }
+    
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--muzz-red); border-radius: 10px; }
+    
+    .online-indicator { width: 8px; height: 8px; background: #39ff14; border-radius: 50%; box-shadow: 0 0 8px #39ff14; }
+    
+    .admin-btn { 
+      font-size: 10px; 
+      padding: 8px 12px; 
+      border-radius: 8px; 
+      background: rgba(255,0,0,0.1); 
+      border: 1px solid rgba(255,0,0,0.3); 
+      color: #ff0000; 
+      font-weight: bold; 
+      transition: all 0.3s;
+      cursor: pointer;
     }
+    .admin-btn:hover { background: #ff0000; color: white; }
   </style>
 </head>
-<body>
-  <div id="root"></div>
+<body class="dark-theme">
+  <div id="root" class="h-full"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
-
+    
     const firebaseConfig = {
       apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
       authDomain: "pulsari.firebaseapp.com",
       databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
-      projectId: "pulsari"
+      projectId: "pulsari",
+      storageBucket: "pulsari.firebasestorage.app",
+      messagingSenderId: "824306321233",
+      appId: "1:824306321233:web:2c9bfa02170a17d560b570"
     };
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const EMOJI_DATA = {
-      "FACES": ["😊","😂","😉","😍","😘","😛","😅","😢","😭","😠","😈","👽"],
-      "HANDS": ["👍","👎","👌","✌️","👏","👋","🙏","💪"],
-      "STUFF": ["❤️","🔥","⭐","🚀","💻","🎮","⚽","🍕"]
+    const ADMINS = {
+      RYACHU: "0x208157b5ec396759e8754058108ecf53e32392ff".toLowerCase(),
+      ITSUKI: "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f".toLowerCase()
     };
+
+    const EMOJIS = {
+      "FACES": ["😊","😂","😉","😍","😘","😛","😅","😢","😭","😠","😈","👽","🤖","🤡","💀","👻","💩"],
+      "HANDS": ["👍","👎","👌","✌️","👏","👋","🙏","💪","☝️","🖖"],
+      "OBJECTS": ["❤️","⭐","🔥","📚","💻","📱","📷","🔑","🔒","💡","💰","💎"],
+      "NATURE": ["☀️","☁️","🌈","🌳","🌸","🌵","🐱","🐶","🦁","🦄","🐉","🐍"],
+      "FOOD": ["🍕","🍔","🌮","🍣","🍰","🍦","☕","🍺","🍷","🍸"],
+      "ACTIVITIES": ["⚽","🏀","🎾","🎵","🎸","🎮","♟️","🎨","🎬"]
+    };
+
+    const CHANNELS = [
+      { id: "general", name: "GENERAL" },
+      { id: "spanish", name: "ESPAÑOL" },
+      { id: "crypto", name: "CRYPTO" }
+    ];
 
     function App() {
       const [user, setUser] = useState(null);
       const [messages, setMessages] = useState([]);
+      const [onlineUsers, setOnlineUsers] = useState([]);
+      const [mutedUsers, setMutedUsers] = useState({});
+      const [pinnedMsg, setPinnedMsg] = useState("");
       const [inputText, setInputText] = useState("");
-      const [editingId, setEditingId] = useState(null);
+      const [isDark, setIsDark] = useState(true);
       const [showEmoji, setShowEmoji] = useState(false);
-      const scrollRef = useRef(null);
+      const [emojiTab, setEmojiTab] = useState("FACES");
+      const [selectedChannel, setSelectedChannel] = useState(CHANNELS[0]);
+      const [isMobileMenu, setIsMobileMenu] = useState(false);
+      const [showUserActions, setShowUserActions] = useState(null);
+      const [pinMode, setPinMode] = useState(false);
+      const [showBanPanel, setShowBanPanel] = useState(false);
+      const [showMutePanel, setShowMutePanel] = useState(false);
+      const dummyRef = useRef(null);
+
+      const toggleTheme = () => {
+        setIsDark(!isDark);
+        document.body.className = isDark ? 'light-theme' : 'dark-theme';
+      };
 
       useEffect(() => {
-        const address = sessionStorage.getItem('muzz_wallet_address') || "User";
-        firebase.auth().signInAnonymously().then(res => {
-          setUser({ uid: res.user.uid, name: address });
-          database.ref('messages/general').limitToLast(50).on('value', snap => {
-            const val = snap.val();
-            setMessages(val ? Object.keys(val).map(k => ({id:k, ...val[k]})) : []);
-          });
+        const sessionData = sessionStorage.getItem('muzz_wallet_address');
+        if (!sessionData) { window.location.href = 'login.html'; return; }
+
+        firebase.auth().signInAnonymously().then((userCredential) => {
+          const uid = userCredential.user.uid;
+          const isWallet = !sessionData.startsWith('guest_');
+          let name = "", role = "user";
+
+          if (isWallet) {
+            const w = sessionData.toLowerCase();
+            if (w === ADMINS.RYACHU) { name = "Ryachu"; role = "ryachu"; }
+            else if (w === ADMINS.ITSUKI) { name = "Itsuki"; role = "itsuki"; }
+            else { name = `Node_${sessionData.slice(-4)}`; }
+          } else {
+            name = sessionData.replace('guest_', '');
+            role = "guest";
+          }
+
+          setUser({ username: name, uid, role, isWallet });
+
+          database.ref(`status/${uid}`).onDisconnect().remove();
+          database.ref(`status/${uid}`).set({ username: name, role, uid });
+          database.ref('status').on('value', snap => setOnlineUsers(snap.val() ? Object.values(snap.val()) : []));
+          database.ref('settings/pinned').on('value', snap => setPinnedMsg(snap.val() || ""));
+          database.ref('muted').on('value', snap => setMutedUsers(snap.val() || {}));
         });
       }, []);
 
       useEffect(() => {
-        scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
-      }, [messages]);
+        if (!user) return;
+        const msgRef = database.ref('messages/' + selectedChannel.id).limitToLast(50);
+        msgRef.on('value', snap => {
+          const data = snap.val();
+          setMessages(data ? Object.keys(data).map(k => ({id:k, ...data[k]})) : []);
+        });
+        return () => msgRef.off();
+      }, [selectedChannel, user]);
+
+      useEffect(() => { dummyRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
       const handleSend = () => {
         if (!inputText.trim()) return;
-        if (editingId) {
-          database.ref(`messages/general/${editingId}`).update({ content: inputText, edited: true });
-          setEditingId(null);
-        } else {
-          database.ref('messages/general').push({
-            content: inputText, userId: user.uid, username: user.name, timestamp: Date.now()
-          });
+        if (mutedUsers[user.uid] && mutedUsers[user.uid] > Date.now()) {
+          alert("Estás silenciado temporalmente");
+          return;
         }
-        setInputText("");
-        setShowEmoji(false);
+        
+        if (pinMode && isAdmin) {
+          database.ref('settings/pinned').set(inputText);
+          setPinMode(false);
+          setInputText("");
+          return;
+        }
+        
+        database.ref('messages/' + selectedChannel.id).push({
+          content: inputText, username: user.username, role: user.role, userId: user.uid,
+          timestamp: Date.now()
+        });
+        setInputText(""); setShowEmoji(false);
       };
 
-      const formatDate = (ts) => new Date(ts).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+      const adminActions = {
+        clearChat: () => { 
+          if(confirm("¿Borrar todo el historial del chat?")) {
+            database.ref('messages/'+selectedChannel.id).remove();
+          }
+        },
+        enablePinMode: () => {
+          setPinMode(true);
+          setInputText("");
+        },
+        removePin: () => database.ref('settings/pinned').remove(),
+        openBanPanel: () => setShowBanPanel(true),
+        openMutePanel: () => setShowMutePanel(true),
+        banUser: (userId, username) => {
+          if(confirm(`¿Banear permanentemente a ${username}?`)) {
+            database.ref(`banned/${userId}`).set(true);
+            database.ref(`status/${userId}`).remove();
+          }
+          setShowBanPanel(false);
+        },
+        muteUser: (userId, username) => {
+          const muteUntil = Date.now() + 60000;
+          database.ref(`muted/${userId}`).set(muteUntil);
+          setTimeout(() => database.ref(`muted/${userId}`).remove(), 60000);
+          alert(`${username} ha sido silenciado por 1 minuto`);
+          setShowMutePanel(false);
+        }
+      };
 
-      if (!user) return <div className="p-10 text-red-600 font-orbitron">SYNCING...</div>;
+      const isAdmin = user && (user.role === 'ryachu' || user.role === 'itsuki');
+
+      if (!user) return <div className="h-full flex items-center justify-center text-red-600 font-orbitron animate-pulse">CONNECTING...</div>;
 
       return (
-        <div className="flex flex-col h-screen w-full max-w-4xl mx-auto bg-black border-x border-white/5 relative overflow-hidden">
-          {/* Header */}
-          <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/50">
-            <h1 className="font-orbitron font-black text-red-600 text-xl tracking-tighter">MUZZSNAP</h1>
-            <span className="text-xs opacity-50 uppercase font-bold tracking-widest">{user.name}</span>
-          </div>
+        <div className="flex h-screen p-2 md:p-4 lg:p-6 gap-4 md:gap-6 max-w-[1600px] mx-auto overflow-hidden">
+          
+          <aside className={`fixed lg:relative z-50 inset-y-0 left-0 w-72 lg:w-64 transition-all duration-300 transform panel-3d p-6 flex flex-col ${isMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none'}`}>
+            <div className="mb-8 flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/30"><i className="fas fa-ghost text-white text-sm"></i></div>
+              <h1 className="font-orbitron font-black text-xl italic tracking-tighter">MUZZ<span className="text-red-600">SNAP</span></h1>
+            </div>
 
-          {/* Chat con Margen Seguro */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto chat-container no-scrollbar">
-            {messages.map((msg, i) => {
-              const isMe = msg.userId === user.uid;
-              const showDate = !messages[i-1] || formatDate(msg.timestamp) !== formatDate(messages[i-1].timestamp);
+            <div className="flex-1 overflow-y-auto custom-scroll space-y-8 pr-2">
+              {isAdmin && (
+                <div>
+                  <p className="text-[9px] text-red-600 font-bold tracking-[0.3em] mb-4 uppercase">Admin Console</p>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <button onClick={adminActions.enablePinMode} className="admin-btn">
+                      <i className="fas fa-thumbtack mr-1"></i> FIJAR
+                    </button>
+                    <button onClick={adminActions.clearChat} className="admin-btn">
+                      <i className="fas fa-trash mr-1"></i> LIMPIAR
+                    </button>
+                  </div>
+                  <details className="bg-red-600/5 border border-red-600/20 rounded-lg">
+                    <summary className="cursor-pointer px-3 py-2 text-[9px] font-bold text-red-500 uppercase tracking-wider">
+                      Moderación ▼
+                    </summary>
+                    <div className="p-3 space-y-2 border-t border-red-600/20">
+                      <button onClick={() => adminActions.openBanPanel()} className="w-full admin-btn text-left">
+                        <i className="fas fa-user-slash mr-2"></i> Banear Usuario
+                      </button>
+                      <button onClick={() => adminActions.openMutePanel()} className="w-full admin-btn text-left">
+                        <i className="fas fa-volume-mute mr-2"></i> Mutear 1min
+                      </button>
+                    </div>
+                  </details>
+                </div>
+              )}
 
-              return (
-                <div key={msg.id} className="flex flex-col">
-                  {showDate && <div className="date-separator uppercase">{formatDate(msg.timestamp)}</div>}
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mb-4 uppercase">Channels</p>
+                {CHANNELS.map(ch => (
+                  <button key={ch.id} onClick={() => { setSelectedChannel(ch); setIsMobileMenu(false); }} 
+                    className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold mb-1 transition-all ${selectedChannel.id === ch.id ? 'bg-red-600/10 text-red-600 border-l-2 border-red-600 shadow-lg shadow-red-600/5' : 'text-gray-500 hover:text-white'}`}>
+                    # {ch.name}
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mb-4 uppercase">Online — {onlineUsers.length}</p>
+                <div className="space-y-3">
+                  {onlineUsers.map((u, i) => (
+                    <div key={i} className="flex items-center gap-3 px-2">
+                      <span className="online-indicator"></span>
+                      <span className={`text-[11px] truncate font-bold uppercase flex-1 ${u.role === 'ryachu' ? 'ryachu-name' : u.role === 'itsuki' ? 'itsuki-name' : 'text-gray-400'}`}>
+                        {u.role === 'ryachu' && '👑 '}{u.role === 'itsuki' && '💎 '}{u.username}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button onClick={() => {sessionStorage.clear(); window.location.href='login.html'}} className="mt-6 w-full py-3 text-[10px] border border-red-900/30 text-red-600 rounded-xl uppercase font-black tracking-widest hover:bg-red-600/5 transition-all">
+              <i className="fas fa-power-off mr-2"></i> Disconnect
+            </button>
+          </aside>
+
+          <main className="flex-1 panel-3d flex flex-col overflow-hidden border border-white/5 h-full relative">
+            {pinnedMsg && (
+              <div className="bg-red-600/10 border-b border-red-600/30 py-2 px-6 flex items-center gap-4 flex-shrink-0">
+                <i className="fas fa-thumbtack text-red-600 text-[10px] animate-pulse"></i>
+                <marquee className="text-[10px] font-bold tracking-[0.2em] text-red-500 uppercase flex-1">{pinnedMsg}</marquee>
+                {isAdmin && (
+                  <button onClick={adminActions.removePin} className="text-[8px] text-red-400 hover:text-red-600">
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
+            )}
+
+            <header className="h-16 flex items-center justify-between px-8 bg-white/5 border-b border-white/5 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setIsMobileMenu(true)} className="lg:hidden text-red-600"><i className="fas fa-bars"></i></button>
+                <h2 className="text-sm font-black tracking-[0.2em] text-red-600 uppercase italic">/ {selectedChannel.name}</h2>
+              </div>
+              <button onClick={toggleTheme} className="w-10 h-10 rounded-xl border border-red-600/20 flex items-center justify-center hover:bg-red-600/5 transition-all">
+                {isDark ? <i className="fas fa-sun text-yellow-500"></i> : <i className="fas fa-moon text-blue-500"></i>}
+              </button>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-5 custom-scroll">
+              {messages.map((msg, index) => {
+                const isMuted = mutedUsers[msg.userId] && mutedUsers[msg.userId] > Date.now();
+                
+                const currentDate = new Date(msg.timestamp);
+                const prevMsg = index > 0 ? messages[index - 1] : null;
+                const prevDate = prevMsg ? new Date(prevMsg.timestamp) : null;
+                
+                const showDateSeparator = !prevDate || 
+                  currentDate.toDateString() !== prevDate.toDateString();
+                
+                const formatDate = (date) => {
+                  const today = new Date();
+                  const yesterday = new Date(today);
+                  yesterday.setDate(yesterday.getDate() - 1);
                   
-                  <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                    <div className="flex items-center gap-3 mb-1 px-1">
-                      <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter">{msg.username}</span>
-                      {isMe && (
-                        <button onClick={() => { setEditingId(msg.id); setInputText(msg.content); }} className="text-[10px] text-red-600 font-bold underline">EDITAR</button>
-                      )}
+                  if (date.toDateString() === today.toDateString()) {
+                    return 'HOY';
+                  } else if (date.toDateString() === yesterday.toDateString()) {
+                    return 'AYER';
+                  } else {
+                    return date.toLocaleDateString('es-ES', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    }).toUpperCase();
+                  }
+                };
+                
+                return (
+                  <React.Fragment key={msg.id}>
+                    {showDateSeparator && (
+                      <div className="flex items-center gap-4 my-4">
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent"></div>
+                        <span className="text-[9px] font-black tracking-[0.3em] text-red-600/70 px-4 py-1.5 bg-red-600/5 rounded-full border border-red-600/20">
+                          {formatDate(currentDate)}
+                        </span>
+                        <div className="flex-1 h-px bg-gradient-to-r from-red-600/30 via-transparent to-transparent"></div>
+                      </div>
+                    )}
+                    
+                    <div className={`flex flex-col ${msg.userId === user.uid ? 'items-end' : 'items-start'}`}>
+                      <span className={`text-[10px] font-black mb-1.5 uppercase px-2 ${msg.role === 'ryachu' ? 'ryachu-name' : msg.role === 'itsuki' ? 'itsuki-name' : 'text-gray-500'}`}>
+                        {msg.role === 'ryachu' && '👑 '}{msg.role === 'itsuki' && '💎 '}{msg.username} {isMuted && '🔇'}
+                      </span>
+                      <div className={`bubble-3d shadow-xl ${msg.userId === user.uid ? 'me' : 'other'} ${isMuted ? 'muted' : ''}`}>
+                        {msg.content}
+                      </div>
                     </div>
-                    <div className={`bubble-3d ${isMe ? 'me' : 'other'}`}>
-                      {msg.content}
-                      {msg.edited && <div className="text-[10px] opacity-30 text-right mt-1 italic font-bold">EDITADO</div>}
-                    </div>
+                  </React.Fragment>
+                );
+              })}
+              <div ref={dummyRef}></div>
+            </div>
+
+            <div className={`p-4 md:p-6 ${isDark ? 'bg-black/40' : 'bg-gray-50'} border-t border-white/5 flex-shrink-0`}>
+              {pinMode && (
+                <div className="mb-3 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-500 text-xs font-bold flex items-center gap-2">
+                  <i className="fas fa-thumbtack animate-pulse"></i>
+                  MODO FIJAR MENSAJE ACTIVADO - Escribe y envía
+                  <button onClick={() => setPinMode(false)} className="ml-auto text-yellow-500 hover:text-yellow-300">
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+              )}
+
+              {showBanPanel && (
+                <div className="mb-3 panel-3d border border-red-600/30 p-4 max-h-48 overflow-y-auto custom-scroll">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-xs font-bold text-red-500 uppercase">Seleccionar usuario para banear</p>
+                    <button onClick={() => setShowBanPanel(false)} className="text-gray-500 hover:text-red-500">
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                  {onlineUsers.filter(u => u.role !== 'ryachu' && u.role !== 'itsuki').map(u => (
+                    <button key={u.uid} onClick={() => adminActions.banUser(u.uid, u.username)} 
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-red-600/10 rounded mb-1 flex items-center gap-2">
+                      <i className="fas fa-user-slash text-red-500"></i>
+                      <span className="font-bold">{u.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {showMutePanel && (
+                <div className="mb-3 panel-3d border border-yellow-600/30 p-4 max-h-48 overflow-y-auto custom-scroll">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-xs font-bold text-yellow-500 uppercase">Seleccionar usuario para mutear</p>
+                    <button onClick={() => setShowMutePanel(false)} className="text-gray-500 hover:text-yellow-500">
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                  {onlineUsers.filter(u => u.role !== 'ryachu' && u.role !== 'itsuki').map(u => (
+                    <button key={u.uid} onClick={() => adminActions.muteUser(u.uid, u.username)} 
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-yellow-600/10 rounded mb-1 flex items-center gap-2">
+                      <i className="fas fa-volume-mute text-yellow-500"></i>
+                      <span className="font-bold">{u.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {showEmoji && (
+                <div className={`mb-4 panel-3d border border-red-600/20 overflow-hidden shadow-2xl h-auto flex-shrink-0`}>
+                  <div className="flex bg-black/10 border-b border-white/5 overflow-x-auto custom-scroll">
+                    {Object.keys(EMOJIS).map(tab => (
+                      <button key={tab} onClick={() => setEmojiTab(tab)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-tighter ${emojiTab === tab ? 'text-red-600 bg-red-600/5' : 'text-gray-500'}`}>{tab}</button>
+                    ))}
+                  </div>
+                  <div className="emoji-window custom-scroll">
+                    {EMOJIS[emojiTab].map(e => (<span key={e} onClick={() => setInputText(inputText + e)} className="emoji-btn">{e}</span>))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              )}
 
-          {/* Emojis */}
-          {showEmoji && (
-            <div className="emoji-panel p-4 grid grid-cols-6 gap-4">
-              {Object.values(EMOJI_DATA).flat().map(e => (
-                <span key={e} onClick={() => setInputText(inputText + e)} className="text-2xl cursor-pointer text-center">{e}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Input Footer - Ajuste Fijo */}
-          <div className="p-4 bg-black border-t border-white/10">
-            {editingId && <div className="text-xs text-red-500 font-bold mb-2 px-2 tracking-widest uppercase">Modo Edición Activo</div>}
-            <div className="flex gap-3 items-center">
-              <button onClick={() => setShowEmoji(!showEmoji)} className="text-2xl">😊</button>
-              <div className="flex-1">
+              <div className="flex items-center bg-black/30 border border-white/10 rounded-2xl p-2.5 pl-5 focus-within:border-red-600/50 transition-all shadow-inner">
+                <button onClick={() => setShowEmoji(!showEmoji)} className="text-gray-500 hover:text-red-600 transition-colors mr-3"><i className="far fa-laugh-beam text-xl"></i></button>
                 <input 
-                  type="text" 
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Mensaje..."
+                  value={inputText} 
+                  onChange={e => setInputText(e.target.value)} 
+                  onKeyDown={e => e.key === 'Enter' && handleSend()} 
+                  placeholder={pinMode ? "Escribe el mensaje a fijar..." : mutedUsers[user.uid] && mutedUsers[user.uid] > Date.now() ? "Estás silenciado..." : "Transmit message..."} 
+                  disabled={mutedUsers[user.uid] && mutedUsers[user.uid] > Date.now()}
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-input" 
                 />
+                <button onClick={handleSend} className={`w-12 h-12 ${pinMode ? 'bg-yellow-600' : 'bg-red-600'} rounded-xl flex items-center justify-center hover:bg-red-500 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,0,0,0.3)]`}>
+                  <i className={`fas ${pinMode ? 'fa-thumbtack' : 'fa-paper-plane'} text-white`}></i>
+                </button>
               </div>
-              <button onClick={handleSend} className="bg-red-600 w-12 h-12 rounded-full flex items-center justify-center text-xl">
-                <i className={editingId ? "fas fa-check" : "fas fa-paper-plane"}></i>
-              </button>
             </div>
-          </div>
+          </main>
+          {isMobileMenu && <div onClick={() => setIsMobileMenu(false)} className="fixed inset-0 bg-black/90 z-40 lg:hidden backdrop-blur-md"></div>}
         </div>
       );
     }
