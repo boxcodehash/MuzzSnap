@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muzz Swap</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#030303">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;600;700&display=swap');
+
+        :root {
+            --neon: #ff0000;
+            --neon-glow: rgba(255, 0, 0, 0.4);
+            --sidebar-bg: #0f0f0f;
+            --border: rgba(255, 0, 0, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, var(--sidebar-bg) 0%, #000 100%);
+            height: 100vh;
+            padding: 32px 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            position: fixed;
+            left: 0; top: 0; z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logo-container {
+            display: flex; align-items: center; gap: 14px;
+            margin-bottom: 30px; padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo-icon {
+            width: 45px; height: 45px;
+            background: var(--neon);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; box-shadow: 0 0 20px var(--neon-glow);
+        }
+
+        .logo-text { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.2rem; }
+        .logo-text span { color: var(--neon); }
+
+        .nav-item {
+            padding: 12px 16px; margin-bottom: 4px; border-radius: 10px;
+            color: rgba(255, 255, 255, 0.5); display: flex; align-items: center;
+            gap: 14px; text-decoration: none; transition: all 0.3s;
+            text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255, 0, 0, 0.1); color: #fff;
+            border-left: 3px solid var(--neon);
+        }
+
+        /* Main Viewport */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            background: radial-gradient(circle at top right, #1a0000, #000);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Ajuste de Uniswap */
+        .swap-wrapper {
+            width: 100%;
+            max-width: 480px;
+            margin: 20px auto;
+            padding: 10px;
+        }
+
+        .uniswap-card {
+            width: 100%;
+            height: 680px; /* Altura optimizada para que no se corte el botón de Connect */
+            background: #191b1f;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        .uniswap-card iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Tarjeta de Contrato Única */
+        .contract-card {
+            width: 90%;
+            max-width: 460px;
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 10px;
+            margin-bottom: 40px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Radar Effect */
+        .radar-ping {
+            position: absolute;
+            border: 2px solid var(--neon);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            animation: radar-expand 0.8s ease-out;
+            opacity: 0;
+        }
+
+        @keyframes radar-expand {
+            0% { width: 0; height: 0; opacity: 0.8; }
+            100% { width: 400px; height: 400px; opacity: 0; }
+        }
+
+        /* Mobile Adjustments */
+        .mobile-toggle {
+            display: none;
+            position: fixed; top: 15px; left: 15px; z-index: 200;
+            background: #111; border: 1px solid var(--neon);
+            color: var(--neon); width: 45px; height: 45px; border-radius: 10px;
+        }
+
+        .menu-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 90;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .main-content { margin-left: 0; padding-top: 60px; }
+            .mobile-toggle { display: flex; align-items: center; justify-content: center; }
+            .menu-overlay.active { display: block; }
+            .uniswap-card { height: 620px; } /* Ajuste altura móvil */
+        }
+    </style>
+</head>
+<body>
+
+    <button class="mobile-toggle" onclick="toggleMenu()">
+        <i class="fas fa-bars" id="toggleIcon"></i>
+    </button>
+    <div class="menu-overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="logo-container">
+            <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+            <div class="logo-text">MUZZ<span>SNAP</span></div>
+        </div>
+
+        <nav>
+            <a href="home.html" class="nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+            <a href="https://web-muzz-snap.vercel.app/login.html" class="nav-item"><i class="fas fa-rocket"></i><span>MuzzSnap</span></a>
+            <a href="#whitepaper" class="nav-item"><i class="fas fa-file-alt"></i><span>Whitepaper</span></a>
+            <a href="#roadmap" class="nav-item"><i class="fas fa-route"></i><span>Roadmap</span></a>
+            <a href="#" class="nav-item active"><i class="fas fa-shopping-cart"></i><span>Buy Muzz</span></a>
+        </nav>
+
+        <div class="mt-auto p-4 border-t border-white/5 text-center">
+            <p class="text-[10px] text-gray-600 tracking-[3px]">MUZZLE PROTOCOL V2</p>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="text-center py-6">
+            <h1 class="font-orbitron text-2xl md:text-3xl font-black tracking-tighter">
+                MUZZLE<span class="text-red-600">TOKEN</span>
+            </h1>
+            <p class="text-[9px] text-gray-500 tracking-[0.4em] uppercase">Liquidity Terminal</p>
+        </div>
+
+        <div class="swap-wrapper">
+            <div class="uniswap-card">
+                <iframe 
+                    src="https://app.uniswap.org/#/swap?outputCurrency=0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0&chain=mainnet&theme=dark"
+                    title="Uniswap Interface">
+                </iframe>
+            </div>
+        </div>
+
+        <div class="contract-card" onclick="createRadar(event, this)">
+            <h3 class="font-orbitron text-red-600 text-[10px] tracking-[0.3em] mb-2 uppercase">Official Contract Address</h3>
+            <p class="text-xs text-white font-mono break-all bg-black/40 p-3 rounded-lg border border-white/5">
+                0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0
+            </p>
+            <p class="text-[9px] text-gray-500 mt-2 uppercase tracking-widest">Ethereum Mainnet (ERC-20)</p>
+        </div>
+    </div>
+
+    <script>
+        // Lógica de apertura del menú
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const icon = document.getElementById('toggleIcon');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        }
+
+        // Efecto Radar al tocar la tarjeta del contrato
+        function createRadar(e, element) {
+            const rect = element.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const ping = document.createElement('div');
+            ping.className = 'radar-ping';
+            ping.style.left = `${x}px`;
+            ping.style.top = `${y}px`;
+            element.appendChild(ping);
+            setTimeout(() => ping.remove(), 800);
+        }
+    </script>
+</body>
+</html>
