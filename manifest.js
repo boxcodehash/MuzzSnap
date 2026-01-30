@@ -7,13 +7,13 @@
   "theme_color": "#ff0000",
   "icons": [
     {
-      "src": "https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png",
+      "src": "icon-512.png,
       "sizes": "512x512",
       "type": "image/png"
     }
