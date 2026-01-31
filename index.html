@@ -3,38 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MuzzSnap | Protocol</title>
-
+    <title>MuzzSnap | Entry Protocol</title>
+    
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#050505">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png">
 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
+        
+        body {
+            background: #000;
+            color: #ff0000;
+            font-family: 'Fira Code', monospace;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .login-card {
+            background: rgba(10, 10, 10, 0.95);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .glitch-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; text-shadow: 0 0 10px #ff0000; }
+            50% { opacity: 0.7; text-shadow: 0 0 20px #ff0000; }
+            100% { opacity: 1; text-shadow: 0 0 10px #ff0000; }
+        }
+
+        input {
+            background: rgba(255, 0, 0, 0.05) !important;
+            border: 1px solid rgba(255, 0, 0, 0.3) !important;
+            color: #fff !important;
+            text-align: center;
+        }
+
+        .btn-muzz {
+            background: #ff0000;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+        }
+
+        .btn-muzz:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
+        }
+
+        #install-banner {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111;
+            border: 1px solid #ff0000;
+            padding: 15px;
+            border-radius: 12px;
+            z-index: 1000;
+            width: 85%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="install-banner">
+        <div class="flex items-center gap-3">
+            <img src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png" class="w-10 h-10 rounded">
+            <div class="flex-1">
+                <p class="text-white text-xs font-bold uppercase">MuzzSnap App</p>
+                <p class="text-[10px] text-gray-400">Instala para una mejor experiencia</p>
+            </div>
+            <button id="btnInstall" class="px-4 py-2 bg-red-600 text-white text-[10px] font-black rounded-lg">INSTALAR</button>
+        </div>
+    </div>
+
+    <div class="login-card">
+        <div class="mb-6">
+            <i class="fas fa-ghost text-4xl mb-4"></i>
+            <h1 class="glitch-text text-2xl">Muzz<span class="text-white">Snap</span></h1>
+            <p class="text-[9px] tracking-[0.4em] text-gray-500 mt-2 uppercase">Protocol Access Point</p>
+        </div>
+
+        <div class="space-y-4">
+            <input type="text" id="wallet" placeholder="WALLET ADDRESS / USERNAME" class="w-full p-4 rounded-xl text-xs focus:outline-none focus:border-red-500 transition-all">
+            
+            <button onclick="handleLogin()" class="w-full p-4 rounded-xl btn-muzz text-xs uppercase tracking-widest">
+                Connect Session
+            </button>
+
+            <button onclick="guestLogin()" class="w-full p-4 rounded-xl border border-white/10 text-gray-400 text-[10px] uppercase hover:bg-white/5 transition-all">
+                Enter as Guest
+            </button>
+        </div>
+
+        <p class="text-[8px] text-gray-600 mt-8 uppercase tracking-widest">Secure encrypted terminal v2.0</p>
+    </div>
+
     <script>
-        // REGISTRO DEL SERVICE WORKER (FORZADO PARA ANDROID)
+        // 1. Registro del Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js', { scope: './' })
-                    .then(() => console.log("PWA: Lista para instalar"))
-                    .catch(err => console.error("PWA: Error", err));
+                    .then(() => console.log("System Ready"))
+                    .catch(err => console.log("System Offline", err));
             });
         }
+
+        // 2. Lógica del Botón de Instalación para Android
+        let deferredPrompt;
+        const installBanner = document.getElementById('install-banner');
+        const btnInstall = document.getElementById('btnInstall');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.style.display = 'block'; // Mostrar banner si es instalable
+        });
+
+        btnInstall.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBanner.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        // 3. Lógica de Login
+        function handleLogin() {
+            const val = document.getElementById('wallet').value;
+            if (val.length < 4) {
+                alert("Invalid Access Code");
+                return;
+            }
+            sessionStorage.setItem('muzz_wallet_address', val);
+            window.location.href = 'chat.html';
+        }
+
+        function guestLogin() {
+            const guestId = 'guest_' + Math.floor(Math.random() * 9999);
+            sessionStorage.setItem('muzz_wallet_address', guestId);
+            window.location.href = 'chat.html';
+        }
     </script>
-    
-    ```
-
----
-
-### ¿Por qué sigue sin salir el botón en Android?
-Si después de subir estos 3 archivos no ves el aviso automático:
-
-1.  **Interacción Obligatoria:** Chrome no muestra el botón de "Instalar" apenas entras. Debes navegar un poco o hacer clic en algún botón para que el navegador confíe en el sitio.
-2.  **Limpiar Caché:** Si entraste antes y falló, Chrome guardó el error. Ve a **Configuración > Privacidad > Borrar datos de navegación** (solo de la última hora) y vuelve a cargar el link.
-3.  **El "Menú de los 3 puntos":** En Android, abre el menú de Chrome (arriba a la derecha). Si ves la opción **"Instalar aplicación"**, significa que el código está perfecto. Si dice "Agregar a la pantalla de inicio", es que el Service Worker aún no ha sido detectado.
-
-**Nota para iPhone:** En iPhone **NUNCA** verás un botón. Apple obliga a los usuarios a ir a **Compartir > Agregar a la pantalla de inicio**. Una vez hecho esto, el icono aparecerá en el menú del iPhone y se abrirá como una App nativa.
-
-¿Quieres que te prepare un **botón personalizado dentro de la web** que diga "INSTALAR APP" y que solo se muestre cuando el navegador esté listo?
-
+</body>
+</html>
