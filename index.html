@@ -4,162 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MuzzSnap | Protocol</title>
-
-    <meta name="theme-color" content="#050505">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MuzzSnap">
-    
-    <link rel="apple-touch-icon" href="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png">
     
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050505">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png">
 
-    <script>
-        // Evitar que se abra en iframes
-        if (window.top !== window.self) {
-            window.top.location.replace(window.self.location.href);
-        }
-
-        // Registro del Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Usamos ./sw.js para asegurar que lo busque en la raíz del repo
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('PWA: Protocolo de instalación activo'))
-        .catch(err => console.error('PWA: Error de registro', err));
-    });
-  }
-    </script>
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="text/javascript"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Fira+Code&display=swap');
-        
-        body { 
-            background-color: #050505; 
-            color: white; 
-            font-family: sans-serif; 
-            height: 100vh; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin: 0;
-            overflow: hidden; /* Evita scroll innecesario en móviles */
-        }
-
-        .logo-glow { 
-            box-shadow: 0 0 40px rgba(255, 0, 0, 0.2); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            transition: 0.3s; 
-            cursor: pointer; 
-        }
-
-        .logo-glow:active { transform: scale(0.95); }
-
-        .loading-spinner { 
-            animation: spin 1s linear infinite; 
-            border: 3px solid transparent; 
-            border-top-color: #ff0000; 
-            border-radius: 50%; 
-        }
-
-        .hacker-input { 
-            font-family: 'Fira Code', monospace; 
-            background: rgba(255,255,255,0.03); 
-            border: 1px solid rgba(255,0,0,0.2); 
-            color: #39ff14; 
-            outline: none;
-        }
-
-        .hacker-input:focus { border-color: #ff0000; }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Ajuste para notch de iPhone */
-        .safe-area { padding-bottom: env(safe-area-inset-bottom); }
+        body { background: #050505; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
+        .loader { width: 48px; height: 48px; border: 3px solid #FFF; border-bottom-color: #ff0000; border-radius: 50%; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
-    <div class="text-center px-6 w-full max-w-sm safe-area">
-        <div id="btnConnect" class="relative inline-block mb-6" onclick="accessWithWallet()">
-            <div id="loadingUI" class="hidden absolute inset-0 z-20 flex items-center justify-center bg-black/50 rounded-3xl">
-                <div class="loading-spinner w-12 h-12"></div>
-            </div>
-            <img src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png/:/rs=w:1440,h:1440" 
-                 class="logo-glow w-32 h-32 md:w-40 md:h-40 rounded-3xl" alt="Logo">
-        </div>
-
-        <h1 style="font-family: 'Orbitron';" class="text-2xl font-black tracking-tighter italic mb-1">
-            MUZZ<span class="text-red-600">SNAP</span>
-        </h1>
-        <p id="statusText" class="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-8">Tap logo for Wallet or use Guest below</p>
-
-        <div class="space-y-4 mb-8">
-            <input type="text" id="usernameInput" placeholder="ENTER_NICKNAME..." 
-                   class="w-full p-3 rounded-xl hacker-input text-center text-xs border-dashed">
-            <button onclick="accessWithGuest()" class="w-full py-2 text-[9px] font-bold text-gray-500 hover:text-red-500 uppercase tracking-widest transition-colors">
-                [ Initialize Guest Protocol ]
-            </button>
-        </div>
-
-        <div id="errorBox" class="hidden p-3 rounded-lg bg-red-900/20 border border-red-500/50 mb-6">
-            <p id="errorTitle" class="text-red-500 text-[10px] font-bold uppercase mb-1"></p>
-            <p id="errorDesc" class="text-gray-400 text-[10px] leading-tight"></p>
-        </div>
-
-        <div class="text-[9px] text-gray-700 font-mono uppercase tracking-widest">
-            &copy; 2025 Protocol Ryachu Edition
-        </div>
-    </div>
+    <div class="loader"></div>
 
     <script>
-        const loadingUI = document.getElementById('loadingUI');
-        const errorBox = document.getElementById('errorBox');
-
-        function showError(title, desc) {
-            errorBox.classList.remove('hidden');
-            document.getElementById('errorTitle').innerText = title;
-            document.getElementById('errorDesc').innerText = desc;
-            loadingUI.classList.add('hidden');
+        // Registro del Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Error', err));
+            });
         }
 
-        async function accessWithWallet() {
-            errorBox.classList.add('hidden');
-            
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    loadingUI.classList.remove('hidden');
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    sessionStorage.setItem('muzz_wallet_address', accounts[0]);
-                    window.location.href = 'chat.html';
-                } catch (err) {
-                    showError("AUTH_FAILED", "Conexión rechazada.");
-                }
+        // Lógica de Redirección Inteligente
+        setTimeout(() => {
+            const user = sessionStorage.getItem('muzz_wallet_address');
+            if (user) {
+                window.location.replace('chat.html');
             } else {
-                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                if (isMobile) {
-                    const dappUrl = window.location.href.split('//')[1];
-                    window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
-                } else {
-                    showError("NO_WALLET", "Instala MetaMask o usa un navegador Web3.");
-                }
+                window.location.replace('login.html');
             }
-        }
-
-        function accessWithGuest() {
-            const user = document.getElementById('usernameInput').value.trim();
-            if (!user) {
-                showError("REQUIRED", "Ingresa un nickname.");
-                return;
-            }
-            sessionStorage.setItem('muzz_wallet_address', `guest_${user}`);
-            window.location.href = 'chat.html';
-        }
+        }, 500);
     </script>
 </body>
 </html>
