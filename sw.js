@@ -1,21 +1,21 @@
-const CACHE_NAME = 'muzz-v2';
-const assets = [
-  '/MuzzSnap/',
-  '/MuzzSnap/index.html',
-  '/MuzzSnap/login.html',
-  '/MuzzSnap/chat.html',
-  '/MuzzSnap/swap.html',
-  '/MuzzSnap/manifest.json'
-];
+const CACHE_NAME = 'muzz-v3';
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(assets))
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll([
+        'index.html',
+        'login.html',
+        'chat.html',
+        'swap.html',
+        'manifest.json'
+      ]).catch(err => console.log("Error caching:", err));
+    })
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((res) => res || fetch(event.request))
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((res) => res || fetch(e.request))
   );
 });
