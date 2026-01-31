@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>MuzzSnap | Protocol</title>
     
     <link rel="manifest" href="manifest.json">
@@ -12,31 +12,23 @@
     <link rel="apple-touch-icon" href="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png">
 
     <style>
-        body { background: #050505; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-        .loader { width: 48px; height: 48px; border: 3px solid #FFF; border-bottom-color: #ff0000; border-radius: 50%; animation: rotation 1s linear infinite; }
+        body { background: #050505; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .loader { width: 40px; height: 40px; border: 3px solid #333; border-bottom-color: #ff0000; border-radius: 50%; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="loader"></div>
-
     <script>
-        // Registro del Service Worker
+        // Registro simplificado
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Error', err));
-            });
+            navigator.serviceWorker.register('sw.js').then(() => console.log("PWA Ready"));
         }
 
-        // Lógica de Redirección Inteligente
+        // Redirección
         setTimeout(() => {
-            const user = sessionStorage.getItem('muzz_wallet_address');
-            if (user) {
-                window.location.replace('chat.html');
-            } else {
-                window.location.replace('login.html');
-            }
-        }, 500);
+            window.location.replace('login.html');
+        }, 800);
     </script>
 </body>
 </html>
