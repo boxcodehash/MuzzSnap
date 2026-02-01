@@ -1,86 +1,299 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>MuzzSnap | Social</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MuzzSnap - Terminal Edition</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&family=Orbitron:wght@400;900&display=swap');
     
-    <script src="muzz-core.js"></script>
+    :root { --muzz-red: #ff0000; --ryachu-gold: #ffcc00; --itsuki-blue: #00d4ff; }
 
-    <style>
-        :root { --bg: #000; --border: #2f3336; }
-        body { background: var(--bg); color: #e7e9ea; font-family: 'Inter', sans-serif; overflow: hidden; }
-        /* Anti-inspección visual */
-        body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-    </style>
+    html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
+
+    body.dark-theme { background: #050505; color: white; }
+    body.light-theme { background: #f0f2f5; color: #1a1a1a; }
+
+    .panel-3d { border-radius: 24px; transition: all 0.3s ease; display: flex; flex-direction: column; height: 100%; }
+    .dark-theme .panel-3d { background: #0c0c0c; border: 1px solid rgba(255,0,0,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+    .light-theme .panel-3d { background: #ffffff; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+
+    .bubble-3d { padding: 12px 16px; border-radius: 20px; font-size: 14px; max-width: 85%; line-height: 1.4; position: relative; }
+    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #b30000); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .dark-theme .bubble-3d.other { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.05); }
+    .light-theme .bubble-3d.other { background: #ffffff; border: 1px solid #e0e0e0; color: black; }
+
+    .ryachu-name { color: var(--ryachu-gold); font-weight: 800; }
+    .itsuki-name { color: var(--itsuki-blue); font-weight: 800; }
+
+    .hacker-input { font-family: 'Fira Code', monospace; }
+    .dark-theme .hacker-input { color: #39ff14 !important; }
+
+    .emoji-window { max-height: 180px; overflow-y: auto; display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; padding: 15px; }
+    .emoji-btn { font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; display: flex; justify-content: center; }
+    
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--muzz-red); border-radius: 10px; }
+    
+    .online-indicator { width: 8px; height: 8px; background: #39ff14; border-radius: 50%; box-shadow: 0 0 8px #39ff14; }
+
+    .nav-button { position: relative; overflow: hidden; transition: all 0.3s ease; }
+    .nav-button::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,0,0,0.3), transparent); transition: left 0.5s ease; }
+    .nav-button:hover::before { left: 100%; }
+    .nav-button:hover { transform: translateX(5px); box-shadow: 0 0 20px rgba(255,0,0,0.3); }
+  </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="dark-theme">
+  <div id="root" class="h-full"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyAe1-JfNde0NKIMdE7phfEXlm9JaqUH0jY",
+      authDomain: "pulsari.firebaseapp.com",
+      databaseURL: "https://pulsari-default-rtdb.firebaseio.com",
+      projectId: "pulsari",
+      storageBucket: "pulsari.firebasestorage.app",
+      messagingSenderId: "824306321233",
+      appId: "1:824306321233:web:2c9bfa02170a17d560b570"
+    };
 
-        function App() {
-            const [posts, setPosts] = useState([]);
-            const [inputText, setInputText] = useState("");
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
-            useEffect(() => {
-                // Cargar datos iniciales usando el motor protegido
-                setPosts(loadFromVault());
+    const ADMINS = {
+      RYACHU: "0x208157b5ec396759e8754058108ecf53e32392ff".toLowerCase(),
+      ITSUKI: "0x000".toLowerCase()
+    };
 
-                // Sincronizar con el puente P2P
-                syncBridge((newPost) => {
-                    setPosts(prev => {
-                        if (prev.find(p => p.id === newPost.id)) return prev;
-                        const updated = [newPost, ...prev].slice(0, 50);
-                        saveToVault(updated); // Guardar encriptado
-                        return updated;
-                    });
-                });
-            }, []);
+    const EMOJIS = {
+      "FACES": ["😊","😂","😉","😍","😘","😛","😅","😢","😭","😠","😈","👽","🤖","🤡","💀","👻","💩"],
+      "HANDS": ["👍","👎","👌","✌️","👏","👋","🙏","💪","☝️","🖖"],
+      "OBJECTS": ["❤️","⭐","🔥","📚","💻","📱","📷","🔑","🔒","💡","💰","💎"],
+      "NATURE": ["☀️","☁️","🌈","🌳","🌸","🌵","🐱","🐶","🦁","🦄","🐉","🐍"],
+      "FOOD": ["🍕","🍔","🌮","🍣","🍰","🍦","☕","🍺","🍷","🍸"],
+      "ACTIVITIES": ["⚽","🏀","🎾","🎵","🎸","🎮","♟️","🎨","🎬"]
+    };
 
-            const handlePost = () => {
-                const address = sessionStorage.getItem('muzz_wallet_address') || "0x000";
-                database.ref('p2p_relay').push({
-                    id: "m_" + Date.now(),
-                    content: inputText,
-                    username: `Node_${address.slice(-4)}`,
-                    address: address,
-                    timestamp: Date.now()
-                });
-                setInputText("");
-            };
+    const CHANNELS = [
+      { id: "general", name: "GENERAL" },
+      { id: "spanish", name: "ESPAÑOL" },
+      { id: "crypto", name: "CRYPTO" }
+    ];
 
-            return (
-                <div className="max-w-[600px] mx-auto border-x border-[#2f3336] h-screen flex flex-col">
-                    <header className="p-4 border-b border-[#2f3336] font-bold text-xl">MuzzSnap Node</header>
-                    <div className="p-4 border-b border-[#2f3336]">
-                        <textarea value={inputText} onChange={e => setInputText(e.target.value)} className="w-full bg-transparent border-none text-lg resize-none" placeholder="¿Qué hay en el lazo?" />
-                        <button onClick={handlePost} className="bg-red-600 px-6 py-2 rounded-full font-bold float-right">Transmitir</button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                        {posts.map(p => (
-                            <div key={p.id} className="p-4 border-b border-[#2f3336] animate-pulse-once">
-                                <div className="font-bold text-sm text-gray-500">@{p.address.slice(-4)}</div>
-                                <div className="text-[15px]">{p.content}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    function App() {
+      const [user, setUser] = useState(null);
+      const [messages, setMessages] = useState([]);
+      const [onlineUsers, setOnlineUsers] = useState([]);
+      const [pinnedMsg, setPinnedMsg] = useState("");
+      const [inputText, setInputText] = useState("");
+      const [isDark, setIsDark] = useState(true);
+      const [showEmoji, setShowEmoji] = useState(false);
+      const [emojiTab, setEmojiTab] = useState("FACES");
+      const [selectedChannel, setSelectedChannel] = useState(CHANNELS[0]);
+      const [isMobileMenu, setIsMobileMenu] = useState(false);
+      const dummyRef = useRef(null);
 
-        // Bloqueo de teclas básicas de inspección
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && (e.key === 'u' || e.key === 's' || e.key === 'i')) e.preventDefault();
+      const toggleTheme = () => {
+        setIsDark(!isDark);
+        document.body.className = isDark ? 'light-theme' : 'dark-theme';
+      };
+
+      useEffect(() => {
+        const sessionData = sessionStorage.getItem('muzz_wallet_address');
+        if (!sessionData) { window.location.href = 'login.html'; return; }
+
+        firebase.auth().signInAnonymously().then((userCredential) => {
+          const uid = userCredential.user.uid;
+          const isWallet = !sessionData.startsWith('guest_');
+          let name = "", role = "user";
+
+          if (isWallet) {
+            const w = sessionData.toLowerCase();
+            if (w === ADMINS.RYACHU) { name = "Ryachu"; role = "ryachu"; }
+            else if (w === ADMINS.ITSUKI) { name = "Itsuki"; role = "itsuki"; }
+            else { name = `Node_${sessionData.slice(-4)}`; }
+          } else {
+            name = sessionData.replace('guest_', '');
+            role = "guest";
+          }
+
+          setUser({ username: name, uid, role, isWallet });
+
+          database.ref(`status/${uid}`).onDisconnect().remove();
+          database.ref(`status/${uid}`).set({ username: name, role, uid });
+          database.ref('status').on('value', snap => setOnlineUsers(snap.val() ? Object.values(snap.val()) : []));
+          database.ref('settings/pinned').on('value', snap => setPinnedMsg(snap.val() || ""));
         });
-    </script>
+      }, []);
+
+      useEffect(() => {
+        if (!user) return;
+        const msgRef = database.ref('messages/' + selectedChannel.id).limitToLast(50);
+        msgRef.on('value', snap => {
+          const data = snap.val();
+          setMessages(data ? Object.keys(data).map(k => ({id:k, ...data[k]})) : []);
+        });
+        return () => msgRef.off();
+      }, [selectedChannel, user]);
+
+      useEffect(() => { dummyRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+      const handleSend = () => {
+        if (!inputText.trim()) return;
+        database.ref('messages/' + selectedChannel.id).push({
+          content: inputText, username: user.username, role: user.role, userId: user.uid,
+          timestamp: Date.now()
+        });
+        setInputText(""); setShowEmoji(false);
+      };
+
+      const adminActions = {
+        clearChat: () => { if(confirm("¿Borrar historial?")) database.ref('messages/'+selectedChannel.id).remove(); },
+        setPin: () => { const msg = prompt("Mensaje fijado:", pinnedMsg); if(msg !== null) database.ref('settings/pinned').set(msg); },
+      };
+
+      if (!user) return <div className="h-full flex items-center justify-center text-red-600 font-orbitron animate-pulse text-2xl">CONNECTING...</div>;
+
+      return (
+        <div className="flex h-screen p-2 md:p-4 lg:p-6 gap-4 md:gap-6 max-w-[1600px] mx-auto overflow-hidden">
+          
+          {/* SIDEBAR */}
+          <aside className={`fixed lg:relative z-50 inset-y-0 left-0 w-72 lg:w-64 transition-all duration-300 transform panel-3d p-6 flex flex-col ${isMobileMenu ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none'}`}>
+            <div className="mb-8 flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/30"><i className="fas fa-ghost text-white text-sm"></i></div>
+              <h1 className="font-orbitron font-black text-xl italic tracking-tighter">MUZZ<span className="text-red-600">SNAP</span></h1>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scroll space-y-8 pr-2">
+              {/* Navigation */}
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mb-4 uppercase">Navigation</p>
+                <button 
+                  onClick={() => window.location.href = 'social.html'} 
+                  className="nav-button w-full text-left px-4 py-3 rounded-xl text-xs font-bold mb-2 bg-gradient-to-r from-red-600/20 to-red-600/5 border border-red-600/30 text-red-600 hover:from-red-600/30 hover:to-red-600/10 transition-all"
+                >
+                  <i className="fas fa-fire mr-2"></i> SOCIAL FEED
+                </button>
+              </div>
+
+              {/* Admin Console */}
+              {(user.role === 'ryachu' || user.role === 'itsuki') && (
+                <div>
+                  <p className="text-[9px] text-red-600 font-bold tracking-[0.3em] mb-4 uppercase">Admin_Console</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={adminActions.setPin} className="text-[9px] bg-red-600/10 border border-red-600/30 py-2 rounded-lg text-red-600 font-bold hover:bg-red-600 hover:text-white transition-all">PIN</button>
+                    <button onClick={adminActions.clearChat} className="text-[9px] bg-red-600/10 border border-red-600/30 py-2 rounded-lg text-red-600 font-bold hover:bg-red-600 hover:text-white transition-all">CLEAR</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Channels */}
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mb-4 uppercase">Channels</p>
+                {CHANNELS.map(ch => (
+                  <button key={ch.id} onClick={() => { setSelectedChannel(ch); setIsMobileMenu(false); }} 
+                    className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold mb-1 transition-all ${selectedChannel.id === ch.id ? 'bg-red-600/10 text-red-600 border-l-2 border-red-600 shadow-lg shadow-red-600/5' : 'text-gray-500 hover:text-white'}`}>
+                    # {ch.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Online Users */}
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold tracking-[0.3em] mb-4 uppercase">Online — {onlineUsers.length}</p>
+                <div className="space-y-3">
+                  {onlineUsers.map((u, i) => (
+                    <div key={i} className="flex items-center gap-3 px-2">
+                      <span className="online-indicator"></span>
+                      <span className={`text-[11px] truncate font-bold uppercase ${u.role === 'ryachu' ? 'ryachu-name' : u.role === 'itsuki' ? 'itsuki-name' : 'text-gray-400'}`}>
+                        {u.role === 'ryachu' && '👑 '}{u.username}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button onClick={() => {sessionStorage.clear(); window.location.href='login.html'}} className="mt-6 w-full py-3 text-[10px] border border-red-900/30 text-red-600 rounded-xl uppercase font-black tracking-widest hover:bg-red-600/5 transition-all">
+              <i className="fas fa-power-off mr-2"></i> Disconnect
+            </button>
+          </aside>
+
+          {/* MAIN PANEL */}
+          <main className="flex-1 panel-3d flex flex-col overflow-hidden border border-white/5 h-full relative">
+            {pinnedMsg && (
+              <div className="bg-red-600/10 border-b border-red-600/30 py-2 px-6 flex items-center gap-4 flex-shrink-0">
+                <i className="fas fa-thumbtack text-red-600 text-[10px] animate-pulse"></i>
+                <marquee className="text-[10px] font-bold tracking-[0.2em] text-red-500 uppercase">{pinnedMsg}</marquee>
+              </div>
+            )}
+
+            <header className="h-16 flex items-center justify-between px-8 bg-white/5 border-b border-white/5 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <button onClick={() => setIsMobileMenu(true)} className="lg:hidden text-red-600"><i className="fas fa-bars"></i></button>
+                <h2 className="text-sm font-black tracking-[0.2em] text-red-600 uppercase italic">/ {selectedChannel.name}</h2>
+              </div>
+              <button onClick={toggleTheme} className="w-10 h-10 rounded-xl border border-red-600/20 flex items-center justify-center hover:bg-red-600/5 transition-all">
+                {isDark ? <i className="fas fa-sun text-yellow-500"></i> : <i className="fas fa-moon text-blue-500"></i>}
+              </button>
+            </header>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-5 custom-scroll">
+              {messages.map(msg => (
+                <div key={msg.id} className={`flex flex-col ${msg.userId === user.uid ? 'items-end' : 'items-start'}`}>
+                  <span className={`text-[10px] font-black mb-1.5 uppercase px-2 ${msg.role === 'ryachu' ? 'ryachu-name' : msg.role === 'itsuki' ? 'itsuki-name' : 'text-gray-500'}`}>
+                    {msg.role === 'ryachu' && '👑 '}{msg.username}
+                  </span>
+                  <div className={`bubble-3d shadow-xl ${msg.userId === user.uid ? 'me' : 'other'}`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              <div ref={dummyRef}></div>
+            </div>
+
+            {/* Input Area */}
+            <div className={`p-4 md:p-6 ${isDark ? 'bg-black/40' : 'bg-gray-50'} border-t border-white/5 flex-shrink-0`}>
+              {showEmoji && (
+                <div className={`mb-4 panel-3d border border-red-600/20 overflow-hidden shadow-2xl h-auto flex-shrink-0`}>
+                  <div className="flex bg-black/10 border-b border-white/5 overflow-x-auto custom-scroll">
+                    {Object.keys(EMOJIS).map(tab => (
+                      <button key={tab} onClick={() => setEmojiTab(tab)} className={`px-4 py-2 text-[9px] font-black uppercase tracking-tighter ${emojiTab === tab ? 'text-red-600 bg-red-600/5' : 'text-gray-500'}`}>{tab}</button>
+                    ))}
+                  </div>
+                  <div className="emoji-window custom-scroll">
+                    {EMOJIS[emojiTab].map(e => (<span key={e} onClick={() => setInputText(inputText + e)} className="emoji-btn">{e}</span>))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center bg-black/30 border border-white/10 rounded-2xl p-2.5 pl-5 focus-within:border-red-600/50 transition-all shadow-inner">
+                <button onClick={() => setShowEmoji(!showEmoji)} className="text-gray-500 hover:text-red-600 transition-colors mr-3"><i className="far fa-laugh-beam text-xl"></i></button>
+                <input value={inputText} onChange={e => setInputText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Transmit message..." className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-input" />
+                <button onClick={handleSend} className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center hover:bg-red-500 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,0,0,0.3)]"><i className="fas fa-paper-plane text-white"></i></button>
+              </div>
+            </div>
+          </main>
+          
+          {isMobileMenu && <div onClick={() => setIsMobileMenu(false)} className="fixed inset-0 bg-black/90 z-40 lg:hidden backdrop-blur-md"></div>}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>
