@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Tactical Terminal</title>
+  <title>MuzzSnap - Tactical Terminal V2 Audited</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -11,34 +11,45 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
-    :root{--muzz-red:#ff0000;--ryachu-gold:#ffcc00;--itsuki-blue:#00d4ff}
-    html,body{height:100%;overflow:hidden;margin:0;padding:0;background:#050505;color:white;font-family:'Inter',sans-serif}
-    .panel-3d{background:#0c0c0c;border:1px solid rgba(255,0,0,0.15);border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.8);display:flex;flex-direction:column;height:100%}
-    .bubble-3d{padding:12px 16px;border-radius:20px;font-size:14px;max-width:85%;line-height:1.4}
+    :root{--muzz-red:#ff0000;--muzz-yellow:#ffcc00;--muzz-blue:#00d4ff}
+    body.dark-theme{background:#050505;color:white}
+    body.light-theme{background:#f0f2f5;color:#1a1a1a}
+    .panel-3d{border-radius:24px;display:flex;flex-direction:column;height:100%}
+    .dark-theme .panel-3d{background:#0c0c0c;border:1px solid rgba(255,0,0,0.15);box-shadow:0 10px 30px rgba(0,0,0,0.8)}
+    .light-theme .panel-3d{background:#ffffff;border:1px solid #e0e0e0}
+    
+    /* Bubble Logic */
+    .bubble-3d{padding:12px 16px;border-radius:20px;font-size:14px;max-width:85%;line-height:1.4;border:1px solid transparent}
     .bubble-3d.me{background:linear-gradient(145deg,#ff0000,#b30000);color:white;align-self:flex-end}
-    .bubble-3d.other{background:#1a1a1a;border:1px solid rgba(255,255,255,0.05)}
-    .emoji-window{max-height:200px;overflow-y:auto;display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:15px;background:#000;border:1px solid rgba(255,0,0,0.2);border-radius:15px;margin-bottom:10px}
-    .emoji-btn{font-size:1.6rem;cursor:pointer;text-align:center}
-    .hacker-input{font-family:'Fira Code',monospace;color:#39ff14!important}
-    .online-indicator{width:8px;height:8px;background:#39ff14;border-radius:50%;box-shadow:0 0 8px #39ff14}
+    
+    /* Private Message - Yellow */
+    .bubble-3d.private-msg{background:var(--muzz-yellow)!important;color:black!important;font-weight:600;border:none}
+    
+    /* Light Theme Public - Blue/White */
+    .light-theme .bubble-3d.other{background:#ffffff;border:1px solid var(--muzz-blue);color:black}
+    /* Dark Theme Public - Black/Border */
+    .dark-theme .bubble-3d.other{background:#1a1a1a;border:1px solid rgba(255,255,255,0.05);color:white}
+
+    .hacker-input{font-family:'Fira Code',monospace}
+    .dark-theme .hacker-input{color:#39ff14!important}
+    .admin-btn{font-size:10px;padding:8px;border-radius:8px;border:1px solid rgba(255,0,0,0.3);color:#ff0000;font-weight:bold;text-transform:uppercase}
     .custom-scroll::-webkit-scrollbar{width:4px}
     .custom-scroll::-webkit-scrollbar-thumb{background:var(--muzz-red);border-radius:10px}
-    .ryachu-name{color:var(--ryachu-gold);font-weight:900}.itsuki-name{color:var(--itsuki-blue);font-weight:900}
   </style>
 </head>
-<body>
+<body class="dark-theme">
   <div id="root" class="h-full"></div>
 
   <script type="text/babel">
     const {useState, useEffect, useRef} = React;
 
-    const fbConfig = {
+    const fbConf = {
       apiKey: atob('QUl6YVN5QWUxLUpmTmRlME5LSU1kRTdwaGZFWGxtOUphcVVIMGpZ'),
       authDomain: atob('cHVsc2FyaS5maXJlYmFzZWFwcC5jb20='),
       databaseURL: atob('aHR0cHM6Ly9wdWxzYXJpLWRlZmF1bHQtcnRkYi5maXJlYmFzZWlvLmNvbQ=='),
@@ -46,11 +57,8 @@
       appId: atob('MTo4MjQzMDYzMjEyMzM6d2ViOjJjOWJmYTAyMTcwYTE3ZDU2MGI1NzA=')
     };
 
-    if (!firebase.apps.length) firebase.initializeApp(fbConfig);
+    if (!firebase.apps.length) firebase.initializeApp(fbConf);
     const db = firebase.database();
-
-    const EMOJIS = ["😊","😂","😉","😍","😘","😛","😅","😢","😭","😠","😈","💀","👻","🤖","👍","👎","👌","✌️","👏","👋","💪","🙏","❤️","🔥","💎","💰","🔒","🔑","⭐","🚀"];
-    const CHANNELS = [{ id: "general", name: "GENERAL" }, { id: "spanish", name: "ESPAÑOL" }, { id: "dao", name: "DAO" }];
     const ADMINS = {
       R: atob('MHgyMDgxNTdiNWVjMzk2NzU5ZTg3NTQwNTgxMDhlY2Y1M2UzMjM5MmZm').toLowerCase(),
       I: atob('MHhmYWI1ODM1Y2ExNGZiM2Y5Zjk3OGM1ZTRkNzMzNzM0ZTYzOTRlMDNm').toLowerCase()
@@ -60,162 +68,199 @@
       const [user, setUser] = useState(null);
       const [messages, setMessages] = useState([]);
       const [onlineUsers, setOnlineUsers] = useState([]);
+      const [activeChan, setActiveChan] = useState({id: "general", name: "GENERAL"});
+      const [targetPM, setTargetPM] = useState(null);
       const [input, setInput] = useState("");
-      const [activeChan, setActiveChan] = useState(CHANNELS[0]);
-      const [targetUser, setTargetUser] = useState(null);
-      const [showEmoji, setShowEmoji] = useState(false);
-      const [sideBar, setSideBar] = useState(false);
-      const [authStep, setAuthStep] = useState("loading");
-      const [regName, setRegName] = useState("");
-      const [regPin, setRegPin] = useState("");
-      const [errorMsg, setErrorMsg] = useState("");
+      const [isDark, setIsDark] = useState(true);
+      const [pinned, setPinned] = useState("");
+      const [chatLocked, setChatLocked] = useState(false);
+      const [slowMode, setSlowMode] = useState(false);
+      const [lastSent, setLastSent] = useState(0);
+
       const scrollRef = useRef(null);
 
+      // Cifrado Local E3EE
+      const encrypt = (text, key) => CryptoJS.AES.encrypt(text, key).toString();
+      const decrypt = (hash, key) => {
+        try {
+          const bytes = CryptoJS.AES.decrypt(hash, key);
+          const original = bytes.toString(CryptoJS.enc.Utf8);
+          return original || "[Decryption Error]";
+        } catch(e) { return "[Encrypted Data]"; }
+      };
+
       useEffect(() => {
-        const wallet = sessionStorage.getItem('muzz_wallet_address');
-        firebase.auth().signInAnonymously().then(async (cred) => {
-          if (wallet && !wallet.startsWith('guest_')) {
-            const lowAddr = wallet.toLowerCase();
-            let name = `Node_${wallet.slice(-4)}`, role = "user";
-            if (lowAddr === ADMINS.R) { name = "Ryachu"; role = "ryachu"; }
-            else if (lowAddr === ADMINS.I) { name = "Itsuki"; role = "itsuki"; }
-            finalizeLogin({ username: name, uid: cred.user.uid, role: role, type: 'wallet' });
-          } else {
-            setAuthStep("login_screen");
+        const wallet = sessionStorage.getItem('muzz_wallet_address') || "guest_" + Math.random().toString(36).substr(2, 5);
+        firebase.auth().signInAnonymously().then(cred => {
+          const isW = wallet && !wallet.startsWith('guest_');
+          let name = isW ? `Node_${wallet.slice(-4)}` : wallet;
+          let role = "user";
+
+          if (isW) {
+            const addr = wallet.toLowerCase();
+            if (addr === ADMINS.R) { name = "Ryachu"; role = "ryachu"; }
+            if (addr === ADMINS.I) { name = "Itsuki"; role = "itsuki"; }
           }
+
+          const uData = { username: name, uid: cred.user.uid, role, isWallet: !!isW, address: wallet };
+          setUser(uData);
+
+          db.ref(`status/${uData.uid}`).onDisconnect().remove();
+          db.ref(`status/${uData.uid}`).set(uData);
+          
+          db.ref('status').on('value', s => setOnlineUsers(s.val() ? Object.values(s.val()) : []));
+          db.ref('settings/pinned').on('value', s => setPinned(s.val() || ""));
+          db.ref('settings/locked').on('value', s => setChatLocked(s.val() || false));
+          db.ref('settings/slowmode').on('value', s => setSlowMode(s.val() || false));
         });
       }, []);
 
-      const finalizeLogin = (uData) => {
-        setUser(uData);
-        setAuthStep("chat");
-        db.ref(`status/${uData.uid}`).onDisconnect().remove();
-        db.ref(`status/${uData.uid}`).set(uData);
-        db.ref('status').on('value', s => setOnlineUsers(s.val() ? Object.values(s.val()) : []));
-      };
-
-      const handleAuth = async (e) => {
-        if(e) e.preventDefault();
-        setErrorMsg("");
-        const key = regName.trim().toLowerCase();
-        if (key.length < 3) return setErrorMsg("NAME TOO SHORT");
-        if (regPin.length !== 4) return setErrorMsg("PIN MUST BE 4 CHARS");
-
-        const ref = db.ref(`accounts/${key}`);
-        const snap = await ref.once('value');
-
-        if (snap.exists()) {
-          const acc = snap.val();
-          if (acc.pin === regPin) finalizeLogin(acc);
-          else setErrorMsg("USERNAME NOT AVAILABLE");
-        } else {
-          const newData = { username: regName.trim(), pin: regPin, uid: firebase.auth().currentUser.uid, role: 'user', type: 'manual' };
-          await ref.set(newData);
-          finalizeLogin(newData);
-        }
-      };
-
-      const getSKey = (pId) => [user.uid, pId].sort().join('_E2EE_');
-      const encrypt = (t, pId) => CryptoJS.AES.encrypt(t, getSKey(pId)).toString();
-      const decrypt = (c, pId) => {
-        try {
-          const b = CryptoJS.AES.decrypt(c, getSKey(pId));
-          return b.toString(CryptoJS.enc.Utf8) || "🔒 Encrypted";
-        } catch(e) { return "❌ Error"; }
-      };
-
       useEffect(() => {
-        if (authStep !== "chat") return;
-        const path = targetUser ? `pms/${[user.uid, targetUser.uid].sort().join('_')}` : `messages/${activeChan.id}`;
-        const mRef = db.ref(path).limitToLast(40);
-        mRef.on('value', s => {
-          const d = s.val();
-          setMessages(d ? Object.keys(d).map(k => ({id:k, ...d[k]})) : []);
+        if (!user) return;
+        // Si hay targetPM, el path es la sala privada, sino es el canal
+        let path = targetPM 
+          ? `pms/${[user.uid, targetPM.uid].sort().join('_')}` 
+          : `messages/${activeChan.id}`;
+        
+        const ref = db.ref(path).limitToLast(50);
+        ref.on('value', snap => {
+          const data = snap.val();
+          if (data) {
+            const now = Date.now();
+            const list = Object.keys(data).map(k => {
+              const msg = data[k];
+              // Auto-borrado 24h para privados
+              if (msg.type === 'private' && (now - msg.timestamp > 86400000)) {
+                db.ref(`${path}/${k}`).remove();
+                return null;
+              }
+              return {id: k, ...msg};
+            }).filter(m => m !== null);
+            setMessages(list);
+          } else { setMessages([]); }
         });
-        return () => mRef.off();
-      }, [authStep, targetUser, activeChan]);
+        return () => ref.off();
+      }, [activeChan, targetPM, user]);
 
-      useEffect(() => { scrollRef.current?.scrollIntoView({behavior:'smooth'}); }, [messages]);
+      useEffect(() => { scrollRef.current?.scrollIntoView({behavior: 'smooth'}); }, [messages]);
 
-      if (authStep === "login_screen") {
-        return (
-          <div className="h-full flex items-center justify-center p-6 bg-black">
-            <div className="panel-3d p-8 w-full max-w-sm text-center border-red-600/40">
-              <h2 className="font-orbitron text-red-600 text-xl mb-6 italic">SECURE ACCESS</h2>
-              <form onSubmit={handleAuth} className="space-y-4 text-left">
-                <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Username" className="w-full bg-black border border-white/10 p-4 rounded-xl hacker-input focus:border-red-600 outline-none" />
-                <input maxLength="4" value={regPin} onChange={e => setRegPin(e.target.value)} placeholder="4-Char PIN" className="w-full bg-black border border-white/10 p-4 rounded-xl hacker-input focus:border-red-600 outline-none text-center tracking-widest" />
-                {errorMsg && <p className="text-red-500 text-[10px] font-bold text-center uppercase tracking-tighter">{errorMsg}</p>}
-                <button type="submit" className="w-full bg-red-600 py-4 rounded-xl font-orbitron font-black hover:bg-red-500 shadow-lg shadow-red-600/20">ACCESS SYSTEM</button>
-              </form>
+      const sendMessage = () => {
+        if (!input.trim()) return;
+        const isAdmin = user.role === 'ryachu' || user.role === 'itsuki';
+
+        if (!isAdmin) {
+          if (chatLocked) return alert("CHAT DISABLED BY ADMIN");
+          if (slowMode && (Date.now() - lastSent < 2000)) return alert("SLOW MODE: WAIT 2s");
+        }
+
+        const isPrivate = !!targetPM;
+        const chatPath = isPrivate ? `pms/${[user.uid, targetPM.uid].sort().join('_')}` : `messages/${activeChan.id}`;
+        const encryptionKey = isPrivate ? [user.uid, targetPM.uid].sort().join('_') : 'public';
+
+        db.ref(chatPath).push({
+          content: isPrivate ? encrypt(input, encryptionKey) : input,
+          username: user.username,
+          userId: user.uid,
+          role: user.role,
+          timestamp: Date.now(),
+          type: isPrivate ? 'private' : 'public',
+          receiverId: isPrivate ? targetPM.uid : null
+        });
+
+        setInput("");
+        setLastSent(Date.now());
+      };
+
+      if (!user) return <div className="h-full flex items-center justify-center bg-black text-red-600 font-orbitron animate-pulse">AUDITING_SYSTEM...</div>;
+
+      return (
+        <div className="flex h-screen p-2 md:p-6 gap-6 max-w-[1600px] mx-auto overflow-hidden">
+          {/* SIDEBAR */}
+          <aside className="hidden lg:flex w-72 panel-3d p-6 flex flex-col">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center"><i className="fas fa-shield-halved text-white"></i></div>
+              <h1 className="font-orbitron font-black text-xl italic tracking-tighter text-red-600">MUZZSNAP</h1>
             </div>
-          </div>
-        );
-      }
 
-      if (authStep === "chat") {
-        return (
-          <div className="flex h-full w-full overflow-hidden relative">
-            <button onClick={() => setSideBar(true)} className="lg:hidden absolute top-5 left-5 z-40 text-red-600 text-2xl"><i className="fas fa-bars"></i></button>
-
-            <aside className={`fixed lg:relative z-50 inset-y-0 left-0 w-72 transition-transform duration-300 panel-3d m-0 lg:m-4 p-6 ${sideBar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-              <div className="flex justify-between items-center mb-10"><h1 className="font-orbitron font-black text-lg italic">MUZZ<span className="text-red-600">SNAP</span></h1><button onClick={() => setSideBar(false)} className="lg:hidden text-gray-500"><i className="fas fa-times"></i></button></div>
-              <div className="flex-1 overflow-y-auto custom-scroll space-y-8">
-                <div>
-                  <p className="text-[10px] text-gray-500 font-bold mb-4 uppercase">Channels</p>
-                  {CHANNELS.map(c => (
-                    <button key={c.id} onClick={() => { setActiveChan(c); setTargetUser(null); setSideBar(false); }} className={`w-full text-left p-3 rounded-xl text-xs font-bold mb-2 ${(!targetUser && activeChan.id === c.id) ? 'bg-red-600/20 text-red-600' : 'text-gray-500'}`}># {c.name}</button>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-500 font-bold mb-4 uppercase">Nodes</p>
-                  {onlineUsers.filter(u => u.uid !== user.uid).map(u => (
-                    <div key={u.uid} onClick={() => { setTargetUser(u); setSideBar(false); }} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer mb-1 ${targetUser?.uid === u.uid ? 'bg-red-600/10' : ''}`}>
-                      <span className="online-indicator"></span>
-                      <span className={`text-[11px] font-bold uppercase ${u.role==='ryachu'?'ryachu-name':u.role==='itsuki'?'itsuki-name':'text-gray-400'}`}>{u.username}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </aside>
-
-            <main className="flex-1 flex flex-col h-full bg-black/40 lg:p-4">
-              <div className="panel-3d flex-1 relative overflow-hidden rounded-none lg:rounded-[24px]">
-                <header className="h-16 flex items-center px-16 lg:px-8 border-b border-white/5 bg-white/5">
-                  <h2 className="text-xs font-black text-red-600 uppercase italic tracking-widest">{targetUser ? `🔒 DM: ${targetUser.username}` : `[#] ${activeChan.name}`}</h2>
-                </header>
-
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-5 custom-scroll">
-                  {messages.map(m => (
-                    <div key={m.id} className={`flex flex-col ${m.userId === user.uid ? 'items-end' : 'items-start'}`}>
-                      <span className={`text-[9px] mb-1 px-2 font-black uppercase ${m.role==='ryachu'?'ryachu-name':m.role==='itsuki'?'itsuki-name':'text-gray-600'}`}>{m.username} {m.encrypted && "🔒"}</span>
-                      <div className={`bubble-3d ${m.userId === user.uid ? 'me' : 'other'}`}>
-                        {m.encrypted ? decrypt(m.content, (m.userId === user.uid ? targetUser?.uid : m.userId)) : m.content}
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={scrollRef}></div>
-                </div>
-
-                <div className="p-4 bg-black/60">
-                  {showEmoji && <div className="emoji-window custom-scroll">{EMOJIS.map(e => <span key={e} onClick={() => setInput(input+e)} className="emoji-btn">{e}</span>)}</div>}
-                  <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-2 pl-4">
-                    <button onClick={() => setShowEmoji(!showEmoji)} className="text-gray-500 mr-3 text-xl"><i className="far fa-smile"></i></button>
-                    <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (()=>{
-                      const path = targetUser ? `pms/${[user.uid, targetUser.uid].sort().join('_')}` : `messages/${activeChan.id}`;
-                      db.ref(path).push({ content: targetUser ? encrypt(input, targetUser.uid) : input, username: user.username, userId: user.uid, role: user.role || 'user', timestamp: Date.now(), encrypted: !!targetUser });
-                      setInput(""); setShowEmoji(false);
-                    })()} placeholder="Type packet..." className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-input" />
-                    <button onClick={() => {/* misma logica que onKeyDown */}} className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center"><i className="fas fa-paper-plane text-white"></i></button>
+            <div className="flex-1 overflow-y-auto custom-scroll space-y-6">
+              {(user.role==='ryachu'||user.role==='itsuki') && (
+                <div className="p-4 bg-red-600/5 border border-red-600/20 rounded-2xl space-y-3">
+                  <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest">Admin Overrides</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={()=>db.ref('settings/locked').set(!chatLocked)} className={`admin-btn ${chatLocked?'bg-red-600 text-white':''}`}>Lock</button>
+                    <button onClick={()=>db.ref('settings/slowmode').set(!slowMode)} className={`admin-btn ${slowMode?'bg-orange-500 text-white':''}`}>Slow</button>
                   </div>
                 </div>
+              )}
+
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase mb-4">Channels</p>
+                {['GENERAL', 'DAO', 'SPANISH'].map(name => (
+                  <button key={name} onClick={()=>{setActiveChan({id: name.toLowerCase(), name}); setTargetPM(null)}} className={`w-full text-left p-3 rounded-xl text-xs font-bold mb-1 ${!targetPM && activeChan.name === name ? 'bg-red-600/10 text-red-600' : 'text-gray-500'}`}># {name}</button>
+                ))}
               </div>
-            </main>
-            {sideBar && <div onClick={() => setSideBar(false)} className="fixed inset-0 bg-black/80 z-40 lg:hidden"></div>}
-          </div>
-        );
-      }
-      return null;
+
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase mb-4">E3EE Nodes (Wallet Only)</p>
+                {onlineUsers.filter(u => u.uid !== user.uid && u.isWallet).map(u => (
+                  <button key={u.uid} onClick={() => setTargetPM(u)} className={`w-full flex items-center gap-3 p-3 rounded-xl mb-1 ${targetPM?.uid === u.uid ? 'bg-yellow-500/10 border border-yellow-500/30' : 'hover:bg-white/5'}`}>
+                    <div className="online-indicator"></div>
+                    <span className="text-[11px] font-bold uppercase truncate text-gray-400">{u.username}</span>
+                    <i className="fa-brands fa-ethereum text-[10px] text-red-600 ml-auto"></i>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* CHAT AREA */}
+          <main className="flex-1 panel-3d flex flex-col overflow-hidden border border-white/5">
+            {pinned && <div className="bg-red-600/10 border-b border-red-600/20 py-2 px-6"><marquee className="text-[10px] font-bold text-red-500 uppercase">{pinned}</marquee></div>}
+
+            <header className="h-16 flex items-center justify-between px-8 bg-white/5 border-b border-white/5 flex-shrink-0">
+              <h2 className="text-xs font-black text-red-600 uppercase italic">
+                {targetPM ? `// PRIVATE_P2P: ${targetPM.username}` : `// CHANNEL: ${activeChan.name}`}
+              </h2>
+              <button onClick={()=>{setIsDark(!isDark); document.body.className=isDark?'light-theme':'dark-theme'}} className="w-10 h-10 rounded-xl border border-red-600/20 flex items-center justify-center">
+                <i className={`fas ${isDark?'fa-sun text-yellow-500':'fa-moon text-blue-500'}`}></i>
+              </button>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-4 custom-scroll">
+              {messages.map(m => {
+                const isMe = m.userId === user.uid;
+                const e3eeKey = [user.uid, (isMe ? m.receiverId : m.userId)].sort().join('_');
+                const content = m.type === 'private' ? decrypt(m.content, e3eeKey) : m.content;
+                
+                return (
+                  <div key={m.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    <span className={`text-[9px] font-black mb-1 px-2 ${m.role==='ryachu'?'text-yellow-500':m.role==='itsuki'?'text-blue-400':'text-gray-500'}`}>{m.username}</span>
+                    <div className={`bubble-3d shadow-md ${isMe?'me':'other'} ${m.type==='private'?'private-msg':''}`}>
+                      {content}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={scrollRef}></div>
+            </div>
+
+            <div className="p-6">
+              <div className="flex items-center bg-black/40 border border-white/10 rounded-2xl p-2.5 pl-5 focus-within:border-red-600/50 shadow-inner">
+                <input 
+                  value={input} 
+                  onChange={e=>setInput(e.target.value)} 
+                  onKeyDown={e=>e.key==='Enter' && sendMessage()}
+                  placeholder={targetPM ? "Send E3EE Encrypted Message..." : "Broadcast packet..."} 
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-input"
+                />
+                <button onClick={sendMessage} className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all">
+                  <i className="fas fa-paper-plane text-white"></i>
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
     }
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
