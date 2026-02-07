@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap - Terminal Stable</title>
+  <title>MuzzSnap - Ultra Stable</title>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -17,16 +17,12 @@
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
-    :root { --muzz-red: #ff0000; }
-    body { background: #050505; color: white; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
-    .panel-3d { background: #0c0c0c; border: 1px solid rgba(255,0,0,0.15); border-radius: 24px; }
-    .bubble-3d { padding: 12px 16px; border-radius: 20px; font-size: 14px; max-width: 85%; position: relative; }
-    .bubble-3d.me { background: linear-gradient(145deg, #ff0000, #b30000); align-self: flex-end; border-bottom-right-radius: 4px; }
-    .bubble-3d.other { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; }
-    .hacker-input { font-family: 'Fira Code', monospace; color: #ff0000 !important; }
-    .custom-scroll::-webkit-scrollbar { width: 4px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: var(--muzz-red); border-radius: 10px; }
-    .glow-red { box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
+    body { background: #050505; color: white; font-family: sans-serif; height: 100vh; margin: 0; }
+    .panel-main { background: #0c0c0c; border: 1px solid rgba(255,0,0,0.1); border-radius: 20px; }
+    .bubble { padding: 10px 15px; border-radius: 15px; font-size: 14px; margin-bottom: 5px; max-width: 80%; }
+    .bubble.me { background: #ff0000; margin-left: auto; border-bottom-right-radius: 2px; }
+    .bubble.other { background: #1a1a1a; margin-right: auto; border-bottom-left-radius: 2px; }
+    .hacker-font { font-family: 'Fira Code', monospace; }
   </style>
 </head>
 <body>
@@ -35,127 +31,112 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // --- CONFIGURACIÓN DE ACCESO ---
+    // --- CONFIG ---
     const CONTRACT_ADDR = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
     const VIP_WALLET = "0xBEec8F1fee64627F83F0188eAe621F367A6bCb8a".toLowerCase();
-    const MIN_BALANCE = 1000000n * (10n ** 18n); 
+    const MIN_BAL = 1000000n * (10n ** 18n);
     const ABI = [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}];
 
-    // Firebase
-    const fbConfig = {
+    const fbConf = {
       apiKey: atob('QUl6YVN5QWUxLUpmTmRlME5LSU1kRTdwaGZFWGxtOUphcVVIMGpZ'),
       databaseURL: atob('aHR0cHM6Ly9wdWxzYXJpLWRlZmF1bHQtcnRkYi5maXJlYmFzZWlvLmNvbQ=='),
       projectId: atob('cHVsc2FyaQ==')
     };
-    if (!firebase.apps.length) firebase.initializeApp(fbConfig);
+
+    if (!firebase.apps.length) firebase.initializeApp(fbConf);
     const db = firebase.database();
 
     function App() {
       const [user, setUser] = useState(null);
-      const [messages, setMessages] = useState([]);
-      const [input, setInput] = useState("");
-      const [channel, setChannel] = useState({id: 'general', name: 'GENERAL'});
-      const [showPrivateBtn, setShowPrivateBtn] = useState(false);
+      const [msgs, setMsgs] = useState([]);
+      const [val, setVal] = useState("");
+      const [showPriv, setShowPriv] = useState(false);
       const scrollRef = useRef();
 
       useEffect(() => {
         const addr = sessionStorage.getItem('muzz_wallet_address');
         if (!addr) { window.location.href = 'login.html'; return; }
 
-        const initSession = async () => {
-          // 1. Validar Acceso Privado
-          const lowAddr = addr.toLowerCase();
-          if (lowAddr === VIP_WALLET) {
-            setShowPrivateBtn(true);
-          } else if (window.ethereum) {
-            try {
-              const provider = new ethers.BrowserProvider(window.ethereum);
-              const contract = new ethers.Contract(CONTRACT_ADDR, ABI, provider);
-              const bal = await contract.balanceOf(addr);
-              if (bal >= MIN_BALANCE) setShowPrivateBtn(true);
-            } catch (e) { console.error("Blockchain error", e); }
+        // Setup User
+        const name = addr.startsWith('0x') ? `Node_${addr.slice(-4)}` : addr;
+        setUser({ name, addr });
+
+        // Firebase Auth
+        firebase.auth().signInAnonymously();
+
+        // Check Access (Sin bloquear el renderizado)
+        const check = async () => {
+          if (addr.toLowerCase() === VIP_WALLET) {
+            setShowPriv(true);
+            return;
           }
-
-          // 2. Auth Firebase
-          firebase.auth().signInAnonymously().then(u => {
-            const name = addr.startsWith('0x') ? `Node_${addr.slice(-4)}` : addr;
-            setUser({ username: name, uid: u.user.uid, address: addr });
-          });
+          try {
+            if (window.ethereum) {
+              const prov = new ethers.BrowserProvider(window.ethereum);
+              const con = new ethers.Contract(CONTRACT_ADDR, ABI, prov);
+              const b = await con.balanceOf(addr);
+              if (b >= MIN_BAL) setShowPriv(true);
+            }
+          } catch (e) { console.log("Token gating check skipped/error"); }
         };
-
-        initSession();
+        check();
       }, []);
 
       useEffect(() => {
-        if (!user) return;
-        const msgRef = db.ref('messages/' + channel.id).limitToLast(50);
-        msgRef.on('value', s => {
-          const data = s.val();
-          setMessages(data ? Object.keys(data).map(k => ({id: k, ...data[k]})) : []);
+        const ref = db.ref('messages/general').limitToLast(40);
+        ref.on('value', s => {
+          const d = s.val();
+          setMsgs(d ? Object.values(d) : []);
         });
-        return () => msgRef.off();
-      }, [channel, user]);
+        return () => ref.off();
+      }, []);
 
-      useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+      useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs]);
 
-      const handleSend = () => {
-        if (!input.trim()) return;
-        db.ref('messages/' + channel.id).push({
-          content: input,
-          username: user.username,
-          userId: user.uid,
-          timestamp: Date.now()
+      const send = () => {
+        if (!val.trim()) return;
+        db.ref('messages/general').push({
+          content: val,
+          username: user.name,
+          sender: user.addr,
+          ts: Date.now()
         });
-        setInput("");
+        setVal("");
       };
 
-      if (!user) return <div className="h-full flex items-center justify-center text-red-600 font-orbitron animate-pulse uppercase tracking-widest">Iniciando Enlace Seguro...</div>;
+      if (!user) return <div className="h-full flex items-center justify-center text-red-600">LOADING MUZZLE NODE...</div>;
 
       return (
-        <div className="flex h-screen p-4 md:p-6 gap-6 max-w-[1600px] mx-auto">
+        <div className="flex h-screen p-4 gap-4">
           {/* SIDEBAR */}
-          <aside className="w-64 panel-3d p-6 hidden lg:flex flex-col">
-            <div className="mb-10 flex items-center gap-3">
-              <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center"><i className="fas fa-ghost"></i></div>
-              <h1 className="font-orbitron font-black text-xl italic text-white">MUZZ<span className="text-red-600">SNAP</span></h1>
-            </div>
-
-            <nav className="flex-1 space-y-4">
-              <p className="text-[10px] text-gray-600 font-bold tracking-widest uppercase">Canales Públicos</p>
-              {['GENERAL', 'DAO'].map(c => (
-                <button key={c} onClick={() => setChannel({id: c.toLowerCase(), name: c})}
-                  className={`w-full text-left px-4 py-2 rounded-lg text-xs font-bold transition-all ${channel.name === c ? 'bg-red-600/10 text-red-600 border-l-2 border-red-600' : 'text-gray-500 hover:text-white'}`}>
-                  # {c}
-                </button>
-              ))}
-
-              {showPrivateBtn && (
-                <div className="pt-6 border-t border-white/5 mt-6">
-                  <p className="text-[10px] text-red-600 font-bold tracking-widest uppercase mb-3">Acceso VIP</p>
-                  <a href="private.html" className="flex items-center justify-center gap-2 w-full py-4 bg-red-600 rounded-xl text-[10px] font-black uppercase tracking-tighter text-white glow-red hover:scale-105 transition-all">
-                    <i className="fas fa-lock"></i> Entrar al Archivo
+          <div className="w-64 panel-main p-6 hidden md:flex flex-col">
+            <h1 className="font-orbitron font-black text-xl text-red-600 mb-8">MUZZSNAP</h1>
+            <div className="flex-1 space-y-2">
+              <button className="w-full text-left p-2 text-red-500 font-bold bg-red-500/10 rounded"># GENERAL</button>
+              
+              {showPriv && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <a href="private.html" className="flex items-center justify-center w-full p-3 bg-red-600 rounded-lg text-[10px] font-black uppercase hover:bg-red-700 transition-all shadow-lg">
+                    <i className="fas fa-lock mr-2"></i> Private Archive
                   </a>
                 </div>
               )}
-            </nav>
+            </div>
+            <button onClick={() => {sessionStorage.clear(); location.href='login.html'}} className="p-2 text-[10px] text-gray-600 border border-gray-800 rounded uppercase">Logout</button>
+          </div>
 
-            <button onClick={() => {sessionStorage.clear(); window.location.href='login.html'}} className="mt-auto py-3 text-[10px] border border-red-900/30 text-red-600 rounded-xl font-black uppercase">
-              Desconectar
-            </button>
-          </aside>
+          {/* CHAT */}
+          <div className="flex-1 panel-main flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-white/5 flex justify-between items-center">
+              <span className="text-xs font-bold text-red-500 uppercase tracking-widest">/ general</span>
+              <span className="text-[10px] text-gray-600">{user.addr.slice(0,10)}...</span>
+            </div>
 
-          {/* CHAT MAIN */}
-          <main className="flex-1 panel-3d flex flex-col overflow-hidden relative">
-            <header className="h-16 flex items-center justify-between px-8 bg-white/5 border-b border-white/5">
-              <h2 className="text-xs font-black tracking-widest text-red-600 uppercase italic">/ {channel.name}</h2>
-              <div className="text-[10px] text-gray-500 font-bold">NODE: <span className="text-red-500">{user.address.slice(0,8)}...</span></div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 custom-scroll">
-              {messages.map(m => (
-                <div key={m.id} className={`flex flex-col ${m.userId === user.uid ? 'items-end' : 'items-start'}`}>
-                  <span className="text-[9px] text-gray-500 uppercase mb-1 px-2">{m.username}</span>
-                  <div className={`bubble-3d shadow-lg ${m.userId === user.uid ? 'me' : 'other'}`}>
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col custom-scroll">
+              {msgs.map((m, i) => (
+                <div key={i} className={`flex flex-col ${m.sender === user.addr ? 'items-end' : 'items-start'} mb-4`}>
+                  <span className="text-[8px] text-gray-500 uppercase mb-1">{m.username}</span>
+                  <div className={`bubble ${m.sender === user.addr ? 'me' : 'other'}`}>
                     {m.content}
                   </div>
                 </div>
@@ -163,27 +144,24 @@
               <div ref={scrollRef}></div>
             </div>
 
-            <div className="p-6 bg-black/40 border-t border-white/5">
-              <div className="flex items-center bg-black/30 border border-white/10 rounded-2xl p-2 pl-5 focus-within:border-red-600/50 transition-all">
-                <input 
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSend()}
-                  placeholder="Transmitir mensaje..."
-                  className="flex-1 bg-transparent border-none focus:ring-0 text-sm hacker-input"
-                />
-                <button onClick={handleSend} className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center hover:bg-red-500 transition-all shadow-lg">
-                  <i className="fas fa-paper-plane text-white"></i>
-                </button>
-              </div>
+            <div className="p-4 bg-black/40 border-t border-white/5 flex gap-2">
+              <input 
+                value={val}
+                onChange={e => setVal(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && send()}
+                placeholder="Message..."
+                className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm hacker-font text-red-500 focus:outline-none focus:border-red-600"
+              />
+              <button onClick={send} className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-lg hover:bg-red-500 transition-all">
+                <i className="fas fa-paper-plane"></i>
+              </button>
             </div>
-          </main>
+          </div>
         </div>
       );
     }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
