@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>MuzzSnap - Private</title>
+  <title>MuzzSnap</title>
 
   <!-- React UMD -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -188,16 +188,30 @@
       }, []);
 
       useEffect(() => {
-        const mq = window.matchMedia('(max-width: 900px)');
-        const apply = () => {
-          const m = !!mq.matches;
-          setIsMobile(m);
-          setSidebarOpen(!m); // open by default on desktop, closed on mobile
+        const mq = window.matchMedia ? window.matchMedia('(max-width: 980px)') : null;
+
+        const compute = () => {
+          const vv = window.visualViewport ? window.visualViewport.width : 0;
+          const iw = window.innerWidth || document.documentElement.clientWidth || 0;
+          const w = Math.min(iw || 9999, vv || 9999);
+          const m = (mq ? mq.matches : false) || (w > 0 ? w <= 980 : true);
+          setIsMobile(!!m);
+          // keep current open state if already toggled; default closed on mobile, open on desktop
+          setSidebarOpen(prev => (m ? false : true));
         };
-        apply();
-        try { mq.addEventListener('change', apply); } catch(e){ mq.addListener(apply); }
+
+        compute();
+        window.addEventListener('resize', compute, {passive:true});
+
+        if (mq) {
+          try { mq.addEventListener('change', compute); } catch(e){ try{ mq.addListener(compute); }catch(_){ } }
+        }
+
         return () => {
-          try { mq.removeEventListener('change', apply); } catch(e){ try{ mq.removeListener(apply); }catch(_){} }
+          window.removeEventListener('resize', compute);
+          if (mq) {
+            try { mq.removeEventListener('change', compute); } catch(e){ try{ mq.removeListener(compute); }catch(_){ } }
+          }
         };
       }, []);
 
@@ -404,15 +418,7 @@
         <div className="muzz-app pm-wrap flex p-2 md:p-4 lg:p-6 gap-4 md:gap-6 max-w-[1600px] mx-auto overflow-hidden">
           <>{isMobile && sidebarOpen && (<div className="pm-drawer-overlay" onClick={()=>setSidebarOpen(false)}></div>)}
           <aside className={`panel-3d w-80 max-w-[85vw] p-5 flex flex-col overflow-hidden ${isMobile ? "pm-drawer" : ""} ${isMobile && sidebarOpen ? "open" : ""}`}>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/30">
-                <i className="fas fa-user-secret text-white text-sm"></i>
-              </div>
-              <div className="flex-1">
-                <div className="font-[Orbitron] font-black text-lg italic tracking-tighter">MUZZ<span className="text-red-600">SNAP</span></div>
-                <div className="text-[10px] text-gray-500 font-bold tracking-[0.25em] uppercase">Private • E2EE • P2P</div>
-              </div>
-            </div>
+            <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/30"><i className="fas fa-user-secret text-white text-sm"></i></div><div className="flex-1"><div className="font-[Orbitron] font-black text-lg italic tracking-tighter">MUZZ<span className="text-red-600">SNAP</span></div><div className="text-[10px] text-gray-500 font-bold tracking-[0.25em] uppercase">Private • E2EE • P2P</div></div></div>{isMobile && sidebarOpen && (<button onClick={()=>setSidebarOpen(false)} className="soft-btn w-10 h-10 flex items-center justify-center"><i className="fas fa-xmark"></i></button>)}</div>
 
             <div className="flex items-center gap-2 mb-3">
               <span className="pill px-3 py-1 text-[10px] font-black tracking-[0.2em] text-red-400 uppercase">{me.username}</span>
@@ -468,11 +474,10 @@
               </div>
 
 
-              {isMobile && (
-                <button onClick={()=>setSidebarOpen(true)} className="soft-btn px-4 py-2 text-[10px] font-black tracking-[0.25em] uppercase text-gray-200">
-                  <i className="fas fa-users mr-2"></i>Users
-                </button>
-              )}
+              {/* Menu toggle */}
+              <button onClick={()=>setSidebarOpen(true)} className="soft-btn px-4 py-2 text-[10px] font-black tracking-[0.25em] uppercase text-gray-200">
+                <i className="fas fa-bars mr-2"></i>Menu
+              </button>
               {peer && (
                 <button onClick={disconnect} className="soft-btn px-4 py-2 text-[10px] font-black tracking-[0.25em] uppercase text-gray-200">
                   <i className="fas fa-link-slash mr-2"></i>Disconnect
