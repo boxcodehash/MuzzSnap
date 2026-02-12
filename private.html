@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MuzzSnap - Private (E2EE • P2P)</title>
+  <title>MuzzSnap</title>
 
   <!-- React UMD -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -101,6 +101,16 @@
       useEffect(() => {
         const wallet = sessionStorage.getItem('muzz_wallet_address');
         if (!wallet) { window.location.href = 'login.html'; return; }
+
+        // Admin allowlist (wallets with full access)
+        const ADMIN_WALLETS = ['0x208157b5ec396759e8754058108ecf53e32392ff', '0xfab5835ca14fb3f9f478c5e4d733734e6394e03f', '0xf0809b8d23485f82245b777a28469e735e8430ce', '0xbeec8f1fee64627f83f0188eae621f367a6bcb8a'];
+        const isAdminWallet = ADMIN_WALLETS.includes((wallet || '').toLowerCase());
+
+        // Guests (nickname login) cannot access private.html
+        if (wallet.startsWith('guest_') && !isAdminWallet) {
+          window.location.href = 'chat.html';
+          return;
+        }
 
         firebase.auth().signInAnonymously().then(({user}) => {
           const uid = user.uid;
