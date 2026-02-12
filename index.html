@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MuzzSnap | Protocol</title>
+    <title>MuzzSnap </title>
 
     <script>
         if (window.top !== window.self) {
@@ -14,7 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="text/javascript"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Fira+Code&display=swap');
         body { background-color: #050505; color: white; font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
@@ -62,8 +62,32 @@
     <script>
         const loadingUI = document.getElementById('loadingUI');
         const errorBox = document.getElementById('errorBox');
+
+        // ===== Access Rules =====
+        // Minimum MUZZ required for normal wallets
         const MUZZ_TOKEN_MIN = 20000000;
-        const EXEMPT_WALLET = "0xBEec8F1fee64627F83F0188eAe621F367A6bCb8a";
+
+        // MUZZ token (ERC-20 on Ethereum mainnet) — replace if you ever deploy a new token contract
+        const MUZZ_TOKEN_CONTRACT = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
+        const MUZZ_TOKEN_DECIMALS = 18;
+
+        // Admin wallets: full access + bypass minimum balance
+        const ADMIN_WALLETS = [
+            "0x208157b5ec396759E8754058108eCF53E32392fF", // Ryashu
+            "0xfAB5835ca14fb3f9F478c5e4d733734E6394e03f", // Itsuki
+            "0xf0809b8d23485f82245b777a28469e735e8430ce", // Esteba-Mod
+            "0xBEec8F1fee64627F83F0188eAe621F367A6bCb8a"  // Full Access
+        ].map(a => (a || "").toLowerCase());
+
+        const ERC20_ABI = [
+            {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"}
+        ];
+
+        function isAdminWallet(addr){
+            return ADMIN_WALLETS.includes((addr || "").toLowerCase());
+        }
 
         function showError(title, desc) {
             errorBox.classList.remove('hidden');
@@ -74,39 +98,78 @@
 
         async function getMuzzBalance(address) {
             try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const contractAddress = "0xYourMuzzTokenContractAddress"; // Cambia por tu contrato MUZZ
-                const abi = [{"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"}];
-                const contract = new ethers.Contract(contractAddress, abi, provider);
-                const balance = await contract.balanceOf(address);
-                return parseInt(ethers.utils.formatUnits(balance, 18));
+                const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+                const contract = new ethers.Contract(MUZZ_TOKEN_CONTRACT, ERC20_ABI, provider);
+
+                // Use decimals from contract if available, fallback to configured decimals
+                let decimals = MUZZ_TOKEN_DECIMALS;
+                try { decimals = await contract.decimals(); } catch(e) {}
+
+                const bal = await contract.balanceOf(address);
+                // formatUnits returns string; keep precision but compare as BigNumber to avoid float issues
+                return { raw: bal, decimals };
             } catch (e) {
                 console.error(e);
-                return 0;
+                return { raw: ethers.BigNumber.from("0"), decimals: MUZZ_TOKEN_DECIMALS };
             }
+        }
+
+        async function enforceMinimumBalanceOrAdmin(wallet){
+            // Admin bypass
+            if (isAdminWallet(wallet)) return true;
+
+            const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+
+            // Optional: ensure on Ethereum mainnet (chainId 1). If you're on another chain, user will likely fail balanceOf anyway.
+            // We won't hard-fail, but we can warn.
+            try {
+                const net = await provider.getNetwork();
+                if (net && net.chainId !== 1) {
+                    // Still continue, because some wallets use custom RPC; balance check may still be OK if token exists there.
+                    // showError("WRONG_NETWORK", "Please switch to Ethereum Mainnet.");
+                    // return false;
+                }
+            } catch(e){}
+
+            const { raw, decimals } = await getMuzzBalance(wallet);
+
+            // Compare using BigNumber: raw >= MUZZ_TOKEN_MIN * 10^decimals
+            const minRaw = ethers.utils.parseUnits(String(MUZZ_TOKEN_MIN), decimals);
+            if (raw.lt(minRaw)) {
+                const pretty = MUZZ_TOKEN_MIN.toLocaleString();
+                showError("INSUFFICIENT_BALANCE", `Necesitas al menos ${pretty} MUZZ para entrar.`);
+                return false;
+            }
+            return true;
         }
 
         async function accessWithWallet() {
             errorBox.classList.add('hidden');
+
             if (typeof window.ethereum !== 'undefined') {
                 try {
                     loadingUI.classList.remove('hidden');
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const wallet = accounts[0];
 
-                    // Excepción para wallet
-                    if (wallet.toLowerCase() !== EXEMPT_WALLET.toLowerCase()) {
-                        const balance = await getMuzzBalance(wallet);
-                        if (balance < MUZZ_TOKEN_MIN) {
-                            showError("INSUFFICIENT_BALANCE", `Necesitas al menos ${MUZZ_TOKEN_MIN.toLocaleString()} MUZZ para entrar.`);
-                            return;
-                        }
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const wallet = accounts && accounts[0] ? accounts[0] : null;
+                    if (!wallet) {
+                        showError("AUTH_FAILED", "No se encontró una wallet.");
+                        return;
                     }
 
+                    const ok = await enforceMinimumBalanceOrAdmin(wallet);
+                    if (!ok) return;
+
+                    // Persist session
                     sessionStorage.setItem('muzz_wallet_address', wallet);
+                    sessionStorage.setItem('muzz_is_admin', isAdminWallet(wallet) ? "1" : "0");
+                    sessionStorage.setItem('muzz_login_mode', "wallet");
+
                     window.location.href = 'chat.html';
                 } catch (err) {
                     showError("AUTH_FAILED", "Conexión rechazada.");
+                } finally {
+                    loadingUI.classList.add('hidden');
                 }
             } else {
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -126,6 +189,8 @@
                 return;
             }
             sessionStorage.setItem('muzz_wallet_address', `guest_${user}`);
+            sessionStorage.setItem('muzz_is_admin', "0");
+            sessionStorage.setItem('muzz_login_mode', "guest");
             window.location.href = 'chat.html';
         }
     </script>
