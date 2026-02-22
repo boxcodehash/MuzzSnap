@@ -1,538 +1,337 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MuzzSnap</title>
 
-  <!-- React UMD -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-
-  <!-- Firebase (signaling + presence only) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-  <!-- Crypto (TweetNaCl) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl-util/0.15.1/nacl-util.min.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&family=Orbitron:wght@400;900&display=swap');
-    :root{--muzz-red:#ff0000;--ryachu-gold:#ffcc00;--itsuki-blue:#00d4ff}
-    html,body{height:100%;overflow:hidden;margin:0;padding:0}
-    body{background:#050505;color:white}
-    .panel-3d{border-radius:24px;transition:all 0.3s ease;display:flex;flex-direction:column;height:100%;background:#0c0c0c;border:1px solid rgba(255,0,0,0.15);box-shadow:0 10px 30px rgba(0,0,0,0.8)}
-    .bubble-3d{padding:12px 16px;border-radius:20px;font-size:14px;max-width:85%;line-height:1.4;position:relative}
-    .bubble-3d.me{background:linear-gradient(145deg,#ff0000,#b30000);color:white;align-self:flex-end;border-bottom-right-radius:4px}
-    .bubble-3d.other{background:#1a1a1a;border:1px solid rgba(255,255,255,0.05)}
-    .custom-scroll::-webkit-scrollbar{width:4px}
-    .custom-scroll::-webkit-scrollbar-thumb{background:var(--muzz-red);border-radius:10px}
-    .online-indicator{width:8px;height:8px;background:#39ff14;border-radius:50%;box-shadow:0 0 8px #39ff14}
-    .hacker-input{font-family:'Fira Code',monospace;color:#39ff14!important}
-    .pill{border:1px solid rgba(255,0,0,0.25);background:rgba(255,0,0,0.05);border-radius:999px}
-    .soft-btn{border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);border-radius:14px}
-    .soft-btn:hover{background:rgba(255,0,0,0.08);border-color:rgba(255,0,0,0.25)}
-  
-    /* ===== Mobile responsiveness ===== */
-    :root { --safe-b: env(safe-area-inset-bottom); --safe-t: env(safe-area-inset-top); }
-    .muzz-app { height: 100dvh; }
-    @supports not (height: 100dvh) { .muzz-app { height: 100vh; } }
-
-    /* Sidebar drawer on mobile */
-    .pm-drawer-overlay { display:none; }
-    @media (max-width: 900px){
-      body { overflow: hidden; }
-      .pm-drawer-overlay{
-        display: block;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.65);
-        backdrop-filter: blur(6px);
-        z-index: 9998;
-      }
-      .pm-drawer{
-        position: fixed;
-        top: 0; left: 0; bottom: 0;
-        width: min(90vw, 340px);
-        z-index: 9999;
-        transform: translateX(-105%);
-        transition: transform .25s ease;
-        padding-top: calc(10px + var(--safe-t));
-        padding-bottom: calc(10px + var(--safe-b));
-      }
-      .pm-drawer.open{ transform: translateX(0); }
-      .pm-main{
-        width: 100% !important;
-      }
-      .pm-wrap{
-        padding: 8px !important;
-        gap: 10px !important;
-      }
-      .pm-header{
-        padding-top: calc(10px + var(--safe-t)) !important;
-      }
-      .pm-inputbar{
-        padding-bottom: calc(14px + var(--safe-b)) !important;
-      }
-    }
-
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
+    :root { --muzz-red: #ff0000; --muzz-bg: #050505; }
+    body { background: var(--muzz-bg); color: white; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
+    .panel-3d { background: #0c0c0c; border: 1px solid rgba(255,0,0,0.1); border-radius: 24px; }
+    .bubble-3d { padding: 12px 16px; border-radius: 18px; font-size: 14px; position: relative; max-width: 85%; word-break: break-word; }
+    .bubble-3d.me { background: linear-gradient(135deg, #ff0000, #800000); align-self: flex-end; border-bottom-right-radius: 4px; }
+    .bubble-3d.other { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .hacker-input { font-family: 'Fira Code', monospace; color: #ff0000 !important; background: transparent; border: none; outline: none; }
+    .custom-scroll::-webkit-scrollbar { width: 3px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: var(--muzz-red); }
+    /* Clase para ocultar elementos de inspeccion simple */
+    .stealth-mode { filter: contrast(1.1) brightness(0.9); }
   </style>
 </head>
-
 <body>
   <div id="root" class="h-full"></div>
 
   <script type="text/babel">
-    const {useEffect, useMemo, useRef, useState} = React;
+    const { useState, useEffect, useRef } = React;
 
-    // --- Firebase config (same project as your chat.html) ---
-    const firebaseConfig = {
+    const ADDR_CONTRACT = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
+    const ABI_BALANCE = [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"}];
+
+    // Admin bypass (4 wallets)
+    const ADMIN_WALLETS = [
+      "0x208157b5ec396759e8754058108ecf53e32392ff", // Ryachu
+      "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f", // Itsuki
+      "0xf0809b8d23485f82245b777a28469e735e8430ce", // Esteban
+      "0xbeec8f1fee64627f83f0188eae621f367a6bcb8a"  // Additional bypass
+    ];
+
+    // Team Finance staking wallet (users send MUZZ here)
+    const TEAM_FINANCE_STAKING = "0xd6A07b8065f9e8386A9a5bBA6A754a10A9CD1074";
+
+    // Minimum access: 10,000,000 MUZZ
+    const MIN_MUZZ = 10000000;
+
+    // Configuración Base de Datos (Mantenida igual)
+    const _fb = {
       apiKey: atob('QUl6YVN5QWUxLUpmTmRlME5LSU1kRTdwaGZFWGxtOUphcVVIMGpZ'),
-      authDomain: atob('cHVsc2FyaS5maXJlYmFzZWFwcC5jb20='),
       databaseURL: atob('aHR0cHM6Ly9wdWxzYXJpLWRlZmF1bHQtcnRkYi5maXJlYmFzZWlvLmNvbQ=='),
-      projectId: atob('cHVsc2FyaQ=='),
-      storageBucket: atob('cHVsc2FyaS5maXJlYmFzZXN0b3JhZ2UuYXBw'),
-      messagingSenderId: atob('ODI0MzA2MzIxMjMz'),
-      appId: atob('MTo4MjQzMDYzMjEyMzM6d2ViOjJjOWJmYTAyMTcwYTE3ZDU2MGI1NzA=')
+      projectId: atob('cHVsc2FyaQ==')
     };
-
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) firebase.initializeApp(_fb);
     const db = firebase.database();
 
-    const b64 = {
-      enc: (u8) => nacl.util.encodeBase64(u8),
-      dec: (s) => nacl.util.decodeBase64(s),
+    // --- MOTOR DE CIFRADO E3EE (P2P) ---
+    const _S = "Muzzle_Quantum_Shield_2026"; 
+    const _enc = async (t) => {
+      const e = new TextEncoder();
+      const k = await crypto.subtle.importKey("raw", e.encode(_S), {name: "AES-GCM"}, false, ["encrypt"]);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const res = await crypto.subtle.encrypt({name: "AES-GCM", iv}, k, e.encode(t));
+      return btoa(JSON.stringify({ a: Array.from(iv), b: Array.from(new Uint8Array(res)) }));
     };
 
-    function safeRoomId(a, b){
-      const [x,y] = [a,b].sort();
-      return `pm_${x}_${y}`;
+    const _dec = async (c) => {
+      try {
+        const {a, b} = JSON.parse(atob(c));
+        const e = new TextEncoder();
+        const k = await crypto.subtle.importKey("raw", e.encode(_S), {name: "AES-GCM"}, false, ["decrypt"]);
+        const res = await crypto.subtle.decrypt({name: "AES-GCM", iv: new Uint8Array(a)}, k, new Uint8Array(b));
+        return new TextDecoder().decode(res);
+      } catch (err) { return "󰈡 [Contenido Cifrado]"; }
+    };
+
+    // Helpers
+    const _isGuest = (addr) => (addr || "").startsWith("guest_");
+    const _isAdmin = (addr) => ADMIN_WALLETS.includes((addr || "").toLowerCase());
+
+    const _toLowerAddr = (a) => (a || "").toLowerCase();
+    const _isAddr = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || "");
+
+    async function _getProvider() {
+      if (!window.ethereum) throw new Error("NO_WALLET");
+      // ethers v6 BrowserProvider
+      return new ethers.BrowserProvider(window.ethereum);
     }
 
-    function App(){
-      const [me, setMe] = useState(null);
-      const [online, setOnline] = useState([]);
-      const [peer, setPeer] = useState(null);
-      const [status, setStatus] = useState({phase:'idle', note:'Select a user to start a private chat'});
-      const [messages, setMessages] = useState([]);
-      const [text, setText] = useState('');
-      const [search, setSearch] = useState('');
+    async function _getDecimals(provider) {
+      const contract = new ethers.Contract(ADDR_CONTRACT, ABI_BALANCE, provider);
+      try { return await contract.decimals(); } catch(e) { return 18n; }
+    }
 
-      const [isMobile, setIsMobile] = useState(false);
-      const [sidebarOpen, setSidebarOpen] = useState(false);
+    async function _hasWalletBalance(provider, userAddr, minHuman) {
+      const contract = new ethers.Contract(ADDR_CONTRACT, ABI_BALANCE, provider);
+      const dec = await contract.decimals().catch(()=>18);
+      const bal = await contract.balanceOf(userAddr);
+      const minRaw = BigInt(minHuman) * (10n ** BigInt(dec));
+      return bal >= minRaw;
+    }
 
-      const pcRef = useRef(null);
-      const dcRef = useRef(null);
+    // Sum of transfers user -> staking wallet (Team Finance) for MUZZ token
+    // NOTE: If token has been live a long time, scanning from block 0 can be slow. Once you know deploy block, set FROM_BLOCK to that.
+    const FROM_BLOCK = 0;
+    async function _sumStakedToTeamFinance(provider, userAddr) {
+      const iface = new ethers.Interface([
+        "event Transfer(address indexed from, address indexed to, uint256 value)"
+      ]);
+      const topic0 = iface.getEvent("Transfer").topicHash;
+      const fromTopic = ethers.zeroPadValue(_toLowerAddr(userAddr), 32);
+      const toTopic = ethers.zeroPadValue(_toLowerAddr(TEAM_FINANCE_STAKING), 32);
 
-      // E2EE keys (ephemeral per-session)
-      const myKeyPairRef = useRef(null);
-      const peerPubKeyRef = useRef(null);
-      const sharedKeyRef = useRef(null);
+      const logs = await provider.getLogs({
+        address: ADDR_CONTRACT,
+        fromBlock: FROM_BLOCK,
+        toBlock: "latest",
+        topics: [topic0, fromTopic, toTopic]
+      });
 
-      const sigRefs = useRef({room:null, offer:null, answer:null, cand:null, keys:null});
-      const bottomRef = useRef(null);
+      let total = 0n;
+      for (const l of logs) {
+        const parsed = iface.parseLog(l);
+        total += BigInt(parsed.args.value.toString());
+      }
+      return total;
+    }
 
-      const filteredOnline = useMemo(() => {
-        const s = search.trim().toLowerCase();
-        const list = online.filter(u => u?.uid && u?.username && me?.uid && u.uid !== me.uid);
-        if (!s) return list;
-        return list.filter(u => (u.username||'').toLowerCase().includes(s));
-      }, [online, search, me]);
+    async function _hasStaked(provider, userAddr, minHuman) {
+      const contract = new ethers.Contract(ADDR_CONTRACT, ABI_BALANCE, provider);
+      const dec = await contract.decimals().catch(()=>18);
+      const minRaw = BigInt(minHuman) * (10n ** BigInt(dec));
+      const total = await _sumStakedToTeamFinance(provider, userAddr);
+      return total >= minRaw;
+    }
+
+    function App() {
+      const [u, setU] = useState(null);
+      const [m, setM] = useState([]);
+      const [txt, setTxt] = useState("");
+      const [ch, setCh] = useState("GENERAL");
+      const [isP, setIsP] = useState(false);
+      const [menuOpen, setMenuOpen] = useState(false);
+      const scroll = useRef();
 
       useEffect(() => {
-        const wallet = sessionStorage.getItem('muzz_wallet_address');
-        if (!wallet) { window.location.href = 'login.html'; return; }
+        const a = sessionStorage.getItem('muzz_wallet_address');
+        if(!a) { window.location.href='login.html'; return; }
 
-        // Admin allowlist (wallets with full access)
-        const ADMIN_WALLETS = ['0x208157b5ec396759e8754058108ecf53e32392ff', '0xfab5835ca14fb3f9f478c5e4d733734e6394e03f', '0xf0809b8d23485f82245b777a28469e735e8430ce', '0xbeec8f1fee64627f83f0188eae621f367a6bcb8a'];
-        const isAdminWallet = ADMIN_WALLETS.includes((wallet || '').toLowerCase());
-
-        // Guests (nickname login) cannot access private.html
-        if (wallet.startsWith('guest_') && !isAdminWallet) {
+        // Guest cannot access private page at all (policy)
+        if(_isGuest(a)) {
+          alert("Guest mode is chat-only. Connect your wallet (10,000,000 MUZZ balance or staked in Team Finance) to access Private.");
           window.location.href = 'chat.html';
           return;
         }
 
-        firebase.auth().signInAnonymously().then(({user}) => {
-          const uid = user.uid;
+        // Ensure Firebase auth for secured rules
+        firebase.auth().signInAnonymously().catch(()=>{});
 
-          const isWallet = !wallet.startsWith('guest_');
-          let username = '';
-          let role = 'user';
-
-          if (isWallet){
-            username = `Node_${wallet.slice(-4)}`;
-          } else {
-            username = wallet.replace('guest_','');
-            role = 'guest';
-          }
-
-          setMe({uid, username, role, isWallet});
-
-          db.ref(`status/${uid}`).onDisconnect().remove();
-          db.ref(`status/${uid}`).set({uid, username, role, ts: Date.now(), mode:'private'});
-
-          db.ref('status').on('value', snap => {
-            const v = snap.val();
-            setOnline(v ? Object.values(v).filter(Boolean) : []);
-          });
-
-          myKeyPairRef.current = nacl.box.keyPair(); // Curve25519
-        }).catch(() => window.location.href='login.html');
+        setU({ addr: a, id: a.slice(-4) });
+        listen("GENERAL");
       }, []);
 
-      useEffect(() => {
-        const mq = window.matchMedia ? window.matchMedia('(max-width: 980px)') : null;
-
-        const compute = () => {
-          const vv = window.visualViewport ? window.visualViewport.width : 0;
-          const iw = window.innerWidth || document.documentElement.clientWidth || 0;
-          const w = Math.min(iw || 9999, vv || 9999);
-          const m = (mq ? mq.matches : false) || (w > 0 ? w <= 980 : true);
-          setIsMobile(!!m);
-          // keep current open state if already toggled; default closed on mobile, open on desktop
-          setSidebarOpen(prev => (m ? false : true));
-        };
-
-        compute();
-        window.addEventListener('resize', compute, {passive:true});
-
-        if (mq) {
-          try { mq.addEventListener('change', compute); } catch(e){ try{ mq.addListener(compute); }catch(_){ } }
-        }
-
-        return () => {
-          window.removeEventListener('resize', compute);
-          if (mq) {
-            try { mq.removeEventListener('change', compute); } catch(e){ try{ mq.removeListener(compute); }catch(_){ } }
-          }
-        };
-      }, []);
-
-
-      useEffect(() => { bottomRef.current?.scrollIntoView({behavior:'smooth'}); }, [messages]);
-
-      function addSystem(msg){
-        setMessages(prev => [...prev, {id: crypto.randomUUID(), sys:true, t:Date.now(), text: msg}]);
-      }
-
-      function cleanupConnection(){
-        try {
-          if (dcRef.current){
-            try{ dcRef.current.onmessage = null; dcRef.current.onopen = null; dcRef.current.onclose = null; dcRef.current.close(); }catch(e){}
-          }
-          dcRef.current = null;
-
-          if (pcRef.current){
-            try{ pcRef.current.onicecandidate = null; pcRef.current.onconnectionstatechange = null; pcRef.current.ondatachannel = null; pcRef.current.close(); }catch(e){}
-          }
-          pcRef.current = null;
-
-          sharedKeyRef.current = null;
-          peerPubKeyRef.current = null;
-
-          const r = sigRefs.current;
-          try{ r.offer?.off(); }catch(e){}
-          try{ r.answer?.off(); }catch(e){}
-          try{ r.cand?.off(); }catch(e){}
-          try{ r.keys?.off(); }catch(e){}
-          sigRefs.current = {room:null, offer:null, answer:null, cand:null, keys:null};
-        } catch(e){}
-      }
-
-      async function startChatWith(user){
-        if (!me?.uid) return;
-        if (peer?.uid === user.uid) return;
-
-        cleanupConnection();
-        setPeer(user);
-        setMessages([]);
-        setText('');
-        setStatus({phase:'connecting', note:`Connecting to ${user.username}…`});
-
-        const roomId = safeRoomId(me.uid, user.uid);
-        const initiator = me.uid < user.uid;
-
-        addSystem(`Private chat started with ${user.username}. (E2EE + P2P)`);
-        addSystem(`Only signaling uses Firebase. Messages travel encrypted over WebRTC.`);
-
-        const pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
-          ]
+      const listen = (target) => {
+        db.ref('messages/' + target).limitToLast(30).on('value', async (s) => {
+          const val = s.val();
+          if(!val) { setM([]); return; }
+          const raw = Object.values(val);
+          if(target === "ARCHIVO") {
+            const resolved = await Promise.all(raw.map(async x => ({...x, content: await _dec(x.content)})));
+            setM(resolved);
+          } else { setM(raw); }
         });
-        pcRef.current = pc;
+      };
 
-        pc.onconnectionstatechange = () => {
-          const st = pc.connectionState;
-          if (st === 'connected') setStatus({phase:'connected', note:'P2P connected • E2EE active'});
-          if (st === 'disconnected' || st === 'failed') setStatus({phase:'error', note:'Connection lost'});
-        };
+      const switchCh = async (target) => {
+        if(!u) return;
 
-        if (initiator){
-          const dc = pc.createDataChannel('muzz_pm', {ordered:true});
-          wireDataChannel(dc);
-          dcRef.current = dc;
+        if(target === "ARCHIVO") {
+          // ARCHIVO is the protected P2P/E3EE room
+          const userA = u.addr.toLowerCase();
+
+          // Admin bypass (all 4)
+          if (_isAdmin(userA)) {
+            setCh("ARCHIVO"); setIsP(true); listen("ARCHIVO"); setMenuOpen(false); return;
+          }
+
+          if(!_isAddr(u.addr)) {
+            alert("Wallet inválida.");
+            return;
+          }
+
+          try {
+            const provider = await _getProvider();
+
+            // 1) Wallet balance >= 10M
+            const okBal = await _hasWalletBalance(provider, u.addr, MIN_MUZZ);
+            if (okBal) {
+              setCh("ARCHIVO"); setIsP(true); listen("ARCHIVO"); setMenuOpen(false); return;
+            }
+
+            // 2) Staked (sent to Team Finance) >= 10M
+            const okStake = await _hasStaked(provider, u.addr, MIN_MUZZ);
+            if (okStake) {
+              setCh("ARCHIVO"); setIsP(true); listen("ARCHIVO"); setMenuOpen(false); return;
+            }
+
+            alert("Balance insuficiente: 10,000,000 $MUZZ requerido (en wallet o stakeado en Team Finance).");
+          } catch(e) {
+            console.error(e);
+            alert("Error de Wallet / RPC. Abre la página dentro de MetaMask o un navegador Web3.");
+          }
         } else {
-          pc.ondatachannel = (ev) => {
-            const dc = ev.channel;
-            wireDataChannel(dc);
-            dcRef.current = dc;
-          };
+          setCh(target); setIsP(false); listen(target); setMenuOpen(false);
         }
+      };
 
-        const roomRef = db.ref(`webrtcSignals/${roomId}`);
-        const offerRef = roomRef.child('offer');
-        const answerRef = roomRef.child('answer');
-        const candRef = roomRef.child('candidates');
-        const keysRef = roomRef.child('keys');
+      const send = async (imgData = null) => {
+        const finalContent = imgData || txt;
+        if(!finalContent || !u) return;
 
-        sigRefs.current = {room: roomRef, offer: offerRef, answer: answerRef, cand: candRef, keys: keysRef};
-
-        keysRef.child(me.uid).set({
-          pub: b64.enc(myKeyPairRef.current.publicKey),
+        const payload = isP ? await _enc(finalContent) : finalContent;
+        db.ref('messages/' + ch).push({
+          content: payload,
+          type: imgData ? "img" : "txt",
+          user: `Node_${u.id}`,
+          sender: u.addr,
           ts: Date.now()
         });
+        setTxt("");
+      };
 
-        keysRef.on('value', snap => {
-          const v = snap.val() || {};
-          const other = v[user.uid];
-          if (other?.pub && !peerPubKeyRef.current){
-            try{
-              peerPubKeyRef.current = b64.dec(other.pub);
-              sharedKeyRef.current = nacl.box.before(peerPubKeyRef.current, myKeyPairRef.current.secretKey);
-              addSystem('E2EE key established ✅');
-            } catch(e){
-              addSystem('E2EE key error (public key invalid)');
-            }
-          }
-        });
-
-        pc.onicecandidate = (ev) => {
-          if (ev.candidate){
-            candRef.push({ from: me.uid, c: ev.candidate.toJSON(), ts: Date.now() });
-          }
+      const handleImg = (e) => {
+        const f = e.target.files[0];
+        if(!f) return;
+        const r = new FileReader();
+        r.readAsDataURL(f);
+        r.onload = (ev) => {
+          const i = new Image();
+          i.src = ev.target.result;
+          i.onload = () => {
+            const canvas = document.createElement('canvas');
+            const scale = Math.min(1200 / i.width, 1200 / i.height, 1);
+            canvas.width = i.width * scale;
+            canvas.height = i.height * scale;
+            canvas.getContext('2d').drawImage(i, 0, 0, canvas.width, canvas.height);
+            send(canvas.toDataURL('image/jpeg', 0.7));
+          };
         };
+      };
 
-        candRef.off();
-        candRef.on('child_added', snap => {
-          const v = snap.val();
-          if (!v || v.from === me.uid) return;
-          try{ pc.addIceCandidate(new RTCIceCandidate(v.c)); }catch(e){}
-        });
-
-        offerRef.off(); answerRef.off();
-
-        if (initiator){
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          await offerRef.set({ from: me.uid, sdp: offer.sdp, type: offer.type, ts: Date.now() });
-
-          answerRef.on('value', async snap => {
-            const v = snap.val();
-            if (!v || v.from === me.uid) return;
-            if (!pc.currentRemoteDescription){
-              try{ await pc.setRemoteDescription({type: v.type, sdp: v.sdp}); }catch(e){}
-            }
-          });
-        } else {
-          offerRef.on('value', async snap => {
-            const v = snap.val();
-            if (!v || v.from === me.uid) return;
-            if (!pc.currentRemoteDescription){
-              try{
-                await pc.setRemoteDescription({type: v.type, sdp: v.sdp});
-                const ans = await pc.createAnswer();
-                await pc.setLocalDescription(ans);
-                await answerRef.set({ from: me.uid, sdp: ans.sdp, type: ans.type, ts: Date.now() });
-              } catch(e){}
-            }
-          });
-        }
-      }
-
-      function wireDataChannel(dc){
-        dc.onopen = () => {
-          setStatus({phase:'connected', note:'P2P connected • E2EE active'});
-          addSystem('Secure channel ready 🔒');
-        };
-        dc.onclose = () => {
-          setStatus({phase:'idle', note:'Channel closed'});
-          addSystem('Channel closed');
-        };
-        dc.onmessage = (ev) => {
-          try{
-            const pkt = JSON.parse(ev.data);
-            if (pkt?.t === 'msg'){
-              const shared = sharedKeyRef.current;
-              if (!shared) { addSystem('Received message but E2EE key not ready'); return; }
-              const nonce = b64.dec(pkt.n);
-              const cipher = b64.dec(pkt.c);
-              const plain = nacl.secretbox.open(cipher, nonce, shared);
-              if (!plain){ addSystem('⚠️ Decrypt failed (tampered/wrong key)'); return; }
-              const txt = nacl.util.encodeUTF8(plain);
-              setMessages(prev => [...prev, {id: crypto.randomUUID(), me:false, t:Date.now(), text: txt}]);
-            }
-          }catch(e){}
-        };
-      }
-
-      function send(){
-        if (!text.trim()) return;
-        if (!peer?.uid){ addSystem('Select a user first.'); return; }
-
-        const dc = dcRef.current;
-        const shared = sharedKeyRef.current;
-
-        if (!dc || dc.readyState !== 'open'){ addSystem('Not connected yet.'); return; }
-        if (!shared){ addSystem('E2EE key not ready yet.'); return; }
-
-        const msg = text.trim();
-        const nonce = nacl.randomBytes(nacl.secretbox.nonceLength);
-        const cipher = nacl.secretbox(nacl.util.decodeUTF8(msg), nonce, shared);
-
-        dc.send(JSON.stringify({t:'msg', n: b64.enc(nonce), c: b64.enc(cipher)}));
-        setMessages(prev => [...prev, {id: crypto.randomUUID(), me:true, t:Date.now(), text: msg}]);
-        setText('');
-      }
-
-      function disconnect(){
-        cleanupConnection();
-        setPeer(null);
-        setMessages([]);
-        setStatus({phase:'idle', note:'Disconnected'});
-      }
-
-      if (!me){
-        return <div className="h-full flex items-center justify-center text-red-600 font-[Orbitron] font-black tracking-widest animate-pulse">CONNECTING…</div>;
-      }
+      useEffect(() => { scroll.current?.scrollIntoView(); }, [m]);
 
       return (
-        <div className="muzz-app pm-wrap flex p-2 md:p-4 lg:p-6 gap-4 md:gap-6 max-w-[1600px] mx-auto overflow-hidden">
-          <>{isMobile && sidebarOpen && (<div className="pm-drawer-overlay" onClick={()=>setSidebarOpen(false)}></div>)}
-          <aside className={`panel-3d w-80 max-w-[85vw] p-5 flex flex-col overflow-hidden ${isMobile ? "pm-drawer" : ""} ${isMobile && sidebarOpen ? "open" : ""}`}>
-            <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/30"><i className="fas fa-user-secret text-white text-sm"></i></div><div className="flex-1"><div className="font-[Orbitron] font-black text-lg italic tracking-tighter">MUZZ<span className="text-red-600">SNAP</span></div><div className="text-[10px] text-gray-500 font-bold tracking-[0.25em] uppercase">Private • E2EE • P2P</div></div></div>{isMobile && sidebarOpen && (<button onClick={()=>setSidebarOpen(false)} className="soft-btn w-10 h-10 flex items-center justify-center"><i className="fas fa-xmark"></i></button>)}</div>
+        <div className="flex h-screen p-2 md:p-6 gap-4 stealth-mode">
+          {/* Mobile overlay */}
+          {menuOpen && (
+            <div
+              onClick={() => setMenuOpen(false)}
+              className="fixed inset-0 bg-black/90 z-40 md:hidden backdrop-blur-md"
+            />
+          )}
 
-            <div className="flex items-center gap-2 mb-3">
-              <span className="pill px-3 py-1 text-[10px] font-black tracking-[0.2em] text-red-400 uppercase">{me.username}</span>
-              <span className="pill px-3 py-1 text-[10px] font-black tracking-[0.2em] text-gray-400 uppercase">Online {Math.max(0, online.length - 1)}</span>
-            </div>
-
-            <div className="soft-btn p-2 mb-3 flex items-center gap-2">
-              <i className="fas fa-search text-gray-500 text-xs"></i>
-              <input value={search} onChange={(e)=>setSearch(e.target.value)} className="flex-1 bg-transparent outline-none border-none text-xs hacker-input" placeholder="Search user…" />
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1">
-              {filteredOnline.map(u => (
-                <button key={u.uid} onClick={()=>{ startChatWith(u); if(isMobile) setSidebarOpen(false); }} className={`w-full text-left soft-btn px-3 py-3 flex items-center gap-3 transition-all ${peer?.uid===u.uid ? 'border-red-600/40 bg-red-600/10' : ''}`}>
-                  <span className="online-indicator"></span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-black uppercase tracking-wider truncate">{u.username}</div>
-                    <div className="text-[10px] text-gray-500 font-bold tracking-[0.2em] uppercase truncate">{u.role || 'user'}</div>
-                  </div>
-                  <i className="fas fa-lock text-red-500/80 text-sm"></i>
-                </button>
+          {/* Sidebar (desktop + mobile toggled) */}
+          <aside className={
+            `fixed md:static z-50 inset-y-0 left-0 w-72 md:w-64 transition-transform duration-300 panel-3d p-6 flex flex-col
+             ${menuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`
+          }>
+            <h1 className="font-orbitron font-black text-xl italic mb-8">MUZZ<span className="text-red-600">SNAP</span></h1>
+            <div className="flex-1 space-y-2">
+              {['GENERAL', 'ESPAÑOL', 'DAO'].map(c => (
+                <button key={c} onClick={()=>switchCh(c)} className={`w-full text-left px-4 py-2 rounded-lg text-xs font-bold ${ch===c?'bg-red-600/20 text-red-600':'text-gray-500'}`}># {c}</button>
               ))}
-              {filteredOnline.length === 0 && (
-                <div className="text-xs text-gray-500 font-bold tracking-wider opacity-80 p-3">No users found.</div>
-              )}
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button onClick={()=>window.location.href='chat.html'} className="soft-btn py-3 text-[10px] font-black tracking-[0.25em] uppercase text-gray-300">
-                <i className="fas fa-arrow-left mr-2"></i>Back
+              <button onClick={()=>switchCh("ARCHIVO")} className={`w-full text-left px-4 py-3 rounded-lg text-xs font-black border ${ch==='ARCHIVO'?'bg-red-600 border-red-500':'border-red-600/30 text-red-600'}`}>
+                <i className="fas fa-user-secret mr-2"></i> ARCHIVO (P2P)
               </button>
-              <button onClick={()=>{ sessionStorage.clear(); window.location.href='login.html'; }} className="soft-btn py-3 text-[10px] font-black tracking-[0.25em] uppercase text-red-400">
-                <i className="fas fa-power-off mr-2"></i>Exit
+              <button onClick={()=>alert('Social section — Coming Soon')} 
+                className="w-full text-left px-4 py-3 rounded-lg text-xs font-black border border-blue-600/30 text-blue-400 mt-2 hover:bg-blue-600/10">
+                <i className="fas fa-globe mr-2"></i> SOCIAL
               </button>
-            </div>
-
-            <div className="mt-3 text-[9px] text-gray-500 font-bold tracking-[0.18em] uppercase leading-5 opacity-80">
-              Signaling: Firebase • Transport: WebRTC • Encryption: NaCl secretbox (XSalsa20-Poly1305)
+              <div className="text-[9px] text-gray-600 font-mono leading-snug mt-2">
+                Access: 10,000,000 MUZZ (wallet balance OR staked to Team Finance).
+              </div>
             </div>
           </aside>
-          </>
 
-          <main className="panel-3d pm-main flex-1 overflow-hidden">
-            <header className="pm-header h-16 flex items-center justify-between px-6 border-b border-white/5 bg-white/5">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-red-600/15 border border-red-600/25 flex items-center justify-center">
-                  <i className="fas fa-shield-halved text-red-500"></i>
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-black tracking-[0.2em] uppercase text-red-600 truncate">{peer ? `Private / ${peer.username}` : 'Private Messages'}</div>
-                  <div className="text-[10px] text-gray-500 font-bold tracking-[0.25em] uppercase truncate">{status.note}</div>
-                </div>
-              </div>
-
-
-              {/* Menu toggle */}
-              <button onClick={()=>setSidebarOpen(true)} className="soft-btn px-4 py-2 text-[10px] font-black tracking-[0.25em] uppercase text-gray-200">
-                <i className="fas fa-bars mr-2"></i>Menu
+          {/* Main Chat */}
+          <main className={`flex-1 panel-3d flex flex-col overflow-hidden ${isP ? 'border-red-600/50 shadow-[0_0_15px_rgba(255,0,0,0.1)]' : ''}`}>
+            <header className="h-14 flex items-center px-6 border-b border-white/5 bg-white/5 uppercase text-[10px] font-black tracking-widest text-red-500">
+              <button onClick={() => setMenuOpen(true)} className="md:hidden mr-4 text-red-600">
+                <i className="fas fa-bars"></i>
               </button>
-              {peer && (
-                <button onClick={disconnect} className="soft-btn px-4 py-2 text-[10px] font-black tracking-[0.25em] uppercase text-gray-200">
-                  <i className="fas fa-link-slash mr-2"></i>Disconnect
-                </button>
-              )}
+              {isP && <i className="fas fa-lock mr-2"></i>} Canal: {ch}
+              <button onClick={() => window.location.href='chat.html'} 
+                className="ml-auto text-[9px] border border-red-600/40 px-3 py-1 rounded-lg hover:bg-red-600/20 transition-all">
+                <i className="fas fa-arrow-left mr-1"></i> Back
+              </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-8 flex flex-col gap-4">
-              {messages.map(m => (
-                <div key={m.id} className={`flex flex-col ${m.sys ? 'items-center' : (m.me ? 'items-end' : 'items-start')}`}>
-                  {m.sys ? (
-                    <div className="pill px-4 py-2 text-[10px] font-black tracking-[0.2em] uppercase text-gray-400 text-center max-w-[92%]">{m.text}</div>
-                  ) : (
-                    <div className={`bubble-3d shadow-xl ${m.me ? 'me' : 'other'}`}>{m.text}</div>
-                  )}
-                </div>
-              ))}
-              {messages.length === 0 && (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center max-w-lg">
-                    <div className="text-red-500 font-[Orbitron] font-black tracking-widest uppercase text-sm mb-2">Private Chat</div>
-                    <div className="text-xs text-gray-500 font-bold tracking-[0.18em] uppercase leading-6">
-                      Select an online user to start an encrypted P2P conversation.<br/>
-                      Messages are NOT stored in Firebase (only signaling).
-                    </div>
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scroll">
+              {m.map((x, i) => (
+                <div key={i} className={`flex flex-col ${x.sender === (u && u.addr) ? 'items-end' : 'items-start'}`}>
+                  <div className={`bubble-3d ${x.sender === (u && u.addr) ? 'me' : 'other'}`}>
+                    {x.type === 'img' ? <img src={x.content} className="rounded-lg max-h-60" /> : x.content}
                   </div>
                 </div>
-              )}
-              <div ref={bottomRef}></div>
+              ))}
+              <div ref={scroll}></div>
             </div>
 
-            <div className="pm-inputbar p-4 md:p-6 border-t border-white/5 bg-black/40">
-              <div className="flex items-center bg-black/30 border border-white/10 rounded-2xl p-2.5 pl-5 focus-within:border-red-600/50 transition-all shadow-inner">
-                <input value={text} onChange={(e)=>setText(e.target.value)} onKeyDown={(e)=> e.key==='Enter' && send()}
-                  placeholder={peer ? 'Write private message…' : 'Select a user to start…'}
-                  disabled={!peer}
-                  className="flex-1 bg-transparent border-none outline-none text-sm hacker-input"
-                />
-                <button onClick={send} disabled={!peer}
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center active:scale-95 transition-all shadow-[0_0_20px_rgba(255,0,0,0.25)]
-                    ${peer ? 'bg-red-600 hover:bg-red-500' : 'bg-gray-700 opacity-50 cursor-not-allowed'}`}
-                >
-                  <i className="fas fa-paper-plane text-white"></i>
-                </button>
-              </div>
-
-              <div className="mt-2 text-[9px] text-gray-500 font-bold tracking-[0.18em] uppercase leading-5 opacity-80">
-                Security note: E2EE protects messages in transit. No web app can fully protect if a device/browser is compromised.
+            <div className="p-4 bg-black/40 border-t border-white/5">
+              <div className="flex items-center bg-black/50 rounded-2xl p-2 px-4 border border-white/10 focus-within:border-red-600/50">
+                {isP && (
+                  <label className="mr-3 text-gray-500 hover:text-red-500 cursor-pointer">
+                    <i className="fas fa-camera text-lg"></i>
+                    <input type="file" accept="image/*" onChange={handleImg} className="hidden" />
+                  </label>
+                )}
+                <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Escribir..." className="flex-1 hacker-input text-sm" />
+                <button onClick={()=>send()} className="w-10 h-10 bg-red-600 rounded-xl ml-2"><i className="fas fa-paper-plane text-xs"></i></button>
               </div>
             </div>
           </main>
         </div>
       );
     }
-
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
