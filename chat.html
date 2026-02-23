@@ -35,20 +35,17 @@ const _0xperm=()=>{try{
 }catch(e){return {isGuest:true,isAdmin:false,canPrivate:false,canSocial:false};}};
 const _0xgate=(_0xkind)=>{
   const p=_0xperm();
+  // Guests are chat-only (can see buttons but cannot enter)
   if(p.isGuest){
     alert("Minimum required: 10,000,000 MUZZ (wallet balance OR staked in Team Finance). Connect your wallet to unlock this section.");
     return false;
   }
-  if(_0xkind==='private'&&!p.canPrivate){
-    alert("Minimum required: 10,000,000 MUZZ (wallet balance OR staked in Team Finance) to access Private.");
-    return false;
-  }
-  if(_0xkind==='social'&&!p.canSocial){
-    alert("Minimum required: 10,000,000 MUZZ (wallet balance OR staked in Team Finance) to access Social.");
-    return false;
-  }
+  // Wallet users can proceed; Private/Social pages enforce the 10M gate.
   return true;
 };
+const _0xgoPrivate=()=>{ if(!_0xgate('private'))return; window.location.href='private.html'; };
+const _0xgoSocial=()=>{ if(!_0xgate('social'))return; window.location.href='social.html'; };
+
 const _0xgoPrivate=()=>{ if(!_0xgate('private'))return; window.location.href='private.html'; };
 const _0xgoSocial=()=>{ if(!_0xgate('social'))return; window.location.href='social.html'; };
 
