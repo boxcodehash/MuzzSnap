@@ -14,7 +14,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 
-  <!-- Firebase (compat) - mismo proyecto que tu chat -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
@@ -22,39 +22,22 @@
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Fira+Code&display=swap');
-    body {
-      background-color:#050505; color:white; font-family:sans-serif;
-      min-height:100vh; display:flex; align-items:center; justify-content:center; margin:0;
-    }
-    .logo-glow{
-      box-shadow:0 0 40px rgba(255,0,0,.2);
-      border:1px solid rgba(255,255,255,.1);
-      transition:.3s; cursor:pointer;
-    }
-    .logo-glow:active{transform:scale(.95)}
-    .loading-spinner{
-      animation:spin 1s linear infinite;
-      border:3px solid transparent; border-top-color:#ff0000; border-radius:50%;
-    }
-    .hacker-input{
-      font-family:'Fira Code', monospace;
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,0,0,.2);
-      color:#39ff14;
-    }
-    @keyframes spin{to{transform:rotate(360deg)}}
+    body { background:#050505; color:#fff; height:100vh; display:flex; align-items:center; justify-content:center; margin:0; }
+    .logo-glow{ box-shadow:0 0 40px rgba(255,0,0,.2); border:1px solid rgba(255,255,255,.1); transition:.3s; cursor:pointer; }
+    .logo-glow:active{ transform:scale(.95); }
+    .loading-spinner{ animation:spin 1s linear infinite; border:3px solid transparent; border-top-color:#ff0000; border-radius:50%; }
+    .hacker-input{ font-family:'Fira Code', monospace; background:rgba(255,255,255,.03); border:1px solid rgba(255,0,0,.2); color:#39ff14; }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
   </style>
 </head>
 
 <body>
   <div class="text-center px-6 w-full max-w-sm">
-    <div class="relative inline-block mb-6">
+    <div id="btnConnect" class="relative inline-block mb-6">
       <div id="loadingUI" class="hidden absolute inset-0 z-20 flex items-center justify-center bg-black/50 rounded-3xl">
         <div class="loading-spinner w-12 h-12"></div>
       </div>
-
       <img
-        id="btnConnect"
         src="https://img1.wsimg.com/isteam/ip/ac9578cb-a6ce-417e-8ad5-b2d6701462eb/1000030902.png/:/rs=w:1440,h:1440"
         class="logo-glow w-32 h-32 md:w-40 md:h-40 rounded-3xl"
         alt="MuzzSnap"
@@ -64,23 +47,15 @@
     <h1 style="font-family:'Orbitron';" class="text-2xl font-black tracking-tighter italic mb-1">
       MUZZ<span class="text-red-600">SNAP</span>
     </h1>
-
-    <p id="statusText" class="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-8">
+    <p class="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-8">
       Tap logo for Wallet or use Guest below
     </p>
 
     <div class="space-y-4 mb-8">
-      <input
-        type="text"
-        id="usernameInput"
-        placeholder="ENTER_NICKNAME..."
-        class="w-full p-3 rounded-xl hacker-input text-center text-xs border-dashed"
-        autocomplete="off"
-      />
-      <button
-        id="btnGuest"
-        class="w-full py-2 text-[9px] font-bold text-gray-500 hover:text-red-500 uppercase tracking-widest transition-colors"
-      >
+      <input type="text" id="usernameInput" placeholder="ENTER_NICKNAME..."
+        class="w-full p-3 rounded-xl hacker-input text-center text-xs border-dashed" autocomplete="off" />
+      <button id="btnGuest"
+        class="w-full py-2 text-[9px] font-bold text-gray-500 hover:text-red-500 uppercase tracking-widest transition-colors">
         [ Initialize Guest Protocol ]
       </button>
     </div>
@@ -90,10 +65,8 @@
       <p id="errorDesc" class="text-gray-400 text-[10px] leading-tight"></p>
     </div>
 
-    <button
-      id="btnOpenMetamask"
-      class="hidden w-full py-2 mb-6 text-[9px] font-black uppercase tracking-widest rounded-xl border border-red-600/40 text-red-400 hover:bg-red-600/10 transition"
-    >
+    <button id="btnOpenMetamask"
+      class="hidden w-full py-2 mb-6 text-[9px] font-black uppercase tracking-widest rounded-xl border border-red-600/40 text-red-400 hover:bg-red-600/10 transition">
       Open in MetaMask (optional)
     </button>
 
@@ -103,237 +76,94 @@
   </div>
 
   <script>
-    // ====== CONFIG ======
-    // MUZZ token contract (tu mismo contrato que usabas en private.html: 0xef3d...)
-    const MUZZ_TOKEN = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
-
-    // staking wallet (Team Finance)
-    const STAKING_WALLET = "0xd6A07b8065f9e8386A9a5bBA6A754a10A9CD1074";
-
-    // mínimo 10M MUZZ (en unidades humanas)
-    const MIN_MUZZ = 10_000_000;
-
-    // cuánto historial de bloques revisar para “staking por transferencia”
-    // (sube si hace falta, pero demasiado alto puede ser lento/fallar en algunos providers)
-    const STAKE_LOOKBACK_BLOCKS = 450_000;
-
-    // Admin bypass (4 wallets)
-    const ADMIN_BYPASS = new Set([
-      "0x208157b5ec396759e8754058108ecf53e32392ff", // Ryashu
-      "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f", // Itsuki
-      "0xf0809b8d23485f82245b777a28469e735e8430ce", // Esteban-Mod
-      "0xbeec8f1fee64627f83f0188eae621f367a6bcb8a"  // extra bypass
-    ]);
-
-    // ====== FIREBASE INIT (igual que tu chat) ======
+    // ==== Firebase init (igual a tu chat) ====
     const _fb = {
       apiKey: atob('QUl6YVN5QWUxLUpmTmRlME5LSU1kRTdwaGZFWGxtOUphcVVIMGpZ'),
       authDomain: atob('cHVsc2FyaS5maXJlYmFzZWFwcC5jb20='),
-      projectId: atob('cHVsc2FyaQ=='),
       databaseURL: atob('aHR0cHM6Ly9wdWxzYXJpLWRlZmF1bHQtcnRkYi5maXJlYmFzZWlvLmNvbQ=='),
+      projectId: atob('cHVsc2FyaQ=='),
       storageBucket: atob('cHVsc2FyaS5maXJlYmFzZXN0b3JhZ2UuYXBw'),
       messagingSenderId: atob('ODI0MzA2MzIxMjMz'),
       appId: atob('MTo4MjQzMDYzMjEyMzM6d2ViOjJjOWJmYTAyMTcwYTE3ZDU2MGI1NzA=')
     };
     if (!firebase.apps.length) firebase.initializeApp(_fb);
 
-    // ====== UI ======
-    const loadingUI = document.getElementById("loadingUI");
-    const errorBox  = document.getElementById("errorBox");
-    const btnConnect = document.getElementById("btnConnect");
-    const btnGuest = document.getElementById("btnGuest");
-    const btnOpenMetamask = document.getElementById("btnOpenMetamask");
+    const loadingUI = document.getElementById('loadingUI');
+    const errorBox = document.getElementById('errorBox');
+    const btnOpenMetamask = document.getElementById('btnOpenMetamask');
 
-    function setLoading(on){
-      if(on) loadingUI.classList.remove("hidden");
-      else loadingUI.classList.add("hidden");
-    }
-
-    function showError(title, desc){
-      errorBox.classList.remove("hidden");
-      document.getElementById("errorTitle").innerText = title;
-      document.getElementById("errorDesc").innerText = desc;
+    function setLoading(on){ loadingUI.classList.toggle('hidden', !on); }
+    function showError(t,d){
+      errorBox.classList.remove('hidden');
+      document.getElementById('errorTitle').innerText = t;
+      document.getElementById('errorDesc').innerText = d;
       setLoading(false);
     }
+    function clearError(){ errorBox.classList.add('hidden'); }
 
-    function clearError(){
-      errorBox.classList.add("hidden");
-      document.getElementById("errorTitle").innerText = "";
-      document.getElementById("errorDesc").innerText = "";
+    function goChat(){
+      // cache-bust para evitar “pantalla negra” por cache en GoDaddy/móvil
+      const v = Date.now();
+      window.location.replace(`chat.html?v=${v}`);
+    }
+
+    async function ensureAnonAuth(){
+      return new Promise((resolve)=>{
+        firebase.auth().onAuthStateChanged(async (u)=>{
+          if (u) return resolve(true);
+          try { await firebase.auth().signInAnonymously(); } catch(e) {}
+          resolve(true);
+        });
+      });
     }
 
     function openInMetamask(){
       const dappUrl = window.location.href.replace(/^https?:\/\//, "");
       window.location.href = `https://metamask.app.link/dapp/${dappUrl}`;
     }
-
     btnOpenMetamask.addEventListener("click", openInMetamask);
-
-    // ====== ERC20 ABI minimal ======
-    const ERC20_ABI = [
-      {"constant":true,"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"},
-      {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
-    ];
-
-    async function getTokenDecimals(contract){
-      try { return Number(await contract.decimals()); }
-      catch(e){ return 18; }
-    }
-
-    async function getMuzzBalanceHuman(provider, wallet){
-      const c = new ethers.Contract(MUZZ_TOKEN, ERC20_ABI, provider);
-      const dec = await getTokenDecimals(c);
-      const bal = await c.balanceOf(wallet);
-      return Number(ethers.formatUnits(bal, dec));
-    }
-
-    async function hasStakedByTransferLogs(provider, wallet){
-      // Suma transfers MUZZ: from wallet -> STAKING_WALLET en un rango de bloques
-      // Firma del evento Transfer(address,address,uint256)
-      const topic0 = ethers.id("Transfer(address,address,uint256)");
-      const topicFrom = ethers.zeroPadValue(wallet, 32);
-      const topicTo   = ethers.zeroPadValue(STAKING_WALLET, 32);
-
-      const latest = await provider.getBlockNumber();
-      const fromBlock = Math.max(0, latest - STAKE_LOOKBACK_BLOCKS);
-
-      const c = new ethers.Contract(MUZZ_TOKEN, ERC20_ABI, provider);
-      const dec = await getTokenDecimals(c);
-
-      let logs = [];
-      try{
-        logs = await provider.getLogs({
-          address: MUZZ_TOKEN,
-          fromBlock,
-          toBlock: latest,
-          topics: [topic0, topicFrom, topicTo]
-        });
-      }catch(e){
-        // algunos providers limitan eth_getLogs
-        console.warn(e);
-        return { ok:false, reason:"LOGS_UNAVAILABLE" };
-      }
-
-      // El valor está en data (uint256)
-      let sum = 0n;
-      for(const lg of logs){
-        try{
-          const val = BigInt(lg.data);
-          sum += val;
-        }catch(e){}
-      }
-
-      const human = Number(ethers.formatUnits(sum, dec));
-      return { ok: human >= MIN_MUZZ, staked: human, fromBlock, toBlock: latest };
-    }
-
-    async function ensureFirebaseAuth(){
-      return new Promise((resolve) => {
-        firebase.auth().onAuthStateChanged(async (u)=>{
-          if(u) return resolve(true);
-          try { await firebase.auth().signInAnonymously(); }
-          catch(e){}
-          resolve(true);
-        });
-      });
-    }
 
     async function accessWithWallet(){
       clearError();
       setLoading(true);
 
-      // auth anon para reglas de DB (si lo necesitas después)
-      await ensureFirebaseAuth();
+      await ensureAnonAuth();
 
-      if(typeof window.ethereum === "undefined"){
+      if (typeof window.ethereum === 'undefined') {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        btnOpenMetamask.classList.toggle("hidden", !isMobile);
-        showError(
-          "NO_WALLET_PROVIDER",
-          "This browser has no Web3 provider. You can login as Guest, or (optional) open inside MetaMask."
-        );
+        btnOpenMetamask.classList.toggle('hidden', !isMobile);
+        showError("NO_WALLET", "No Web3 wallet detected in this browser. Use Guest or optionally open in MetaMask.");
         return;
       }
 
-      try{
+      try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await provider.send("eth_requestAccounts", []);
         const wallet = accounts[0];
-        const wLower = wallet.toLowerCase();
 
-        // Admin bypass
-        if(ADMIN_BYPASS.has(wLower)){
-          sessionStorage.setItem("muzz_wallet_address", wallet);
-          sessionStorage.setItem("muzz_login_mode", "wallet");
-          sessionStorage.setItem("muzz_admin_bypass", "1");
-          window.location.href = "chat.html";
-          return;
-        }
+        // Guardar EXACTO la key que chat.html espera:
+        sessionStorage.setItem('muzz_wallet_address', wallet);
 
-        // Check token balance >= 10M
-        let bal = 0;
-        try{
-          bal = await getMuzzBalanceHuman(provider, wallet);
-        }catch(e){
-          console.warn(e);
-          showError("TOKEN_CHECK_FAILED", "Could not read MUZZ balance. Make sure you are on the correct network.");
-          return;
-        }
-
-        if(bal >= MIN_MUZZ){
-          sessionStorage.setItem("muzz_wallet_address", wallet);
-          sessionStorage.setItem("muzz_login_mode", "wallet");
-          window.location.href = "chat.html";
-          return;
-        }
-
-        // Check staked by transfers to staking wallet (best-effort)
-        const stake = await hasStakedByTransferLogs(provider, wallet);
-        if(stake.ok){
-          sessionStorage.setItem("muzz_wallet_address", wallet);
-          sessionStorage.setItem("muzz_login_mode", "wallet");
-          sessionStorage.setItem("muzz_stake_verified", "1");
-          window.location.href = "chat.html";
-          return;
-        }
-
-        // Not enough
-        if(stake.reason === "LOGS_UNAVAILABLE"){
-          showError(
-            "STAKE_VERIFY_BLOCKED",
-            `Balance is ${Math.floor(bal).toLocaleString()} MUZZ (< 10,000,000). Staking verification failed because this provider limits log queries. Try MetaMask in-app browser or increase permissions.`
-          );
-          return;
-        }
-
-        showError(
-          "INSUFFICIENT_ACCESS",
-          `Need ≥ ${MIN_MUZZ.toLocaleString()} MUZZ in wallet OR staked to Team Finance (${STAKING_WALLET.slice(0,6)}...${STAKING_WALLET.slice(-4)}).\nYour wallet balance: ${Math.floor(bal).toLocaleString()} MUZZ.\nStaked found (lookback): ${Math.floor(stake.staked).toLocaleString()} MUZZ.`
-        );
-      }catch(err){
+        // Ir al chat
+        goChat();
+      } catch (err) {
         console.error(err);
         showError("AUTH_FAILED", "Wallet connection rejected or failed.");
-      }finally{
+      } finally {
         setLoading(false);
       }
     }
 
     function accessWithGuest(){
       clearError();
-      const user = (document.getElementById("usernameInput").value || "").trim();
-      if(!user){
-        showError("REQUIRED", "Enter a nickname.");
-        return;
-      }
-
-      // Guardamos como guest_ para que chat aplique restricciones
-      sessionStorage.setItem("muzz_wallet_address", `guest_${user}`);
-      sessionStorage.setItem("muzz_login_mode", "guest");
-      window.location.href = "chat.html";
+      const user = (document.getElementById('usernameInput').value || '').trim();
+      if(!user){ showError("REQUIRED", "Ingresa un nickname."); return; }
+      sessionStorage.setItem('muzz_wallet_address', `guest_${user}`);
+      goChat();
     }
 
-    btnConnect.addEventListener("click", accessWithWallet);
-    btnGuest.addEventListener("click", accessWithGuest);
+    document.getElementById('btnConnect').addEventListener('click', accessWithWallet);
+    document.getElementById('btnGuest').addEventListener('click', accessWithGuest);
   </script>
 </body>
 </html>
