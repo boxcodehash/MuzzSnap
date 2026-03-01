@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MuzzSnap</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MuzzSnap - Private (E2EE)</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
@@ -16,323 +15,681 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Orbitron:wght@400;900&display=swap');
-    :root { --muzz-red: #ff0000; --muzz-bg: #050505; }
-    body { background: var(--muzz-bg); color: white; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
-    .panel-3d { background: #0c0c0c; border: 1px solid rgba(255,0,0,0.1); border-radius: 24px; }
-    .bubble-3d { padding: 12px 16px; border-radius: 18px; font-size: 14px; position: relative; max-width: 85%; word-break: break-word; }
-    .bubble-3d.me { background: linear-gradient(135deg, #ff0000, #800000); align-self: flex-end; border-bottom-right-radius: 4px; }
-    .bubble-3d.other { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.05); align-self: flex-start; border-bottom-left-radius: 4px; }
-    .hacker-input { font-family: 'Fira Code', monospace; color: #ff0000 !important; background: transparent; border: none; outline: none; }
-    .custom-scroll::-webkit-scrollbar { width: 3px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: var(--muzz-red); }
-    /* Clase para ocultar elementos de inspeccion simple */
-    .stealth-mode { filter: contrast(1.1) brightness(0.9); }
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&family=Orbitron:wght@400;900&display=swap');
+    :root{--muzz-red:#ff0000;--muzz-bg:#050505}
+    html,body{height:100%;overflow:hidden;margin:0;padding:0}
+    body{background:var(--muzz-bg);color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .panel-3d{background:#0c0c0c;border:1px solid rgba(255,0,0,.12);border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.8)}
+    .bubble-3d{padding:12px 16px;border-radius:18px;font-size:14px;max-width:85%;line-height:1.4;position:relative;word-break:break-word}
+    .bubble-3d.me{background:linear-gradient(135deg,#ff0000,#800000);align-self:flex-end;border-bottom-right-radius:4px}
+    .bubble-3d.other{background:#1a1a1a;border:1px solid rgba(255,255,255,.06);align-self:flex-start;border-bottom-left-radius:4px}
+    .hacker-input{font-family:'Fira Code',monospace;color:#ff0000!important;background:transparent;border:none;outline:none}
+    .custom-scroll::-webkit-scrollbar{width:3px;height:3px}
+    .custom-scroll::-webkit-scrollbar-thumb{background:var(--muzz-red);border-radius:999px}
+    .online-indicator{width:8px;height:8px;background:#39ff14;border-radius:50%;box-shadow:0 0 8px #39ff14}
+    .stealth-mode{filter:contrast(1.05) brightness(.95)}
+    .chip{border:1px solid rgba(255,0,0,.25);background:rgba(255,0,0,.06);border-radius:999px;padding:6px 10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+    .btn{border-radius:14px;border:1px solid rgba(255,0,0,.25);background:rgba(255,255,255,.02);padding:10px 12px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:800;transition:.2s}
+    .btn:active{transform:scale(.98)}
+    .btn-primary{background:#ff0000;border-color:#ff0000}
+    .btn-primary:hover{filter:brightness(1.05)}
+    .btn-ghost:hover{background:rgba(255,0,0,.08)}
   </style>
 </head>
 <body>
   <div id="root" class="h-full"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const {useState, useEffect, useRef} = React;
 
-    const ADDR_CONTRACT = "0xef3dAa5fDa8Ad7aabFF4658f1F78061fd626B8f0";
-    const ABI_BALANCE = [{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"}];
-
-    // Admin bypass (4 wallets)
-    const ADMIN_WALLETS = [
-      "0x208157b5ec396759e8754058108ecf53e32392ff", // Ryachu
-      "0xfab5835ca14fb3f9f478c5e4d733734e6394e03f", // Itsuki
-      "0xf0809b8d23485f82245b777a28469e735e8430ce", // Esteban
-      "0xbeec8f1fee64627f83f0188eae621f367a6bcb8a"  // Additional bypass
-    ];
-
-    // Team Finance staking wallet (users send MUZZ here)
-    const TEAM_FINANCE_STAKING = "0xd6A07b8065f9e8386A9a5bBA6A754a10A9CD1074";
-
-    // Minimum access: 10,000,000 MUZZ
-    const MIN_MUZZ = 10000000;
-
-    // Configuración Base de Datos (Mantenida igual)
+    // Firebase config (kept consistent with your other pages)
     const _fb = {
       apiKey: atob('QUl6YVN5QWUxLUpmTmRlME5LSU1kRTdwaGZFWGxtOUphcVVIMGpZ'),
+      authDomain: atob('cHVsc2FyaS5maXJlYmFzZWFwcC5jb20='),
       databaseURL: atob('aHR0cHM6Ly9wdWxzYXJpLWRlZmF1bHQtcnRkYi5maXJlYmFzZWlvLmNvbQ=='),
-      projectId: atob('cHVsc2FyaQ==')
+      projectId: atob('cHVsc2FyaQ=='),
+      storageBucket: atob('cHVsc2FyaS5maXJlYmFzZXN0b3JhZ2UuYXBw'),
+      messagingSenderId: atob('ODI0MzA2MzIxMjMz'),
+      appId: atob('MTo4MjQzMDYzMjEyMzM6d2ViOjJjOWJmYTAyMTcwYTE3ZDU2MGI1NzA=')
     };
     if (!firebase.apps.length) firebase.initializeApp(_fb);
     const db = firebase.database();
 
-    // --- MOTOR DE CIFRADO E3EE (P2P) ---
-    const _S = "Muzzle_Quantum_Shield_2026"; 
-    const _enc = async (t) => {
-      const e = new TextEncoder();
-      const k = await crypto.subtle.importKey("raw", e.encode(_S), {name: "AES-GCM"}, false, ["encrypt"]);
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const res = await crypto.subtle.encrypt({name: "AES-GCM", iv}, k, e.encode(t));
-      return btoa(JSON.stringify({ a: Array.from(iv), b: Array.from(new Uint8Array(res)) }));
-    };
+    // ====== E2EE CORE (WebCrypto) ======
+    // This provides real end-to-end encryption *between browsers*.
+    // Firebase will only store ciphertext. No fixed shared key in code.
 
-    const _dec = async (c) => {
-      try {
-        const {a, b} = JSON.parse(atob(c));
-        const e = new TextEncoder();
-        const k = await crypto.subtle.importKey("raw", e.encode(_S), {name: "AES-GCM"}, false, ["decrypt"]);
-        const res = await crypto.subtle.decrypt({name: "AES-GCM", iv: new Uint8Array(a)}, k, new Uint8Array(b));
-        return new TextDecoder().decode(res);
-      } catch (err) { return "󰈡 [Contenido Cifrado]"; }
-    };
+    const IDB_NAME = "muzz_e2ee";
+    const IDB_STORE = "keys";
 
-    // Helpers
-    const _isGuest = (addr) => (addr || "").startsWith("guest_");
-    const _isAdmin = (addr) => ADMIN_WALLETS.includes((addr || "").toLowerCase());
-
-    const _toLowerAddr = (a) => (a || "").toLowerCase();
-    const _isAddr = (a) => /^0x[a-fA-F0-9]{40}$/.test(a || "");
-
-    async function _getProvider() {
-      if (!window.ethereum) throw new Error("NO_WALLET");
-      // ethers v6 BrowserProvider
-      return new ethers.BrowserProvider(window.ethereum);
-    }
-
-    async function _getDecimals(provider) {
-      const contract = new ethers.Contract(ADDR_CONTRACT, ABI_BALANCE, provider);
-      try { return await contract.decimals(); } catch(e) { return 18n; }
-    }
-
-    async function _hasWalletBalance(provider, userAddr, minHuman) {
-      const contract = new ethers.Contract(ADDR_CONTRACT, ABI_BALANCE, provider);
-      const dec = await contract.decimals().catch(()=>18);
-      const bal = await contract.balanceOf(userAddr);
-      const minRaw = BigInt(minHuman) * (10n ** BigInt(dec));
-      return bal >= minRaw;
-    }
-
-    // Sum of transfers user -> staking wallet (Team Finance) for MUZZ token
-    // NOTE: If token has been live a long time, scanning from block 0 can be slow. Once you know deploy block, set FROM_BLOCK to that.
-    const FROM_BLOCK = 0;
-    async function _sumStakedToTeamFinance(provider, userAddr) {
-      const iface = new ethers.Interface([
-        "event Transfer(address indexed from, address indexed to, uint256 value)"
-      ]);
-      const topic0 = iface.getEvent("Transfer").topicHash;
-      const fromTopic = ethers.zeroPadValue(_toLowerAddr(userAddr), 32);
-      const toTopic = ethers.zeroPadValue(_toLowerAddr(TEAM_FINANCE_STAKING), 32);
-
-      const logs = await provider.getLogs({
-        address: ADDR_CONTRACT,
-        fromBlock: FROM_BLOCK,
-        toBlock: "latest",
-        topics: [topic0, fromTopic, toTopic]
+    function openIDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const d = req.result;
+          if (!d.objectStoreNames.contains(IDB_STORE)) d.createObjectStore(IDB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
       });
-
-      let total = 0n;
-      for (const l of logs) {
-        const parsed = iface.parseLog(l);
-        total += BigInt(parsed.args.value.toString());
-      }
-      return total;
     }
 
-    async function _hasStaked(provider, userAddr, minHuman) {
-      const contract = new ethers.Contract(ADDR_CONTRACT, ABI_BALANCE, provider);
-      const dec = await contract.decimals().catch(()=>18);
-      const minRaw = BigInt(minHuman) * (10n ** BigInt(dec));
-      const total = await _sumStakedToTeamFinance(provider, userAddr);
-      return total >= minRaw;
+    async function idbGet(key) {
+      const dbi = await openIDB();
+      return new Promise((resolve, reject) => {
+        const tx = dbi.transaction(IDB_STORE, "readonly");
+        const st = tx.objectStore(IDB_STORE);
+        const req = st.get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idbSet(key, val) {
+      const dbi = await openIDB();
+      return new Promise((resolve, reject) => {
+        const tx = dbi.transaction(IDB_STORE, "readwrite");
+        const st = tx.objectStore(IDB_STORE);
+        const req = st.put(val, key);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+
+    function b64(bytes) {
+      let s = "";
+      bytes.forEach(b => (s += String.fromCharCode(b)));
+      return btoa(s);
+    }
+    function unb64(s) {
+      const bin = atob(s);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+    async function sha256Hex(str) {
+      const h = await crypto.subtle.digest("SHA-256", enc.encode(str));
+      return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function getOrCreateIdentity(addressLower) {
+      // 1) Try load non-extractable private key + public jwk from IndexedDB
+      const saved = await idbGet("identity:" + addressLower);
+      if (saved && saved.privateKey && saved.publicJwk && saved.fingerprint) {
+        return saved;
+      }
+
+      // 2) Generate extractable keypair, export JWK, then re-import private as NON-extractable
+      const kp = await crypto.subtle.generateKey(
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        ["deriveBits", "deriveKey"]
+      );
+
+      const pubJwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
+      const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
+
+      const privateKey = await crypto.subtle.importKey(
+        "jwk",
+        privJwk,
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        ["deriveBits", "deriveKey"]
+      );
+
+      const publicKey = await crypto.subtle.importKey(
+        "jwk",
+        pubJwk,
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        []
+      );
+
+      const fingerprint = await sha256Hex(JSON.stringify(pubJwk));
+
+      const identity = { privateKey, publicJwk: pubJwk, fingerprint };
+      await idbSet("identity:" + addressLower, identity);
+      return identity;
+    }
+
+    async function publishPublicKey(addressLower, identity) {
+      // Publish only public key + fingerprint. Private never leaves the device.
+      await db.ref("pubkeys/" + addressLower).set({
+        jwk: identity.publicJwk,
+        fp: identity.fingerprint,
+        ts: Date.now()
+      });
+    }
+
+    async function getPeerPublicKey(addressLower) {
+      const snap = await db.ref("pubkeys/" + addressLower).get();
+      return snap.exists() ? snap.val() : null;
+    }
+
+    async function deriveAesKey(myPrivKey, peerPubJwk, contextStr) {
+      const peerPub = await crypto.subtle.importKey(
+        "jwk",
+        peerPubJwk,
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        []
+      );
+
+      // shared secret bits
+      const bits = await crypto.subtle.deriveBits(
+        { name: "ECDH", public: peerPub },
+        myPrivKey,
+        256
+      );
+
+      // HKDF -> AES-GCM key
+      const baseKey = await crypto.subtle.importKey("raw", bits, "HKDF", false, ["deriveKey"]);
+      const aesKey = await crypto.subtle.deriveKey(
+        {
+          name: "HKDF",
+          hash: "SHA-256",
+          salt: enc.encode("muzzsnap-e2ee-salt"),
+          info: enc.encode("muzzsnap-e2ee|" + contextStr)
+        },
+        baseKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+
+      return aesKey;
+    }
+
+    async function encryptForPair(aesKey, plaintext) {
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        aesKey,
+        enc.encode(plaintext)
+      );
+      return { iv: b64(iv), ct: b64(new Uint8Array(ct)) };
+    }
+
+    async function decryptForPair(aesKey, ivB64, ctB64) {
+      const iv = unb64(ivB64);
+      const ct = unb64(ctB64);
+      const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ct);
+      return dec.decode(pt);
+    }
+
+    async function threadIdFor(aLower, bLower) {
+      const ids = [aLower, bLower].sort();
+      return await sha256Hex(ids[0] + "|" + ids[1]);
+    }
+
+    function shortAddr(a) {
+      if (!a) return "";
+      return a.slice(0, 6) + "..." + a.slice(-4);
     }
 
     function App() {
-      const [u, setU] = useState(null);
-      const [m, setM] = useState([]);
+      const [me, setMe] = useState(null); // {addrLower, addrRaw, display, role}
+      const [online, setOnline] = useState([]);
+      const [peer, setPeer] = useState(null); // {addrLower, username}
+      const [msgs, setMsgs] = useState([]);
       const [txt, setTxt] = useState("");
-      const [ch, setCh] = useState("GENERAL");
-      const [isP, setIsP] = useState(false);
       const [menuOpen, setMenuOpen] = useState(false);
-      const scroll = useRef();
+      const [banner, setBanner] = useState("");
+      const [e2eeReady, setE2eeReady] = useState(false);
+      const [fingerprint, setFingerprint] = useState("");
+      const scrollRef = useRef(null);
+      const unsubRef = useRef(null);
+      const aesRef = useRef(null);
+      const threadRef = useRef(null);
 
       useEffect(() => {
-        const a = sessionStorage.getItem('muzz_wallet_address');
-        if(!a) { window.location.href='login.html'; return; }
+        const a = sessionStorage.getItem("muzz_wallet_address");
+        if (!a) { window.location.href = "login.html"; return; }
 
-        // Guest cannot access private page at all (policy)
-        if(_isGuest(a)) {
-          alert("Guest mode is chat-only. Connect your wallet (10,000,000 MUZZ balance or staked in Team Finance) to access Private.");
-          window.location.href = 'chat.html';
+        const isGuest = a.startsWith("guest_");
+        if (isGuest) {
+          // Guests can view page but not use E2EE (matches your restriction style)
+          setBanner("Guests can’t use Private. Connect a wallet with access.");
+          setMe({ addrLower: a.toLowerCase(), addrRaw: a, display: a.replace("guest_", ""), role: "guest" });
+          // Still sign in anonymously for presence list (read-only)
+          firebase.auth().onAuthStateChanged((u) => {
+            if (!u) firebase.auth().signInAnonymously();
+          });
           return;
         }
 
-        // Ensure Firebase auth for secured rules
-        firebase.auth().signInAnonymously().catch(()=>{});
+        // Wallet user
+        const addrLower = a.toLowerCase();
+        setMe({ addrLower, addrRaw: a, display: "Node_" + a.slice(-4), role: "wallet" });
 
-        setU({ addr: a, id: a.slice(-4) });
-        listen("GENERAL");
+        // Ensure Firebase auth exists (anon is fine for RTDB)
+        firebase.auth().onAuthStateChanged((u) => {
+          if (!u) firebase.auth().signInAnonymously();
+        });
+
+        (async () => {
+          try {
+            const id = await getOrCreateIdentity(addrLower);
+            setFingerprint(id.fingerprint.slice(0, 16).toUpperCase());
+            await publishPublicKey(addrLower, id);
+            setE2eeReady(true);
+          } catch (e) {
+            console.error(e);
+            setBanner("E2EE engine failed to initialize on this device/browser.");
+          }
+        })();
+
+        // Online list (from your existing /status structure)
+        db.ref("status").on("value", (snap) => {
+          const v = snap.val();
+          const list = v ? Object.values(v) : [];
+          // Only wallet logins appear as selectable peers
+          const cleaned = list
+            .filter(x => x && x.username)
+            .map(x => ({
+              uid: x.uid,
+              username: x.username,
+              role: x.role || "user",
+              wallet: (x.wallet && /^0x[a-fA-F0-9]{40}$/.test(x.wallet)) ? x.wallet : null
+            }))
+            .filter(x => !!x.wallet);
+          setOnline(cleaned);
+        });
+
+        // If chat sets a target recipient in sessionStorage, auto open it
+        const target = sessionStorage.getItem("muzz_private_to");
+        if (target && /^0x[a-fA-F0-9]{40}$/.test(target)) {
+          setPeer({ addrLower: target.toLowerCase(), username: "Node_" + target.slice(-4) });
+          sessionStorage.removeItem("muzz_private_to");
+        }
       }, []);
 
-      const listen = (target) => {
-        db.ref('messages/' + target).limitToLast(30).on('value', async (s) => {
-          const val = s.val();
-          if(!val) { setM([]); return; }
-          const raw = Object.values(val);
-          if(target === "ARCHIVO") {
-            const resolved = await Promise.all(raw.map(async x => ({...x, content: await _dec(x.content)})));
-            setM(resolved);
-          } else { setM(raw); }
-        });
-      };
+      // Scroll down on new messages
+      useEffect(() => {
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, [msgs]);
 
-      const switchCh = async (target) => {
-        if(!u) return;
+      // When peer changes, set up E2EE + listener
+      useEffect(() => {
+        (async () => {
+          if (!me || !peer || me.role !== "wallet") return;
+          if (!e2eeReady) { setBanner("Initializing E2EE..."); return; }
 
-        if(target === "ARCHIVO") {
-          // ARCHIVO is the protected P2P/E3EE room
-          const userA = u.addr.toLowerCase();
+          setBanner("");
 
-          // Admin bypass (all 4)
-          if (_isAdmin(userA)) {
-            setCh("ARCHIVO"); setIsP(true); listen("ARCHIVO"); setMenuOpen(false); return;
-          }
-
-          if(!_isAddr(u.addr)) {
-            alert("Wallet inválida.");
+          // TOFU check for peer key
+          const peerKey = await getPeerPublicKey(peer.addrLower);
+          if (!peerKey || !peerKey.jwk || !peerKey.fp) {
+            setBanner("Peer has no E2EE key published yet. Ask them to open Private once.");
+            setMsgs([]);
             return;
           }
 
-          try {
-            const provider = await _getProvider();
+          const tofuKey = "muzz_peer_fp_" + peer.addrLower;
+          const knownFp = localStorage.getItem(tofuKey);
 
-            // 1) Wallet balance >= 10M
-            const okBal = await _hasWalletBalance(provider, u.addr, MIN_MUZZ);
-            if (okBal) {
-              setCh("ARCHIVO"); setIsP(true); listen("ARCHIVO"); setMenuOpen(false); return;
+          if (knownFp && knownFp !== peerKey.fp) {
+            const ok = confirm("⚠️ Security warning: Peer key changed. This could be a hijack. Continue?");
+            if (!ok) {
+              setPeer(null);
+              setMsgs([]);
+              return;
             }
-
-            // 2) Staked (sent to Team Finance) >= 10M
-            const okStake = await _hasStaked(provider, u.addr, MIN_MUZZ);
-            if (okStake) {
-              setCh("ARCHIVO"); setIsP(true); listen("ARCHIVO"); setMenuOpen(false); return;
-            }
-
-            alert("Balance insuficiente: 10,000,000 $MUZZ requerido (en wallet o stakeado en Team Finance).");
-          } catch(e) {
-            console.error(e);
-            alert("Error de Wallet / RPC. Abre la página dentro de MetaMask o un navegador Web3.");
+          } else if (!knownFp) {
+            localStorage.setItem(tofuKey, peerKey.fp);
           }
-        } else {
-          setCh(target); setIsP(false); listen(target); setMenuOpen(false);
+
+          // Derive shared key
+          const myId = await getOrCreateIdentity(me.addrLower);
+          const context = [me.addrLower, peer.addrLower].sort().join("|");
+          const aesKey = await deriveAesKey(myId.privateKey, peerKey.jwk, context);
+          aesRef.current = aesKey;
+
+          // Open thread
+          const tid = await threadIdFor(me.addrLower, peer.addrLower);
+          threadRef.current = tid;
+
+          // Listen messages
+          if (unsubRef.current) unsubRef.current.off();
+
+          const ref = db.ref("pm/" + tid).limitToLast(60);
+          unsubRef.current = ref;
+
+          ref.on("value", async (snap) => {
+            const v = snap.val();
+            if (!v) { setMsgs([]); return; }
+            const arr = Object.keys(v).map(k => ({ id: k, ...v[k] })).sort((a,b)=>a.ts-b.ts);
+
+            const out = [];
+            for (const msg of arr) {
+              try {
+                // Only decrypt if intended for this pair
+                const plaintext = await decryptForPair(aesRef.current, msg.iv, msg.ct);
+                out.push({ ...msg, text: plaintext });
+              } catch (e) {
+                out.push({ ...msg, text: "󰈡 [Encrypted Message]" });
+              }
+            }
+            setMsgs(out);
+          });
+
+        })();
+
+        return () => {
+          if (unsubRef.current) unsubRef.current.off();
+        };
+      }, [peer, me, e2eeReady]);
+
+      const pickPeerFromOnline = async (item) => {
+        if (!item || !item.wallet) {
+          setBanner("User has no wallet info yet.");
+          return;
         }
+        setPeer({ addrLower: item.wallet.toLowerCase(), username: item.username || ("Node_" + item.wallet.slice(-4)) });
+        setMenuOpen(false);
       };
 
-      const send = async (imgData = null) => {
-        const finalContent = imgData || txt;
-        if(!finalContent || !u) return;
+      const setPeerByAddress = async (addr) => {
+        const a = (addr || "").trim();
+        if (!/^0x[a-fA-F0-9]{40}$/.test(a)) {
+          alert("Invalid wallet address.");
+          return;
+        }
+        setPeer({ addrLower: a.toLowerCase(), username: "Node_" + a.slice(-4) });
+        setMenuOpen(false);
+      };
 
-        const payload = isP ? await _enc(finalContent) : finalContent;
-        db.ref('messages/' + ch).push({
-          content: payload,
-          type: imgData ? "img" : "txt",
-          user: `Node_${u.id}`,
-          sender: u.addr,
-          ts: Date.now()
+      const send = async () => {
+        if (!me) return;
+        if (me.role !== "wallet") { alert("Guests cannot use Private."); return; }
+        if (!peer) { alert("Select a user (wallet) first."); return; }
+        if (!txt.trim()) return;
+
+        const aesKey = aesRef.current;
+        if (!aesKey) { alert("E2EE not ready."); return; }
+
+        const { iv, ct } = await encryptForPair(aesKey, txt);
+
+        const tid = threadRef.current || await threadIdFor(me.addrLower, peer.addrLower);
+        await db.ref("pm/" + tid).push({
+          from: me.addrLower,
+          to: peer.addrLower,
+          iv,
+          ct,
+          ts: Date.now(),
+          v: 1
         });
+
         setTxt("");
       };
 
-      const handleImg = (e) => {
-        const f = e.target.files[0];
-        if(!f) return;
-        const r = new FileReader();
-        r.readAsDataURL(f);
-        r.onload = (ev) => {
-          const i = new Image();
-          i.src = ev.target.result;
-          i.onload = () => {
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(1200 / i.width, 1200 / i.height, 1);
-            canvas.width = i.width * scale;
-            canvas.height = i.height * scale;
-            canvas.getContext('2d').drawImage(i, 0, 0, canvas.width, canvas.height);
-            send(canvas.toDataURL('image/jpeg', 0.7));
-          };
-        };
-      };
-
-      useEffect(() => { scroll.current?.scrollIntoView(); }, [m]);
+      const goBack = () => window.location.href = "chat.html";
+      const comingSoon = () => alert("Coming soon");
 
       return (
         <div className="flex h-screen p-2 md:p-6 gap-4 stealth-mode">
-          {/* Mobile overlay */}
-          {menuOpen && (
-            <div
-              onClick={() => setMenuOpen(false)}
-              className="fixed inset-0 bg-black/90 z-40 md:hidden backdrop-blur-md"
-            />
-          )}
+          {/* Sidebar Desktop */}
+          <aside className="w-72 panel-3d p-6 flex-col hidden md:flex">
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <h1 className="font-orbitron font-black text-xl italic tracking-tighter">
+                MUZZ<span className="text-red-600">SNAP</span>
+              </h1>
+            </div>
 
-          {/* Sidebar (desktop + mobile toggled) */}
-          <aside className={
-            `fixed md:static z-50 inset-y-0 left-0 w-72 md:w-64 transition-transform duration-300 panel-3d p-6 flex flex-col
-             ${menuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`
-          }>
-            <h1 className="font-orbitron font-black text-xl italic mb-8">MUZZ<span className="text-red-600">SNAP</span></h1>
-            <div className="flex-1 space-y-2">
-              {['GENERAL', 'ESPAÑOL', 'DAO'].map(c => (
-                <button key={c} onClick={()=>switchCh(c)} className={`w-full text-left px-4 py-2 rounded-lg text-xs font-bold ${ch===c?'bg-red-600/20 text-red-600':'text-gray-500'}`}># {c}</button>
+            <div className="flex items-center gap-2 mb-4">
+              <button className="btn btn-ghost flex-1" onClick={goBack}><i className="fas fa-arrow-left mr-2"></i>Back</button>
+              <button className="btn btn-ghost flex-1" onClick={comingSoon}><i className="fas fa-hashtag mr-2"></i>Social</button>
+            </div>
+
+            <div className="mb-4">
+              <div className="chip inline-flex items-center gap-2">
+                <i className="fas fa-lock"></i>
+                <span>Private E2EE</span>
+              </div>
+              {me?.role === "wallet" && (
+                <div className="mt-3 text-[10px] text-gray-400 font-mono uppercase tracking-widest">
+                  Your key: <span className="text-red-500 font-bold">{fingerprint || "..."}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
+              Wallet Users (Listbox)
+            </div>
+
+            <select
+              className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input mb-4"
+              size={Math.min(8, Math.max(3, online.length))}
+              onChange={(e)=>{
+                const w = e.target.value;
+                const item = online.find(o => o.wallet === w);
+                if(item) pickPeerFromOnline(item);
+              }}
+            >
+              {online.map((x,i)=>(
+                <option key={i} value={x.wallet}>{x.username} — {shortAddr(x.wallet)}</option>
               ))}
-              <button onClick={()=>switchCh("ARCHIVO")} className={`w-full text-left px-4 py-3 rounded-lg text-xs font-black border ${ch==='ARCHIVO'?'bg-red-600 border-red-500':'border-red-600/30 text-red-600'}`}>
-                <i className="fas fa-user-secret mr-2"></i> ARCHIVO (P2P)
+            </select>
+
+            <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
+              Start DM
+            </div>
+
+            <div className="space-y-3">
+              <input
+                className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input"
+                placeholder="Paste wallet address 0x..."
+                onKeyDown={(e)=>{ if(e.key==="Enter") setPeerByAddress(e.target.value); }}
+              />
+              <button className="btn btn-primary w-full" onClick={()=>{
+                const el = document.querySelector("#peerAddrDesktop");
+              }}>
+                <i className="fas fa-user-secret mr-2"></i>Use address box above
               </button>
-              <button onClick={()=>alert('Social section — Coming Soon')} 
-                className="w-full text-left px-4 py-3 rounded-lg text-xs font-black border border-blue-600/30 text-blue-400 mt-2 hover:bg-blue-600/10">
-                <i className="fas fa-globe mr-2"></i> SOCIAL
-              </button>
-              <div className="text-[9px] text-gray-600 font-mono leading-snug mt-2">
-                Access: 10,000,000 MUZZ (wallet balance OR staked to Team Finance).
+              <div className="text-[10px] text-gray-500 font-mono leading-relaxed">
+                Tip: from <b>chat.html</b> you can set <code>sessionStorage.muzz_private_to</code> then open Private.
               </div>
             </div>
-          </aside>
 
-          {/* Main Chat */}
-          <main className={`flex-1 panel-3d flex flex-col overflow-hidden ${isP ? 'border-red-600/50 shadow-[0_0_15px_rgba(255,0,0,0.1)]' : ''}`}>
-            <header className="h-14 flex items-center px-6 border-b border-white/5 bg-white/5 uppercase text-[10px] font-black tracking-widest text-red-500">
-              <button onClick={() => setMenuOpen(true)} className="md:hidden mr-4 text-red-600">
-                <i className="fas fa-bars"></i>
-              </button>
-              {isP && <i className="fas fa-lock mr-2"></i>} Canal: {ch}
-              <button onClick={() => window.location.href='chat.html'} 
-                className="ml-auto text-[9px] border border-red-600/40 px-3 py-1 rounded-lg hover:bg-red-600/20 transition-all">
-                <i className="fas fa-arrow-left mr-1"></i> Back
-              </button>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scroll">
-              {m.map((x, i) => (
-                <div key={i} className={`flex flex-col ${x.sender === (u && u.addr) ? 'items-end' : 'items-start'}`}>
-                  <div className={`bubble-3d ${x.sender === (u && u.addr) ? 'me' : 'other'}`}>
-                    {x.type === 'img' ? <img src={x.content} className="rounded-lg max-h-60" /> : x.content}
+            <div className="mt-6">
+              <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
+                Online (view)
+              </div>
+              <div className="max-h-56 overflow-y-auto custom-scroll pr-1 space-y-2">
+                {online.map((x, i)=>(
+                  <div key={i} className="flex items-center gap-3 px-2 py-2 rounded-xl border border-white/5 bg-white/5">
+                    <span className="online-indicator"></span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-bold uppercase truncate text-gray-300">{x.username}</div>
+                      <div className="text-[9px] text-gray-500 uppercase tracking-widest">{x.role || "user"}</div>
+                    </div>
+                    <button className="btn btn-ghost" onClick={()=>pickPeerFromOnline(x)}>
+                      <i className="fas fa-comment-dots"></i>
+                    </button>
                   </div>
-                </div>
-              ))}
-              <div ref={scroll}></div>
+                ))}
+              </div>
             </div>
 
-            <div className="p-4 bg-black/40 border-t border-white/5">
+            <button
+              onClick={()=>{sessionStorage.clear(); window.location.href="login.html";}}
+              className="mt-auto w-full py-3 text-[10px] border border-red-900/30 text-red-600 rounded-xl uppercase font-black tracking-widest hover:bg-red-600/5 transition-all"
+            >
+              <i className="fas fa-power-off mr-2"></i>Disconnect
+            </button>
+          </aside>
+
+          {/* Main */}
+          <main className="flex-1 panel-3d flex flex-col overflow-hidden">
+            {/* Mobile header */}
+            <header className="h-14 flex items-center justify-between px-4 md:px-6 border-b border-white/5 bg-white/5">
+              <div className="flex items-center gap-3">
+                <button className="md:hidden text-red-600" onClick={()=>setMenuOpen(true)}>
+                  <i className="fas fa-bars"></i>
+                </button>
+                <div className="text-[10px] font-black tracking-[0.25em] uppercase text-red-500">
+                  <i className="fas fa-lock mr-2"></i>
+                  {peer ? `DM: ${peer.username} (${shortAddr(peer.addrLower)})` : "Private E2EE"}
+                </div>
+              </div>
+              <button className="btn btn-ghost" onClick={goBack}><i className="fas fa-arrow-left mr-2"></i>Back</button>
+            </header>
+
+            {banner && (
+              <div className="px-4 md:px-6 py-2 border-b border-red-600/20 bg-red-600/10 text-red-300 text-[11px]">
+                {banner}
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 custom-scroll">
+              {!peer ? (
+                <div className="h-full flex items-center justify-center text-center px-6">
+                  <div>
+                    <div className="text-red-500 font-black tracking-[0.25em] uppercase text-[11px] mb-2">
+                      Select a wallet to start E2EE
+                    </div>
+                    <div className="text-gray-500 text-sm leading-relaxed">
+                      Open a DM from <b>chat.html</b> or paste a wallet address using the menu.
+                    </div>
+                    {me?.role === "wallet" && (
+                      <div className="mt-4 text-[10px] text-gray-500 font-mono uppercase tracking-widest">
+                        Your key fingerprint: <span className="text-red-500 font-bold">{fingerprint || "..."}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {msgs.map((x)=>(
+                    <div key={x.id} className={`flex flex-col ${x.from === me?.addrLower ? "items-end" : "items-start"}`}>
+                      <div className={`bubble-3d ${x.from === me?.addrLower ? "me" : "other"}`}>
+                        {x.text}
+                      </div>
+                      <div className="text-[9px] text-gray-600 mt-1 font-mono">
+                        {new Date(x.ts).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})}
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={scrollRef}></div>
+                </>
+              )}
+            </div>
+
+            {/* Composer */}
+            <div className="p-3 md:p-4 bg-black/40 border-t border-white/5">
               <div className="flex items-center bg-black/50 rounded-2xl p-2 px-4 border border-white/10 focus-within:border-red-600/50">
-                {isP && (
-                  <label className="mr-3 text-gray-500 hover:text-red-500 cursor-pointer">
-                    <i className="fas fa-camera text-lg"></i>
-                    <input type="file" accept="image/*" onChange={handleImg} className="hidden" />
-                  </label>
-                )}
-                <input value={txt} onChange={e=>setTxt(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} placeholder="Escribir..." className="flex-1 hacker-input text-sm" />
-                <button onClick={()=>send()} className="w-10 h-10 bg-red-600 rounded-xl ml-2"><i className="fas fa-paper-plane text-xs"></i></button>
+                <input
+                  value={txt}
+                  onChange={(e)=>setTxt(e.target.value)}
+                  onKeyDown={(e)=>e.key==="Enter" && send()}
+                  placeholder={peer ? "Write encrypted message..." : "Select a user first..."}
+                  disabled={!peer || me?.role !== "wallet"}
+                  className="flex-1 hacker-input text-sm"
+                />
+                <button
+                  onClick={send}
+                  disabled={!peer || me?.role !== "wallet"}
+                  className={`w-10 h-10 rounded-xl ml-2 ${(!peer || me?.role !== "wallet") ? "bg-gray-800 opacity-60" : "bg-red-600"}`}
+                  title="Send"
+                >
+                  <i className="fas fa-paper-plane text-xs"></i>
+                </button>
               </div>
             </div>
           </main>
+
+          {/* Mobile drawer */}
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 bg-black/90 z-40 backdrop-blur-md" onClick={()=>setMenuOpen(false)}></div>
+              <aside className="fixed z-50 inset-y-0 left-0 w-80 max-w-[85vw] panel-3d p-5 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="font-orbitron font-black italic tracking-tighter">
+                    MUZZ<span className="text-red-600">SNAP</span>
+                  </div>
+                  <button className="text-gray-400" onClick={()=>setMenuOpen(false)}><i className="fas fa-times"></i></button>
+                </div>
+
+                <div className="flex items-center gap-2 mb-4">
+                  <button className="btn btn-ghost flex-1" onClick={goBack}><i className="fas fa-arrow-left mr-2"></i>Back</button>
+                  <button className="btn btn-ghost flex-1" onClick={comingSoon}><i className="fas fa-hashtag mr-2"></i>Social</button>
+                </div>
+
+                {me?.role === "wallet" && (
+                  <div className="mb-4 text-[10px] text-gray-400 font-mono uppercase tracking-widest">
+                    Your key: <span className="text-red-500 font-bold">{fingerprint || "..."}</span>
+                  </div>
+                )}
+
+                <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
+                  Wallet Users (Listbox)
+                </div>
+
+                <select
+                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input mb-3"
+                  size={Math.min(8, Math.max(3, online.length))}
+                  onChange={(e)=>{
+                    const w = e.target.value;
+                    const item = online.find(o => o.wallet === w);
+                    if(item) pickPeerFromOnline(item);
+                  }}
+                >
+                  {online.map((x,i)=>(
+                    <option key={i} value={x.wallet}>{x.username} — {shortAddr(x.wallet)}</option>
+                  ))}
+                </select>
+
+                <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
+                  Start DM
+                </div>
+
+                <input
+                  id="peerAddrMobile"
+                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input mb-3"
+                  placeholder="Paste wallet address 0x..."
+                />
+                <button className="btn btn-primary w-full mb-4" onClick={()=>{
+                  const v = document.getElementById("peerAddrMobile").value;
+                  setPeerByAddress(v);
+                }}>
+                  <i className="fas fa-user-secret mr-2"></i>Open Encrypted DM
+                </button>
+
+                <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
+                  Online (view)
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scroll pr-1 space-y-2">
+                  {online.map((x, i)=>(
+                    <div key={i} className="flex items-center gap-3 px-2 py-2 rounded-xl border border-white/5 bg-white/5">
+                      <span className="online-indicator"></span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-bold uppercase truncate text-gray-300">{x.username}</div>
+                        <div className="text-[9px] text-gray-500 uppercase tracking-widest">{x.role || "user"}</div>
+                      </div>
+                      <button className="btn btn-ghost" onClick={()=>pickPeerFromOnline(x)}>
+                        <i className="fas fa-comment-dots"></i>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={()=>{sessionStorage.clear(); window.location.href="login.html";}}
+                  className="mt-4 w-full py-3 text-[10px] border border-red-900/30 text-red-600 rounded-xl uppercase font-black tracking-widest hover:bg-red-600/5 transition-all"
+                >
+                  <i className="fas fa-power-off mr-2"></i>Disconnect
+                </button>
+              </aside>
+            </>
+          )}
         </div>
       );
     }
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
   </script>
 </body>
 </html>
