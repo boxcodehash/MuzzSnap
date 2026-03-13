@@ -3,693 +3,404 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MuzzSnap - Private (E2EE)</title>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-
+  <title>MuzzSnap Private</title>
+  <meta name="theme-color" content="#10141b" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700&family=Orbitron:wght@400;900&display=swap');
-    :root{--muzz-red:#ff0000;--muzz-bg:#050505}
-    html,body{height:100%;overflow:hidden;margin:0;padding:0}
-    body{background:var(--muzz-bg);color:#fff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .panel-3d{background:#0c0c0c;border:1px solid rgba(255,0,0,.12);border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,.8)}
-    .bubble-3d{padding:12px 16px;border-radius:18px;font-size:14px;max-width:85%;line-height:1.4;position:relative;word-break:break-word}
-    .bubble-3d.me{background:linear-gradient(135deg,#ff0000,#800000);align-self:flex-end;border-bottom-right-radius:4px}
-    .bubble-3d.other{background:#1a1a1a;border:1px solid rgba(255,255,255,.06);align-self:flex-start;border-bottom-left-radius:4px}
-    .hacker-input{font-family:'Fira Code',monospace;color:#ff0000!important;background:transparent;border:none;outline:none}
-    .custom-scroll::-webkit-scrollbar{width:3px;height:3px}
-    .custom-scroll::-webkit-scrollbar-thumb{background:var(--muzz-red);border-radius:999px}
-    .online-indicator{width:8px;height:8px;background:#39ff14;border-radius:50%;box-shadow:0 0 8px #39ff14}
-    .stealth-mode{filter:contrast(1.05) brightness(.95)}
-    .chip{border:1px solid rgba(255,0,0,.25);background:rgba(255,0,0,.06);border-radius:999px;padding:6px 10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
-    .btn{border-radius:14px;border:1px solid rgba(255,0,0,.25);background:rgba(255,255,255,.02);padding:10px 12px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:800;transition:.2s}
-    .btn:active{transform:scale(.98)}
-    .btn-primary{background:#ff0000;border-color:#ff0000}
-    .btn-primary:hover{filter:brightness(1.05)}
-    .btn-ghost:hover{background:rgba(255,0,0,.08)}
+    :root{
+      --bg:#0b0f14;
+      --panel:#141a22;
+      --panel-2:#1a212b;
+      --line:rgba(255,255,255,.07);
+      --text:#edf2f8;
+      --muted:#93a1b3;
+      --red:#ff2d2d;
+      --red-2:#940000;
+      --blue:#8cc4ff;
+      --green:#39ff14;
+      --radius:24px;
+      --shadow:0 20px 45px rgba(0,0,0,.42);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at top, #1b232d 0%, #0d1116 36%, #090b0f 100%);color:var(--text)}
+    button,input,textarea{font:inherit}
+    .app{min-height:100vh;max-width:1520px;margin:0 auto;padding:14px;display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(8px)}
+    .sidebar,.chat{min-height:calc(100vh - 28px)}
+    .sidebar{padding:18px;position:sticky;top:14px;align-self:start}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .logo{width:52px;height:52px;border-radius:18px;background:linear-gradient(145deg,var(--red),#650000);display:grid;place-items:center;box-shadow:0 0 24px rgba(255,45,45,.28);font-size:24px}
+    h1{margin:0;font-size:32px;font-weight:900;font-style:italic;letter-spacing:-.04em}
+    h1 span{color:var(--red)}
+    .sidebarTop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .ghostBtn,.dangerBtn,.iconBtn{border:none;cursor:pointer}
+    .ghostBtn{height:44px;border-radius:16px;padding:0 16px;background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--line);font-weight:800}
+    .dangerBtn{height:44px;border-radius:16px;padding:0 18px;background:linear-gradient(145deg,var(--red),var(--red-2));color:#fff;font-weight:900;box-shadow:0 12px 24px rgba(255,45,45,.2)}
+    .search{width:100%;height:48px;border-radius:16px;border:1px solid var(--line);background:#0f141a;color:var(--text);padding:0 16px;outline:none}
+    .sectionTitle{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#9aa6b8;font-weight:900;margin:18px 0 10px}
+    .convList{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:calc(100vh - 280px);padding-right:4px}
+    .conv{display:flex;gap:12px;padding:14px;border-radius:18px;border:1px solid transparent;cursor:pointer;background:transparent;align-items:center;text-align:left;color:var(--text)}
+    .conv:hover,.conv.active{background:rgba(255,45,45,.07);border-color:rgba(255,45,45,.14)}
+    .avatar{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,#2d3947,#141920);display:grid;place-items:center;border:1px solid rgba(255,255,255,.08);font-weight:900;flex-shrink:0}
+    .avatar.online::after{content:'';position:absolute}
+    .convText{min-width:0;flex:1}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .name{font-weight:900}
+    .muted{color:var(--muted)}
+    .preview{margin-top:4px;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .badge{min-width:24px;height:24px;border-radius:999px;background:rgba(255,45,45,.16);border:1px solid rgba(255,45,45,.18);display:grid;place-items:center;color:#ff8e8e;font-size:12px;font-weight:900;padding:0 6px}
+    .chat{display:flex;flex-direction:column;overflow:hidden}
+    .chatHead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .chatHeadLeft{display:flex;align-items:center;gap:12px;min-width:0}
+    .statusDot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 12px rgba(57,255,20,.5);display:inline-block;margin-right:8px}
+    .messages{flex:1;overflow:auto;padding:22px 18px 90px;background:linear-gradient(180deg, rgba(255,255,255,.008), rgba(255,255,255,.02))}
+    .dayDivider{display:flex;align-items:center;gap:10px;margin:14px 0 18px}
+    .dayDivider::before,.dayDivider::after{content:'';height:1px;background:var(--line);flex:1}
+    .dayDivider span{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .msgRow{display:flex;margin-bottom:14px}
+    .msgRow.me{justify-content:flex-end}
+    .bubbleWrap{max-width:min(76%,560px)}
+    .msgMeta{display:flex;align-items:center;gap:8px;margin:0 4px 6px;color:var(--muted);font-size:12px}
+    .msgRow.me .msgMeta{justify-content:flex-end}
+    .bubble{padding:14px 16px;border-radius:20px;line-height:1.5;word-break:break-word;white-space:pre-wrap;border:1px solid transparent}
+    .msgRow.other .bubble{background:#1b222c;border-color:rgba(255,255,255,.06);color:var(--text);border-bottom-left-radius:6px}
+    .msgRow.me .bubble{background:linear-gradient(145deg,var(--red),#ad0000);color:#fff;border-bottom-right-radius:6px;box-shadow:0 12px 24px rgba(255,45,45,.18)}
+    .composer{padding:14px 16px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:flex-end;background:rgba(9,12,16,.65)}
+    .composerBox{flex:1;display:flex;gap:10px;align-items:flex-end;padding:10px;border-radius:22px;background:#0f141a;border:1px solid var(--line)}
+    .composer textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);resize:none;min-height:24px;max-height:140px;padding:8px 6px 8px 2px;line-height:1.45}
+    .iconBtn{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);font-size:18px}
+    .empty{display:grid;place-items:center;padding:40px;color:var(--muted);text-align:center}
+    .mobileNav{display:none}
+
+    @media (max-width: 940px){
+      .app{grid-template-columns:1fr;padding:10px}
+      .sidebar{display:none}
+      .chat{min-height:calc(100vh - 20px)}
+      .messages{padding-bottom:110px}
+      .mobileNav{position:fixed;left:10px;right:10px;bottom:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px;border-radius:22px;background:rgba(12,16,20,.94);border:1px solid var(--line);backdrop-filter:blur(12px);box-shadow:var(--shadow);z-index:25}
+      .mobileNav a,.mobileNav button{height:54px;border:none;border-radius:16px;background:rgba(255,255,255,.03);display:grid;place-items:center;color:var(--text);font-size:19px}
+      .mobileNav .active{background:rgba(255,45,45,.12);color:var(--red)}
+      .bubbleWrap{max-width:86%}
+    }
   </style>
 </head>
 <body>
-  <div id="root" class="h-full"></div>
+  <div class="app">
+    <aside class="sidebar card">
+      <div class="brand">
+        <div class="logo">🔒</div>
+        <h1>MUZZ<span>SNAP</span></h1>
+      </div>
 
-  <script type="text/babel">
-    const {useState, useEffect, useRef} = React;
+      <div class="sidebarTop">
+        <button class="ghostBtn" onclick="location.href='index.html'">↩ Back</button>
+        <button class="dangerBtn" id="newChatBtn">New Chat</button>
+      </div>
 
-    // Firebase config (kept consistent with your other pages)
-    const _fb = {
-      apiKey: atob('QUl6YVN5QWUxLUpmTmRlME5LSU1kRTdwaGZFWGxtOUphcVVIMGpZ'),
-      authDomain: atob('cHVsc2FyaS5maXJlYmFzZWFwcC5jb20='),
-      databaseURL: atob('aHR0cHM6Ly9wdWxzYXJpLWRlZmF1bHQtcnRkYi5maXJlYmFzZWlvLmNvbQ=='),
-      projectId: atob('cHVsc2FyaQ=='),
-      storageBucket: atob('cHVsc2FyaS5maXJlYmFzZXN0b3JhZ2UuYXBw'),
-      messagingSenderId: atob('ODI0MzA2MzIxMjMz'),
-      appId: atob('MTo4MjQzMDYzMjEyMzM6d2ViOjJjOWJmYTAyMTcwYTE3ZDU2MGI1NzA=')
-    };
-    if (!firebase.apps.length) firebase.initializeApp(_fb);
-    const db = firebase.database();
+      <input class="search" id="searchInput" placeholder="Search conversations" />
 
-    // ====== E2EE CORE (WebCrypto) ======
-    // This provides real end-to-end encryption *between browsers*.
-    // Firebase will only store ciphertext. No fixed shared key in code.
+      <div class="sectionTitle">Private inbox</div>
+      <div class="convList" id="convList"></div>
+    </aside>
 
-    const IDB_NAME = "muzz_e2ee";
-    const IDB_STORE = "keys";
+    <main class="chat card">
+      <div class="chatHead">
+        <div class="chatHeadLeft">
+          <div class="avatar" id="chatAvatar">M</div>
+          <div style="min-width:0">
+            <div class="name" id="chatName">Select a conversation</div>
+            <div class="muted" id="chatStatus">Encrypted demo messages stored locally</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="iconBtn" id="infoBtn">ℹ</button>
+          <button class="iconBtn" onclick="location.href='social.html'">⌂</button>
+        </div>
+      </div>
 
-    function openIDB() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(IDB_NAME, 1);
-        req.onupgradeneeded = () => {
-          const d = req.result;
-          if (!d.objectStoreNames.contains(IDB_STORE)) d.createObjectStore(IDB_STORE);
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
+      <section class="messages" id="messages"></section>
+
+      <section class="composer">
+        <div class="composerBox">
+          <button class="iconBtn" id="emojiBtn">☺</button>
+          <textarea id="messageInput" rows="1" placeholder="Write a private message..."></textarea>
+        </div>
+        <button class="dangerBtn" id="sendBtn">Send</button>
+      </section>
+    </main>
+  </div>
+
+  <nav class="mobileNav">
+    <a href="social.html">⌂</a>
+    <button class="active" id="openList">☰</button>
+    <button id="mobileNew">＋</button>
+    <a href="index.html">↩</a>
+    <button id="mobileInfo">ℹ</button>
+  </nav>
+
+  <script>
+    const STORE_KEY = 'muzz_private_threads_v2';
+    const rawUser = sessionStorage.getItem('muzz_wallet_address') || 'guest_user';
+    const me = rawUser.startsWith('guest_') ? rawUser.replace('guest_','') : `Node_${rawUser.slice(-4)}`;
+
+    const demoThreads = [
+      {
+        id: 'thread_alpha',
+        user: 'Ryachu',
+        handle: '@ryachu',
+        online: true,
+        unread: 2,
+        messages: [
+          { id: crypto.randomUUID(), from:'Ryachu', mine:false, text:'Welcome to the private inbox demo. This is a local conversation preview.', time: Date.now() - 1000 * 60 * 90 },
+          { id: crypto.randomUUID(), from:me, mine:true, text:'Looks good. I want something cleaner and more premium.', time: Date.now() - 1000 * 60 * 76 },
+          { id: crypto.randomUUID(), from:'Ryachu', mine:false, text:'Done. Dark panels, tighter spacing, better contrast, and mobile support.', time: Date.now() - 1000 * 60 * 61 }
+        ]
+      },
+      {
+        id: 'thread_beta',
+        user: 'GalaxyBuilder',
+        handle: '@galaxybuilder',
+        online: false,
+        unread: 0,
+        messages: [
+          { id: crypto.randomUUID(), from:'GalaxyBuilder', mine:false, text:'The new social demo can feel closer to X while keeping the MuzzSnap identity.', time: Date.now() - 1000 * 60 * 210 },
+          { id: crypto.randomUUID(), from:me, mine:true, text:'Perfect. Keep it fast on mobile too.', time: Date.now() - 1000 * 60 * 180 }
+        ]
+      },
+      {
+        id: 'thread_gamma',
+        user: 'DAO Watch',
+        handle: '@daowatch',
+        online: true,
+        unread: 1,
+        messages: [
+          { id: crypto.randomUUID(), from:'DAO Watch', mine:false, text:'Private governance notes can live here as a demo conversation.', time: Date.now() - 1000 * 60 * 34 }
+        ]
+      }
+    ];
+
+    function loadThreads(){
+      const saved = localStorage.getItem(STORE_KEY);
+      if(!saved){
+        localStorage.setItem(STORE_KEY, JSON.stringify(demoThreads));
+        return JSON.parse(JSON.stringify(demoThreads));
+      }
+      try{
+        return JSON.parse(saved);
+      }catch(e){
+        localStorage.setItem(STORE_KEY, JSON.stringify(demoThreads));
+        return JSON.parse(JSON.stringify(demoThreads));
+      }
     }
 
-    async function idbGet(key) {
-      const dbi = await openIDB();
-      return new Promise((resolve, reject) => {
-        const tx = dbi.transaction(IDB_STORE, "readonly");
-        const st = tx.objectStore(IDB_STORE);
-        const req = st.get(key);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
+    function saveThreads(threads){
+      localStorage.setItem(STORE_KEY, JSON.stringify(threads));
     }
 
-    async function idbSet(key, val) {
-      const dbi = await openIDB();
-      return new Promise((resolve, reject) => {
-        const tx = dbi.transaction(IDB_STORE, "readwrite");
-        const st = tx.objectStore(IDB_STORE);
-        const req = st.put(val, key);
-        req.onsuccess = () => resolve(true);
-        req.onerror = () => reject(req.error);
-      });
+    let threads = loadThreads();
+    let activeId = threads[0]?.id || null;
+
+    const convList = document.getElementById('convList');
+    const messagesEl = document.getElementById('messages');
+    const chatName = document.getElementById('chatName');
+    const chatStatus = document.getElementById('chatStatus');
+    const chatAvatar = document.getElementById('chatAvatar');
+    const messageInput = document.getElementById('messageInput');
+    const searchInput = document.getElementById('searchInput');
+
+    function getActiveThread(){
+      return threads.find(t => t.id === activeId) || null;
     }
 
-    const enc = new TextEncoder();
-    const dec = new TextDecoder();
-
-    function b64(bytes) {
-      let s = "";
-      bytes.forEach(b => (s += String.fromCharCode(b)));
-      return btoa(s);
-    }
-    function unb64(s) {
-      const bin = atob(s);
-      const out = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-      return out;
-    }
-    async function sha256Hex(str) {
-      const h = await crypto.subtle.digest("SHA-256", enc.encode(str));
-      return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, "0")).join("");
+    function formatTime(ts){
+      return new Date(ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
     }
 
-    async function getOrCreateIdentity(addressLower) {
-      // 1) Try load non-extractable private key + public jwk from IndexedDB
-      const saved = await idbGet("identity:" + addressLower);
-      if (saved && saved.privateKey && saved.publicJwk && saved.fingerprint) {
-        return saved;
+    function formatDay(ts){
+      return new Date(ts).toLocaleDateString([], { year:'numeric', month:'short', day:'numeric' });
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+
+    function renderList(){
+      const q = searchInput.value.trim().toLowerCase();
+      const filtered = threads
+        .slice()
+        .sort((a,b) => ((b.messages.at(-1)?.time || 0) - (a.messages.at(-1)?.time || 0)))
+        .filter(t => !q || t.user.toLowerCase().includes(q) || t.handle.toLowerCase().includes(q));
+
+      convList.innerHTML = filtered.map(t => {
+        const last = t.messages.at(-1);
+        return `
+          <button class="conv ${t.id === activeId ? 'active':''}" onclick="openThread('${t.id}')">
+            <div class="avatar">${(t.user[0]||'M').toUpperCase()}</div>
+            <div class="convText">
+              <div class="row">
+                <span class="name">${escapeHtml(t.user)}</span>
+                <span class="muted" style="font-size:12px">${last ? formatTime(last.time) : ''}</span>
+              </div>
+              <div class="row" style="margin-top:2px">
+                <span class="preview">${escapeHtml(last?.text || 'No messages yet')}</span>
+                ${t.unread ? `<span class="badge">${t.unread}</span>` : ''}
+              </div>
+            </div>
+          </button>
+        `;
+      }).join('') || '<div class="empty">No conversations found.</div>';
+    }
+
+    function renderMessages(){
+      const thread = getActiveThread();
+      if(!thread){
+        chatName.textContent = 'Select a conversation';
+        chatStatus.textContent = 'Encrypted demo messages stored locally';
+        chatAvatar.textContent = 'M';
+        messagesEl.innerHTML = '<div class="empty">Open a conversation to start messaging.</div>';
+        return;
       }
 
-      // 2) Generate extractable keypair, export JWK, then re-import private as NON-extractable
-      const kp = await crypto.subtle.generateKey(
-        { name: "ECDH", namedCurve: "P-256" },
-        true,
-        ["deriveBits", "deriveKey"]
-      );
+      chatName.textContent = thread.user;
+      chatStatus.innerHTML = `${thread.online ? '<span class="statusDot"></span>Online now' : 'Last active recently'} · ${thread.handle}`;
+      chatAvatar.textContent = (thread.user[0] || 'M').toUpperCase();
+      thread.unread = 0;
+      saveThreads(threads);
+      renderList();
 
-      const pubJwk = await crypto.subtle.exportKey("jwk", kp.publicKey);
-      const privJwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
-
-      const privateKey = await crypto.subtle.importKey(
-        "jwk",
-        privJwk,
-        { name: "ECDH", namedCurve: "P-256" },
-        false,
-        ["deriveBits", "deriveKey"]
-      );
-
-      const publicKey = await crypto.subtle.importKey(
-        "jwk",
-        pubJwk,
-        { name: "ECDH", namedCurve: "P-256" },
-        true,
-        []
-      );
-
-      const fingerprint = await sha256Hex(JSON.stringify(pubJwk));
-
-      const identity = { privateKey, publicJwk: pubJwk, fingerprint };
-      await idbSet("identity:" + addressLower, identity);
-      return identity;
+      let lastDay = '';
+      messagesEl.innerHTML = thread.messages.map(msg => {
+        const day = formatDay(msg.time);
+        const divider = day !== lastDay ? `<div class="dayDivider"><span>${day}</span></div>` : '';
+        lastDay = day;
+        return `
+          ${divider}
+          <div class="msgRow ${msg.mine ? 'me':'other'}">
+            <div class="bubbleWrap">
+              <div class="msgMeta">
+                <span>${msg.mine ? 'You' : escapeHtml(msg.from)}</span>
+                <span>${formatTime(msg.time)}</span>
+              </div>
+              <div class="bubble">${escapeHtml(msg.text)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    async function publishPublicKey(addressLower, identity) {
-      // Publish only public key + fingerprint. Private never leaves the device.
-      await db.ref("pubkeys/" + addressLower).set({
-        jwk: identity.publicJwk,
-        fp: identity.fingerprint,
-        ts: Date.now()
+    window.openThread = function(id){
+      activeId = id;
+      renderList();
+      renderMessages();
+    }
+
+    function autosize(){
+      messageInput.style.height = '24px';
+      messageInput.style.height = Math.min(messageInput.scrollHeight, 140) + 'px';
+    }
+
+    function sendMessage(seed){
+      const thread = getActiveThread();
+      if(!thread) return;
+      const text = (seed || messageInput.value).trim();
+      if(!text) return;
+      thread.messages.push({
+        id: crypto.randomUUID(),
+        from: me,
+        mine: true,
+        text,
+        time: Date.now()
       });
-    }
+      saveThreads(threads);
+      messageInput.value = '';
+      autosize();
+      renderList();
+      renderMessages();
 
-    async function getPeerPublicKey(addressLower) {
-      const snap = await db.ref("pubkeys/" + addressLower).get();
-      return snap.exists() ? snap.val() : null;
-    }
-
-    async function deriveAesKey(myPrivKey, peerPubJwk, contextStr) {
-      const peerPub = await crypto.subtle.importKey(
-        "jwk",
-        peerPubJwk,
-        { name: "ECDH", namedCurve: "P-256" },
-        true,
-        []
-      );
-
-      // shared secret bits
-      const bits = await crypto.subtle.deriveBits(
-        { name: "ECDH", public: peerPub },
-        myPrivKey,
-        256
-      );
-
-      // HKDF -> AES-GCM key
-      const baseKey = await crypto.subtle.importKey("raw", bits, "HKDF", false, ["deriveKey"]);
-      const aesKey = await crypto.subtle.deriveKey(
-        {
-          name: "HKDF",
-          hash: "SHA-256",
-          salt: enc.encode("muzzsnap-e2ee-salt"),
-          info: enc.encode("muzzsnap-e2ee|" + contextStr)
-        },
-        baseKey,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"]
-      );
-
-      return aesKey;
-    }
-
-    async function encryptForPair(aesKey, plaintext) {
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const ct = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv },
-        aesKey,
-        enc.encode(plaintext)
-      );
-      return { iv: b64(iv), ct: b64(new Uint8Array(ct)) };
-    }
-
-    async function decryptForPair(aesKey, ivB64, ctB64) {
-      const iv = unb64(ivB64);
-      const ct = unb64(ctB64);
-      const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, aesKey, ct);
-      return dec.decode(pt);
-    }
-
-    async function threadIdFor(aLower, bLower) {
-      const ids = [aLower, bLower].sort();
-      return await sha256Hex(ids[0] + "|" + ids[1]);
-    }
-
-    function shortAddr(a) {
-      if (!a) return "";
-      return a.slice(0, 6) + "..." + a.slice(-4);
-    }
-
-    function App() {
-      const [me, setMe] = useState(null); // {addrLower, addrRaw, display, role}
-      const [online, setOnline] = useState([]);
-      const [peer, setPeer] = useState(null); // {addrLower, username}
-      const [msgs, setMsgs] = useState([]);
-      const [txt, setTxt] = useState("");
-      const [menuOpen, setMenuOpen] = useState(false);
-      const [banner, setBanner] = useState("");
-      const [e2eeReady, setE2eeReady] = useState(false);
-      const [fingerprint, setFingerprint] = useState("");
-      const scrollRef = useRef(null);
-      const unsubRef = useRef(null);
-      const aesRef = useRef(null);
-      const threadRef = useRef(null);
-
-      useEffect(() => {
-        const a = sessionStorage.getItem("muzz_wallet_address");
-        if (!a) { window.location.href = "login.html"; return; }
-
-        const isGuest = a.startsWith("guest_");
-        if (isGuest) {
-          // Guests can view page but not use E2EE (matches your restriction style)
-          setBanner("Guests can’t use Private. Connect a wallet with access.");
-          setMe({ addrLower: a.toLowerCase(), addrRaw: a, display: a.replace("guest_", ""), role: "guest" });
-          // Still sign in anonymously for presence list (read-only)
-          firebase.auth().onAuthStateChanged((u) => {
-            if (!u) firebase.auth().signInAnonymously();
-          });
-          return;
-        }
-
-        // Wallet user
-        const addrLower = a.toLowerCase();
-        setMe({ addrLower, addrRaw: a, display: "Node_" + a.slice(-4), role: "wallet" });
-
-        // Ensure Firebase auth exists (anon is fine for RTDB)
-        firebase.auth().onAuthStateChanged((u) => {
-          if (!u) firebase.auth().signInAnonymously();
+      setTimeout(() => {
+        const replies = [
+          'Received. This private demo is looking much better now.',
+          'Nice. We can keep refining the UI and later connect a real backend.',
+          'Got it. The layout feels cleaner and more like a real messaging app.'
+        ];
+        thread.messages.push({
+          id: crypto.randomUUID(),
+          from: thread.user,
+          mine: false,
+          text: replies[Math.floor(Math.random()*replies.length)],
+          time: Date.now()
         });
-
-        (async () => {
-          try {
-            const id = await getOrCreateIdentity(addrLower);
-            setFingerprint(id.fingerprint.slice(0, 16).toUpperCase());
-            await publishPublicKey(addrLower, id);
-            setE2eeReady(true);
-          } catch (e) {
-            console.error(e);
-            setBanner("E2EE engine failed to initialize on this device/browser.");
-          }
-        })();
-
-        // Online list (from your existing /status structure)
-        db.ref("status").on("value", (snap) => {
-          const v = snap.val();
-          const list = v ? Object.values(v) : [];
-          // Only wallet logins appear as selectable peers
-          const cleaned = list
-            .filter(x => x && x.username)
-            .map(x => ({
-              uid: x.uid,
-              username: x.username,
-              role: x.role || "user",
-              wallet: (x.wallet && /^0x[a-fA-F0-9]{40}$/.test(x.wallet)) ? x.wallet : null
-            }))
-            .filter(x => !!x.wallet);
-          setOnline(cleaned);
-        });
-
-        // If chat sets a target recipient in sessionStorage, auto open it
-        const target = sessionStorage.getItem("muzz_private_to");
-        if (target && /^0x[a-fA-F0-9]{40}$/.test(target)) {
-          setPeer({ addrLower: target.toLowerCase(), username: "Node_" + target.slice(-4) });
-          sessionStorage.removeItem("muzz_private_to");
-        }
-      }, []);
-
-      // Scroll down on new messages
-      useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, [msgs]);
-
-      // When peer changes, set up E2EE + listener
-      useEffect(() => {
-        (async () => {
-          if (!me || !peer || me.role !== "wallet") return;
-          if (!e2eeReady) { setBanner("Initializing E2EE..."); return; }
-
-          setBanner("");
-
-          // TOFU check for peer key
-          const peerKey = await getPeerPublicKey(peer.addrLower);
-          if (!peerKey || !peerKey.jwk || !peerKey.fp) {
-            setBanner("Peer has no E2EE key published yet. Ask them to open Private once.");
-            setMsgs([]);
-            return;
-          }
-
-          const tofuKey = "muzz_peer_fp_" + peer.addrLower;
-          const knownFp = localStorage.getItem(tofuKey);
-
-          if (knownFp && knownFp !== peerKey.fp) {
-            const ok = confirm("⚠️ Security warning: Peer key changed. This could be a hijack. Continue?");
-            if (!ok) {
-              setPeer(null);
-              setMsgs([]);
-              return;
-            }
-          } else if (!knownFp) {
-            localStorage.setItem(tofuKey, peerKey.fp);
-          }
-
-          // Derive shared key
-          const myId = await getOrCreateIdentity(me.addrLower);
-          const context = [me.addrLower, peer.addrLower].sort().join("|");
-          const aesKey = await deriveAesKey(myId.privateKey, peerKey.jwk, context);
-          aesRef.current = aesKey;
-
-          // Open thread
-          const tid = await threadIdFor(me.addrLower, peer.addrLower);
-          threadRef.current = tid;
-
-          // Listen messages
-          if (unsubRef.current) unsubRef.current.off();
-
-          const ref = db.ref("pm/" + tid).limitToLast(60);
-          unsubRef.current = ref;
-
-          ref.on("value", async (snap) => {
-            const v = snap.val();
-            if (!v) { setMsgs([]); return; }
-            const arr = Object.keys(v).map(k => ({ id: k, ...v[k] })).sort((a,b)=>a.ts-b.ts);
-
-            const out = [];
-            for (const msg of arr) {
-              try {
-                // Only decrypt if intended for this pair
-                const plaintext = await decryptForPair(aesRef.current, msg.iv, msg.ct);
-                out.push({ ...msg, text: plaintext });
-              } catch (e) {
-                out.push({ ...msg, text: "󰈡 [Encrypted Message]" });
-              }
-            }
-            setMsgs(out);
-          });
-
-        })();
-
-        return () => {
-          if (unsubRef.current) unsubRef.current.off();
-        };
-      }, [peer, me, e2eeReady]);
-
-      const pickPeerFromOnline = async (item) => {
-        if (!item || !item.wallet) {
-          setBanner("User has no wallet info yet.");
-          return;
-        }
-        setPeer({ addrLower: item.wallet.toLowerCase(), username: item.username || ("Node_" + item.wallet.slice(-4)) });
-        setMenuOpen(false);
-      };
-
-      const setPeerByAddress = async (addr) => {
-        const a = (addr || "").trim();
-        if (!/^0x[a-fA-F0-9]{40}$/.test(a)) {
-          alert("Invalid wallet address.");
-          return;
-        }
-        setPeer({ addrLower: a.toLowerCase(), username: "Node_" + a.slice(-4) });
-        setMenuOpen(false);
-      };
-
-      const send = async () => {
-        if (!me) return;
-        if (me.role !== "wallet") { alert("Guests cannot use Private."); return; }
-        if (!peer) { alert("Select a user (wallet) first."); return; }
-        if (!txt.trim()) return;
-
-        const aesKey = aesRef.current;
-        if (!aesKey) { alert("E2EE not ready."); return; }
-
-        const { iv, ct } = await encryptForPair(aesKey, txt);
-
-        const tid = threadRef.current || await threadIdFor(me.addrLower, peer.addrLower);
-        await db.ref("pm/" + tid).push({
-          from: me.addrLower,
-          to: peer.addrLower,
-          iv,
-          ct,
-          ts: Date.now(),
-          v: 1
-        });
-
-        setTxt("");
-      };
-
-      const goBack = () => window.location.href = "chat.html";
-      const comingSoon = () => alert("Coming soon");
-
-      return (
-        <div className="flex h-screen p-2 md:p-6 gap-4 stealth-mode">
-          {/* Sidebar Desktop */}
-          <aside className="w-72 panel-3d p-6 flex-col hidden md:flex">
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <h1 className="font-orbitron font-black text-xl italic tracking-tighter">
-                MUZZ<span className="text-red-600">SNAP</span>
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-2 mb-4">
-              <button className="btn btn-ghost flex-1" onClick={goBack}><i className="fas fa-arrow-left mr-2"></i>Back</button>
-              <button className="btn btn-ghost flex-1" onClick={comingSoon}><i className="fas fa-hashtag mr-2"></i>Social</button>
-            </div>
-
-            <div className="mb-4">
-              <div className="chip inline-flex items-center gap-2">
-                <i className="fas fa-lock"></i>
-                <span>Private E2EE</span>
-              </div>
-              {me?.role === "wallet" && (
-                <div className="mt-3 text-[10px] text-gray-400 font-mono uppercase tracking-widest">
-                  Your key: <span className="text-red-500 font-bold">{fingerprint || "..."}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
-              Wallet Users (Listbox)
-            </div>
-
-            <select
-              className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input mb-4"
-              size={Math.min(8, Math.max(3, online.length))}
-              onChange={(e)=>{
-                const w = e.target.value;
-                const item = online.find(o => o.wallet === w);
-                if(item) pickPeerFromOnline(item);
-              }}
-            >
-              {online.map((x,i)=>(
-                <option key={i} value={x.wallet}>{x.username} — {shortAddr(x.wallet)}</option>
-              ))}
-            </select>
-
-            <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
-              Start DM
-            </div>
-
-            <div className="space-y-3">
-              <input
-                className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input"
-                placeholder="Paste wallet address 0x..."
-                onKeyDown={(e)=>{ if(e.key==="Enter") setPeerByAddress(e.target.value); }}
-              />
-              <button className="btn btn-primary w-full" onClick={()=>{
-                const el = document.querySelector("#peerAddrDesktop");
-              }}>
-                <i className="fas fa-user-secret mr-2"></i>Use address box above
-              </button>
-              <div className="text-[10px] text-gray-500 font-mono leading-relaxed">
-                Tip: from <b>chat.html</b> you can set <code>sessionStorage.muzz_private_to</code> then open Private.
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
-                Online (view)
-              </div>
-              <div className="max-h-56 overflow-y-auto custom-scroll pr-1 space-y-2">
-                {online.map((x, i)=>(
-                  <div key={i} className="flex items-center gap-3 px-2 py-2 rounded-xl border border-white/5 bg-white/5">
-                    <span className="online-indicator"></span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-bold uppercase truncate text-gray-300">{x.username}</div>
-                      <div className="text-[9px] text-gray-500 uppercase tracking-widest">{x.role || "user"}</div>
-                    </div>
-                    <button className="btn btn-ghost" onClick={()=>pickPeerFromOnline(x)}>
-                      <i className="fas fa-comment-dots"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={()=>{sessionStorage.clear(); window.location.href="login.html";}}
-              className="mt-auto w-full py-3 text-[10px] border border-red-900/30 text-red-600 rounded-xl uppercase font-black tracking-widest hover:bg-red-600/5 transition-all"
-            >
-              <i className="fas fa-power-off mr-2"></i>Disconnect
-            </button>
-          </aside>
-
-          {/* Main */}
-          <main className="flex-1 panel-3d flex flex-col overflow-hidden">
-            {/* Mobile header */}
-            <header className="h-14 flex items-center justify-between px-4 md:px-6 border-b border-white/5 bg-white/5">
-              <div className="flex items-center gap-3">
-                <button className="md:hidden text-red-600" onClick={()=>setMenuOpen(true)}>
-                  <i className="fas fa-bars"></i>
-                </button>
-                <div className="text-[10px] font-black tracking-[0.25em] uppercase text-red-500">
-                  <i className="fas fa-lock mr-2"></i>
-                  {peer ? `DM: ${peer.username} (${shortAddr(peer.addrLower)})` : "Private E2EE"}
-                </div>
-              </div>
-              <button className="btn btn-ghost" onClick={goBack}><i className="fas fa-arrow-left mr-2"></i>Back</button>
-            </header>
-
-            {banner && (
-              <div className="px-4 md:px-6 py-2 border-b border-red-600/20 bg-red-600/10 text-red-300 text-[11px]">
-                {banner}
-              </div>
-            )}
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 custom-scroll">
-              {!peer ? (
-                <div className="h-full flex items-center justify-center text-center px-6">
-                  <div>
-                    <div className="text-red-500 font-black tracking-[0.25em] uppercase text-[11px] mb-2">
-                      Select a wallet to start E2EE
-                    </div>
-                    <div className="text-gray-500 text-sm leading-relaxed">
-                      Open a DM from <b>chat.html</b> or paste a wallet address using the menu.
-                    </div>
-                    {me?.role === "wallet" && (
-                      <div className="mt-4 text-[10px] text-gray-500 font-mono uppercase tracking-widest">
-                        Your key fingerprint: <span className="text-red-500 font-bold">{fingerprint || "..."}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {msgs.map((x)=>(
-                    <div key={x.id} className={`flex flex-col ${x.from === me?.addrLower ? "items-end" : "items-start"}`}>
-                      <div className={`bubble-3d ${x.from === me?.addrLower ? "me" : "other"}`}>
-                        {x.text}
-                      </div>
-                      <div className="text-[9px] text-gray-600 mt-1 font-mono">
-                        {new Date(x.ts).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})}
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={scrollRef}></div>
-                </>
-              )}
-            </div>
-
-            {/* Composer */}
-            <div className="p-3 md:p-4 bg-black/40 border-t border-white/5">
-              <div className="flex items-center bg-black/50 rounded-2xl p-2 px-4 border border-white/10 focus-within:border-red-600/50">
-                <input
-                  value={txt}
-                  onChange={(e)=>setTxt(e.target.value)}
-                  onKeyDown={(e)=>e.key==="Enter" && send()}
-                  placeholder={peer ? "Write encrypted message..." : "Select a user first..."}
-                  disabled={!peer || me?.role !== "wallet"}
-                  className="flex-1 hacker-input text-sm"
-                />
-                <button
-                  onClick={send}
-                  disabled={!peer || me?.role !== "wallet"}
-                  className={`w-10 h-10 rounded-xl ml-2 ${(!peer || me?.role !== "wallet") ? "bg-gray-800 opacity-60" : "bg-red-600"}`}
-                  title="Send"
-                >
-                  <i className="fas fa-paper-plane text-xs"></i>
-                </button>
-              </div>
-            </div>
-          </main>
-
-          {/* Mobile drawer */}
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 bg-black/90 z-40 backdrop-blur-md" onClick={()=>setMenuOpen(false)}></div>
-              <aside className="fixed z-50 inset-y-0 left-0 w-80 max-w-[85vw] panel-3d p-5 flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="font-orbitron font-black italic tracking-tighter">
-                    MUZZ<span className="text-red-600">SNAP</span>
-                  </div>
-                  <button className="text-gray-400" onClick={()=>setMenuOpen(false)}><i className="fas fa-times"></i></button>
-                </div>
-
-                <div className="flex items-center gap-2 mb-4">
-                  <button className="btn btn-ghost flex-1" onClick={goBack}><i className="fas fa-arrow-left mr-2"></i>Back</button>
-                  <button className="btn btn-ghost flex-1" onClick={comingSoon}><i className="fas fa-hashtag mr-2"></i>Social</button>
-                </div>
-
-                {me?.role === "wallet" && (
-                  <div className="mb-4 text-[10px] text-gray-400 font-mono uppercase tracking-widest">
-                    Your key: <span className="text-red-500 font-bold">{fingerprint || "..."}</span>
-                  </div>
-                )}
-
-                <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
-                  Wallet Users (Listbox)
-                </div>
-
-                <select
-                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input mb-3"
-                  size={Math.min(8, Math.max(3, online.length))}
-                  onChange={(e)=>{
-                    const w = e.target.value;
-                    const item = online.find(o => o.wallet === w);
-                    if(item) pickPeerFromOnline(item);
-                  }}
-                >
-                  {online.map((x,i)=>(
-                    <option key={i} value={x.wallet}>{x.username} — {shortAddr(x.wallet)}</option>
-                  ))}
-                </select>
-
-                <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
-                  Start DM
-                </div>
-
-                <input
-                  id="peerAddrMobile"
-                  className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-xs hacker-input mb-3"
-                  placeholder="Paste wallet address 0x..."
-                />
-                <button className="btn btn-primary w-full mb-4" onClick={()=>{
-                  const v = document.getElementById("peerAddrMobile").value;
-                  setPeerByAddress(v);
-                }}>
-                  <i className="fas fa-user-secret mr-2"></i>Open Encrypted DM
-                </button>
-
-                <div className="text-[10px] text-gray-500 font-bold tracking-[0.3em] uppercase mb-3">
-                  Online (view)
-                </div>
-                <div className="flex-1 overflow-y-auto custom-scroll pr-1 space-y-2">
-                  {online.map((x, i)=>(
-                    <div key={i} className="flex items-center gap-3 px-2 py-2 rounded-xl border border-white/5 bg-white/5">
-                      <span className="online-indicator"></span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-bold uppercase truncate text-gray-300">{x.username}</div>
-                        <div className="text-[9px] text-gray-500 uppercase tracking-widest">{x.role || "user"}</div>
-                      </div>
-                      <button className="btn btn-ghost" onClick={()=>pickPeerFromOnline(x)}>
-                        <i className="fas fa-comment-dots"></i>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={()=>{sessionStorage.clear(); window.location.href="login.html";}}
-                  className="mt-4 w-full py-3 text-[10px] border border-red-900/30 text-red-600 rounded-xl uppercase font-black tracking-widest hover:bg-red-600/5 transition-all"
-                >
-                  <i className="fas fa-power-off mr-2"></i>Disconnect
-                </button>
-              </aside>
-            </>
-          )}
-        </div>
-      );
+        thread.unread = activeId === thread.id ? 0 : (thread.unread || 0) + 1;
+        saveThreads(threads);
+        renderList();
+        renderMessages();
+      }, 900);
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+    function newChat(){
+      const name = prompt('Enter a demo username');
+      if(!name) return;
+      const clean = name.trim();
+      if(!clean) return;
+      const thread = {
+        id: crypto.randomUUID(),
+        user: clean,
+        handle: '@' + clean.toLowerCase().replace(/[^a-z0-9_]/g,''),
+        online: Math.random() > .4,
+        unread: 0,
+        messages: [
+          { id: crypto.randomUUID(), from: clean, mine:false, text:'This is a new private demo conversation.', time: Date.now() }
+        ]
+      };
+      threads.unshift(thread);
+      saveThreads(threads);
+      activeId = thread.id;
+      renderList();
+      renderMessages();
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', () => sendMessage());
+    document.getElementById('emojiBtn').addEventListener('click', () => {
+      messageInput.value += ' 😊';
+      autosize();
+      messageInput.focus();
+    });
+    document.getElementById('newChatBtn').addEventListener('click', newChat);
+    document.getElementById('mobileNew').addEventListener('click', newChat);
+    document.getElementById('infoBtn').addEventListener('click', () => {
+      const thread = getActiveThread();
+      if(!thread) return alert('No conversation selected');
+      alert(`${thread.user}\n${thread.handle}\n\nDemo private chat stored locally in this browser.`);
+    });
+    document.getElementById('mobileInfo').addEventListener('click', () => document.getElementById('infoBtn').click());
+    document.getElementById('openList').addEventListener('click', () => {
+      const names = threads.map((t,i)=>`${i+1}. ${t.user}`).join('\n');
+      const choice = prompt(`Open conversation:\n\n${names}\n\nType number`);
+      const idx = Number(choice) - 1;
+      if(threads[idx]){
+        activeId = threads[idx].id;
+        renderList();
+        renderMessages();
+      }
+    });
+
+    searchInput.addEventListener('input', renderList);
+    messageInput.addEventListener('input', autosize);
+    messageInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    autosize();
+    renderList();
+    renderMessages();
   </script>
 </body>
 </html>
