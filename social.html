@@ -4,99 +4,454 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MuzzSnap Social</title>
-  <meta name="theme-color" content="#0f1318" />
+  <meta name="theme-color" content="#111418" />
   <style>
     :root{
-      --bg:#0d1116;
-      --panel:#151b22;
-      --panel-2:#1b232d;
-      --soft:#222c38;
-      --line:rgba(255,255,255,.07);
-      --text:#eef3f8;
-      --muted:#97a5b8;
-      --red:#ff2d2d;
-      --red-2:#b30000;
-      --blue:#7fc3ff;
-      --green:#39ff14;
-      --shadow:0 18px 45px rgba(0,0,0,.4);
-      --radius:24px;
+      --bg:#20262d;
+      --panel:#12171d;
+      --soft:#1a2028;
+      --soft-2:#232b35;
+      --line:rgba(255,255,255,.08);
+      --text:#eef2f7;
+      --muted:#93a0b3;
+      --red:#ff2b2b;
+      --red-soft:rgba(255,43,43,.14);
+      --green:#4ade80;
+      --blue:#60a5fa;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --radius:22px;
     }
+
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:radial-gradient(circle at top, #1b232d 0%, #0d1116 38%, #090c10 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;height:100%}
-    a{text-decoration:none;color:inherit}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(255,43,43,.10), transparent 24%),
+        radial-gradient(circle at bottom left, rgba(96,165,250,.07), transparent 20%),
+        var(--bg);
+      color:var(--text);
+      overflow:hidden;
+    }
+
     button,input,textarea{font:inherit}
-    .app{min-height:100vh;max-width:1500px;margin:0 auto;padding:14px;display:grid;grid-template-columns:290px minmax(0,1fr) 340px;gap:16px}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.015));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(8px)}
-    .sidebar,.rightbar,.feed{min-height:calc(100vh - 28px)}
-    .sidebar,.rightbar{padding:18px;position:sticky;top:14px;align-self:start}
-    .brand{display:flex;align-items:center;gap:14px;padding:8px 4px 20px}
-    .logo{width:54px;height:54px;border-radius:18px;background:linear-gradient(145deg,var(--red),#650000);display:grid;place-items:center;box-shadow:0 0 25px rgba(255,45,45,.25);font-size:24px}
-    .brand h1{margin:0;font-size:34px;line-height:1;font-weight:900;font-style:italic;letter-spacing:-.04em}
+    a{text-decoration:none;color:inherit}
+
+    .app{
+      display:grid;
+      grid-template-columns:280px minmax(0,720px) 340px;
+      gap:18px;
+      height:100vh;
+      max-width:1450px;
+      margin:0 auto;
+      padding:18px;
+    }
+
+    .card{
+      background:rgba(18,23,29,.92);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(10px);
+    }
+
+    .sidebar,.rightbar,.feed-shell{
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .sidebar,.rightbar{padding:18px}
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:6px 4px 18px;
+      margin-bottom:8px;
+    }
+
+    .brand-badge{
+      width:48px;
+      height:48px;
+      display:grid;
+      place-items:center;
+      border-radius:16px;
+      background:linear-gradient(145deg, #ff3b3b, #9d1111);
+      box-shadow:0 0 24px rgba(255,43,43,.25);
+      font-size:22px;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:28px;
+      letter-spacing:-.04em;
+      font-weight:900;
+      font-style:italic;
+    }
+
     .brand span{color:var(--red)}
-    .nav{display:flex;flex-direction:column;gap:8px}
-    .nav a,.nav button{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:18px;border:1px solid transparent;background:transparent;color:var(--text);cursor:pointer}
-    .nav a.active,.nav a:hover,.nav button:hover{background:rgba(255,45,45,.08);border-color:rgba(255,45,45,.18)}
-    .nav .ico{width:22px;text-align:center;color:var(--red)}
-    .profileBox{margin-top:16px;padding:16px;border-radius:20px;background:linear-gradient(180deg, rgba(255,45,45,.06), rgba(255,255,255,.02));border:1px solid rgba(255,45,45,.12)}
-    .profileTop{display:flex;align-items:center;gap:12px}
-    .avatar{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,#2e3947,#141920);display:grid;place-items:center;font-weight:800;color:#fff;border:1px solid rgba(255,255,255,.08)}
-    .small{font-size:12px;color:var(--muted)}
-    .dangerBtn,.primaryBtn,.ghostBtn{border:none;cursor:pointer;border-radius:18px;height:48px;padding:0 18px;font-weight:800}
-    .dangerBtn{background:linear-gradient(145deg,var(--red),var(--red-2));color:#fff;box-shadow:0 10px 24px rgba(255,45,45,.22)}
-    .primaryBtn{background:linear-gradient(145deg,#1f87ff,#115fbc);color:#fff}
-    .ghostBtn{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text)}
-    .feed{overflow:hidden;display:flex;flex-direction:column}
-    .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
-    .title{font-size:18px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#ff6b6b}
-    .composer{padding:18px 18px 10px;border-bottom:1px solid var(--line)}
-    .composerHead{display:flex;gap:14px}
-    .composer textarea{width:100%;min-height:110px;resize:none;border:none;outline:none;background:transparent;color:var(--text);font-size:20px;line-height:1.45}
-    .composer textarea::placeholder{color:#7b8695}
-    .composerTools{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-left:62px;gap:12px;flex-wrap:wrap}
-    .toolRow{display:flex;gap:8px;flex-wrap:wrap}
-    .toolChip{padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.02);font-size:13px;color:var(--blue)}
-    .postList{overflow:auto;padding-bottom:90px}
-    .post{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;gap:14px;transition:.2s background}
-    .post:hover{background:rgba(255,255,255,.015)}
-    .postBody{min-width:0;flex:1}
-    .postTop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .name{font-weight:900}
-    .handle,.time{color:var(--muted);font-size:14px}
-    .content{margin-top:10px;font-size:17px;line-height:1.58;white-space:pre-wrap;word-break:break-word}
-    .tag{color:#86bfff}
-    .postCard{margin-top:12px;border-radius:22px;background:linear-gradient(180deg, rgba(255,45,45,.08), rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.06);padding:16px}
-    .metrics{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
-    .metricBtn{display:flex;align-items:center;gap:8px;border:none;background:transparent;color:var(--muted);padding:10px 12px;border-radius:14px;cursor:pointer;min-width:78px;justify-content:center}
-    .metricBtn:hover{background:rgba(255,255,255,.04);color:var(--text)}
-    .metricBtn.liked{color:#ff6b9c;background:rgba(255,107,156,.08)}
-    .metricBtn.reposted{color:#79ff7b;background:rgba(121,255,123,.08)}
-    .sectionTitle{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#96a2b3;margin:2px 0 14px;font-weight:900}
-    .trend,.who{padding:14px 0;border-top:1px solid var(--line)}
-    .trend:first-of-type,.who:first-of-type{border-top:none}
-    .trend .small{display:block;margin-bottom:6px}
-    .trend strong,.who strong{display:block;font-size:15px}
-    .whoRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .miniBtn{height:38px;border:none;border-radius:12px;padding:0 14px;background:rgba(255,255,255,.06);color:#fff;font-weight:800;cursor:pointer}
-    .rightBox{padding:18px;border-radius:20px;background:rgba(255,255,255,.02);border:1px solid var(--line);margin-bottom:14px}
-    .search{width:100%;height:48px;border-radius:16px;border:1px solid var(--line);background:#0f141a;color:var(--text);padding:0 16px;outline:none}
-    .empty{padding:36px 24px;color:var(--muted);text-align:center}
-    .mobileNav{display:none}
-    .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+
+    .nav{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin:6px 0 16px;
+    }
+
+    .nav-btn{
+      border:none;
+      background:transparent;
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:14px 14px;
+      border-radius:18px;
+      cursor:pointer;
+      transition:.2s ease;
+      text-align:left;
+    }
+
+    .nav-btn:hover,.nav-btn.active{
+      background:var(--red-soft);
+      color:#fff;
+    }
+
+    .nav-icon{
+      width:38px;height:38px;border-radius:14px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.05);
+      font-size:16px;
+      flex-shrink:0;
+    }
+
+    .compose-main{
+      margin:10px 0 18px;
+      padding:14px 18px;
+      border:none;
+      border-radius:18px;
+      font-weight:800;
+      color:#fff;
+      background:linear-gradient(145deg,#ff3d3d,#b10f0f);
+      cursor:pointer;
+      box-shadow:0 12px 30px rgba(255,43,43,.22);
+    }
+
+    .profile-mini{
+      margin-top:auto;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:12px;
+      border-radius:18px;
+      background:var(--soft);
+      border:1px solid var(--line);
+    }
+
+    .avatar{
+      width:48px;height:48px;border-radius:50%;
+      display:grid;place-items:center;
+      background:linear-gradient(145deg,#3a4552,#19202a);
+      border:1px solid rgba(255,255,255,.08);
+      font-weight:800;
+      flex-shrink:0;
+    }
+
+    .profile-mini .name{font-weight:800}
+    .profile-mini .sub{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis}
+
+    .feed-shell{
+      overflow:hidden;
+    }
+
+    .feed-top{
+      position:sticky;
+      top:0;
+      z-index:5;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:16px 18px;
+      border-bottom:1px solid var(--line);
+      background:rgba(18,23,29,.84);
+      backdrop-filter:blur(14px);
+      border-top-left-radius:var(--radius);
+      border-top-right-radius:var(--radius);
+    }
+
+    .feed-top h2{margin:0;font-size:20px;letter-spacing:-.03em}
+
+    .ghost-btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      color:var(--text);
+      padding:10px 14px;
+      border-radius:14px;
+      cursor:pointer;
+    }
+
+    .feed-scroll{
+      overflow:auto;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-height:0;
+    }
+
+    .composer{
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:24px;
+      background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+    }
+
+    .composer-head{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+    }
+
+    .composer textarea{
+      width:100%;
+      min-height:88px;
+      resize:none;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font-size:18px;
+      line-height:1.45;
+    }
+
+    .composer-tools{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:14px;
+      padding-top:14px;
+      border-top:1px solid var(--line);
+      flex-wrap:wrap;
+    }
+
+    .tools-left{display:flex;gap:8px;flex-wrap:wrap}
+
+    .tool-pill{
+      padding:9px 12px;
+      border-radius:999px;
+      background:rgba(96,165,250,.12);
+      color:#bfdbfe;
+      font-size:13px;
+      border:1px solid rgba(96,165,250,.18);
+    }
+
+    .post-btn{
+      border:none;
+      padding:12px 18px;
+      border-radius:14px;
+      color:#fff;
+      font-weight:800;
+      background:linear-gradient(145deg,#ff3d3d,#b10f0f);
+      cursor:pointer;
+    }
+
+    .count{color:var(--muted);font-size:13px}
+
+    .post{
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:18px;
+      background:rgba(255,255,255,.02);
+    }
+
+    .post-head{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+    }
+
+    .post-meta{min-width:0;flex:1}
+    .post-name-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      min-width:0;
+    }
+
+    .post-name{font-weight:900}
+    .post-handle,.post-time{color:var(--muted);font-size:14px}
+    .verified{
+      display:inline-grid;place-items:center;
+      width:18px;height:18px;border-radius:50%;
+      background:var(--blue);color:#07111d;font-size:11px;font-weight:900;
+    }
+
+    .post-text{
+      margin:12px 0 14px 60px;
+      color:#edf2f7;
+      line-height:1.6;
+      font-size:16px;
+      white-space:pre-wrap;
+      word-wrap:break-word;
+    }
+
+    .post-media{
+      margin:0 0 14px 60px;
+      border-radius:20px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      background:linear-gradient(145deg, rgba(255,43,43,.14), rgba(96,165,250,.14));
+      min-height:190px;
+      display:grid;
+      place-items:center;
+      color:#fff;
+      position:relative;
+    }
+
+    .media-demo{
+      padding:30px;
+      text-align:center;
+    }
+
+    .media-demo strong{display:block;font-size:28px;letter-spacing:-.04em}
+    .media-demo span{display:block;margin-top:10px;color:#dbeafe}
+
+    .post-actions{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:8px;
+      margin-left:60px;
+    }
+
+    .action-btn{
+      border:none;
+      background:transparent;
+      color:var(--muted);
+      padding:10px 12px;
+      border-radius:14px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition:.2s ease;
+    }
+
+    .action-btn:hover{background:rgba(255,255,255,.04);color:#fff}
+    .action-btn.liked{color:#ff7b95;background:rgba(255,123,149,.12)}
+    .action-btn.reposted{color:var(--green);background:rgba(74,222,128,.12)}
+
+    .section-title{
+      font-size:13px;
+      text-transform:uppercase;
+      letter-spacing:.24em;
+      color:var(--muted);
+      margin:0 0 14px;
+      font-weight:800;
+    }
+
+    .search{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:var(--soft);
+      border:1px solid var(--line);
+      margin-bottom:16px;
+    }
+
+    .search input{
+      width:100%;border:none;outline:none;background:transparent;color:var(--text)
+    }
+
+    .widget{
+      padding:16px;
+      border-radius:20px;
+      background:var(--soft);
+      border:1px solid var(--line);
+      margin-bottom:16px;
+    }
+
+    .trend,.follow-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 0;
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+
+    .trend:first-of-type,.follow-row:first-of-type{border-top:none;padding-top:0}
+
+    .trend small,.follow-row small{display:block;color:var(--muted);margin-top:4px}
+
+    .follow-btn{
+      border:none;
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:800;
+      cursor:pointer;
+      background:#fff;
+      color:#111;
+    }
+
+    .mobile-bottom{
+      display:none;
+      position:fixed;
+      left:12px;right:12px;bottom:12px;
+      z-index:30;
+      background:rgba(18,23,29,.92);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:10px;
+      grid-template-columns:repeat(5,1fr);
+      gap:6px;
+    }
+
+    .mobile-bottom button{
+      border:none;background:transparent;color:var(--muted);
+      padding:10px 6px;border-radius:14px;cursor:pointer;font-size:12px
+    }
+
+    .mobile-bottom button.active{background:var(--red-soft);color:#fff}
+
+    .fab{
+      display:none;
+      position:fixed;
+      right:18px;bottom:86px;
+      width:64px;height:64px;border-radius:22px;
+      border:none;color:#fff;font-size:24px;
+      background:linear-gradient(145deg,#ff3d3d,#b10f0f);
+      box-shadow:0 14px 34px rgba(255,43,43,.28);
+      z-index:31;cursor:pointer;
+    }
+
+    .hidden-mobile{display:block}
 
     @media (max-width: 1180px){
-      .app{grid-template-columns:260px minmax(0,1fr)}
-      .rightbar{display:none}
+      .app{grid-template-columns:250px minmax(0,1fr) 300px}
     }
-    @media (max-width: 860px){
-      .app{grid-template-columns:1fr;padding:10px}
-      .sidebar{display:none}
-      .feed{min-height:calc(100vh - 20px)}
-      .topbar{position:sticky;top:0;z-index:5;background:rgba(15,19,24,.92);backdrop-filter:blur(10px)}
-      .composerTools{padding-left:0}
-      .postList{padding-bottom:110px}
-      .mobileNav{position:fixed;left:10px;right:10px;bottom:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px;border-radius:22px;background:rgba(12,16,20,.94);border:1px solid var(--line);backdrop-filter:blur(12px);box-shadow:var(--shadow);z-index:20}
-      .mobileNav a,.mobileNav button{height:54px;border:none;border-radius:16px;background:rgba(255,255,255,.03);color:var(--text);display:grid;place-items:center;font-size:20px;cursor:pointer}
-      .mobileNav .active{background:rgba(255,45,45,.12);color:var(--red)}
+
+    @media (max-width: 980px){
+      body{overflow:auto}
+      .app{
+        height:auto;
+        min-height:100vh;
+        grid-template-columns:1fr;
+        padding:12px 12px 92px;
+      }
+      .sidebar,.rightbar{display:none}
+      .feed-shell{min-height:calc(100vh - 104px)}
+      .mobile-bottom,.fab{display:grid}
+      .fab{display:block}
+      .post-text,.post-media,.post-actions{margin-left:0}
+      .feed-top{position:sticky}
     }
   </style>
 </head>
@@ -104,351 +459,409 @@
   <div class="app">
     <aside class="sidebar card">
       <div class="brand">
-        <div class="logo">👻</div>
-        <h1>MUZZ<span>SNAP</span></h1>
+        <div class="brand-badge">👻</div>
+        <h1>MUZZ<span>SOCIAL</span></h1>
       </div>
 
       <nav class="nav">
-        <a class="active" href="social.html"><span class="ico">⌂</span><span>Home</span></a>
-        <a href="private.html"><span class="ico">✉</span><span>Private</span></a>
-        <a href="index.html"><span class="ico">↩</span><span>Back to Chat</span></a>
-        <button id="newDemoPost"><span class="ico">✦</span><span>Generate demo post</span></button>
+        <button class="nav-btn active" id="navHome"><span class="nav-icon">🏠</span><span>Home</span></button>
+        <button class="nav-btn" id="navExplore"><span class="nav-icon">🔍</span><span>Explore</span></button>
+        <button class="nav-btn" id="navAlerts"><span class="nav-icon">🔔</span><span>Notifications</span></button>
+        <button class="nav-btn" id="navMessages"><span class="nav-icon">✉️</span><span>Messages</span></button>
+        <button class="nav-btn" id="navProfile"><span class="nav-icon">👤</span><span>Profile</span></button>
       </nav>
 
-      <div class="profileBox">
-        <div class="profileTop">
-          <div class="avatar" id="meAvatar">M</div>
-          <div>
-            <div class="name" id="meName">Muzz User</div>
-            <div class="small" id="meHandle">@muzzuser</div>
-          </div>
-        </div>
-        <div class="small" style="margin-top:10px">Basic X-style social demo stored in your browser.</div>
-        <div style="display:flex;gap:10px;margin-top:14px">
-          <button class="dangerBtn" id="clearPosts">Clear feed</button>
+      <button class="compose-main" id="openComposer">Post something</button>
+
+      <div class="profile-mini">
+        <div class="avatar" id="meAvatar">MZ</div>
+        <div style="min-width:0;flex:1">
+          <div class="name" id="meName">Muzz User</div>
+          <div class="sub" id="meHandle">@muzzuser</div>
         </div>
       </div>
     </aside>
 
-    <main class="feed card">
-      <div class="topbar">
-        <div>
-          <div class="title">Social Feed</div>
-          <div class="small">Basic demo inspired by X.com</div>
+    <main class="feed-shell card">
+      <div class="feed-top">
+        <h2>Social</h2>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <a href="index.html" class="ghost-btn">← Back to Chat</a>
+          <button class="ghost-btn" id="demoFill">Load demo</button>
         </div>
-        <div class="pill" id="statusPill">online demo</div>
       </div>
 
-      <section class="composer">
-        <div class="composerHead">
-          <div class="avatar" id="composerAvatar">M</div>
-          <div style="flex:1;min-width:0">
-            <textarea id="composerInput" maxlength="280" placeholder="What's happening in the MUZZ universe?"></textarea>
+      <div class="feed-scroll" id="feedScroll">
+        <section class="composer" id="composerCard">
+          <div class="composer-head">
+            <div class="avatar" id="composerAvatar">MZ</div>
+            <div style="flex:1;min-width:0">
+              <textarea id="postInput" maxlength="280" placeholder="What’s happening in MUZZ world?"></textarea>
+              <div class="composer-tools">
+                <div class="tools-left">
+                  <span class="tool-pill">Crypto</span>
+                  <span class="tool-pill">Community</span>
+                  <span class="tool-pill">Project update</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span class="count" id="charCount">0 / 280</span>
+                  <button class="post-btn" id="publishBtn">Post</button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="composerTools">
-          <div class="toolRow">
-            <div class="toolChip">#muzzsnap</div>
-            <div class="toolChip">#muzzletoken</div>
-            <div class="toolChip">#galaxy</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span class="small" id="charCount">0 / 280</span>
-            <button class="dangerBtn" id="publishBtn">Post</button>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="postList" id="postList"></section>
+        <div id="feed"></div>
+      </div>
     </main>
 
     <aside class="rightbar card">
-      <div class="rightBox">
-        <input class="search" placeholder="Search demo..." />
+      <div class="search">
+        <span>🔎</span>
+        <input type="text" placeholder="Search MUZZ Social demo" />
       </div>
-      <div class="rightBox">
-        <div class="sectionTitle">Trending now</div>
+
+      <section class="widget">
+        <p class="section-title">Trending</p>
         <div class="trend">
-          <span class="small">Crypto · Trending</span>
-          <strong>#MuzzSnap</strong>
-          <span class="small">12.4K posts</span>
-        </div>
-        <div class="trend">
-          <span class="small">Gaming · Live</span>
-          <strong>#GalaxyLaunch</strong>
-          <span class="small">4,280 posts</span>
+          <div>
+            <strong>#MuzzSnap</strong>
+            <small>Private chat + social demo</small>
+          </div>
+          <span style="color:var(--muted)">1.2K</span>
         </div>
         <div class="trend">
-          <span class="small">Community</span>
-          <strong>#DAO</strong>
-          <span class="small">1,920 posts</span>
-        </div>
-      </div>
-      <div class="rightBox">
-        <div class="sectionTitle">Who to follow</div>
-        <div class="who">
-          <div class="whoRow">
-            <div>
-              <strong>@MuzzSnap</strong>
-              <span class="small">Official updates</span>
-            </div>
-            <button class="miniBtn">Follow</button>
+          <div>
+            <strong>#MuzzleToken</strong>
+            <small>Community mentions</small>
           </div>
+          <span style="color:var(--muted)">875</span>
         </div>
-        <div class="who">
-          <div class="whoRow">
-            <div>
-              <strong>@MuzzleGalaxy</strong>
-              <span class="small">Game progress</span>
-            </div>
-            <button class="miniBtn">Follow</button>
+        <div class="trend">
+          <div>
+            <strong>#Galaxy</strong>
+            <small>Game and ecosystem</small>
           </div>
+          <span style="color:var(--muted)">642</span>
         </div>
-        <div class="who">
-          <div class="whoRow">
+      </section>
+
+      <section class="widget">
+        <p class="section-title">Who to follow</p>
+        <div class="follow-row">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="avatar" style="width:42px;height:42px">MS</div>
             <div>
-              <strong>@DAO</strong>
-              <span class="small">Governance chatter</span>
+              <strong>MuzzSnap</strong>
+              <small>@muzzsnap</small>
             </div>
-            <button class="miniBtn">Follow</button>
           </div>
+          <button class="follow-btn">Follow</button>
         </div>
-      </div>
+        <div class="follow-row">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="avatar" style="width:42px;height:42px">MT</div>
+            <div>
+              <strong>Muzzle Token</strong>
+              <small>@muzzletoken</small>
+            </div>
+          </div>
+          <button class="follow-btn">Follow</button>
+        </div>
+        <div class="follow-row">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="avatar" style="width:42px;height:42px">GX</div>
+            <div>
+              <strong>Galaxy</strong>
+              <small>@galaxyverse</small>
+            </div>
+          </div>
+          <button class="follow-btn">Follow</button>
+        </div>
+      </section>
+
+      <section class="widget">
+        <p class="section-title">About this demo</p>
+        <div style="color:var(--muted);line-height:1.65;font-size:14px">
+          Static social feed inspired by X-style layouts. Users can publish local demo posts, like, repost, and return to the main chat.
+        </div>
+      </section>
     </aside>
   </div>
 
-  <nav class="mobileNav">
-    <a class="active" href="social.html">⌂</a>
-    <a href="private.html">✉</a>
-    <button id="mobilePost">＋</button>
-    <a href="index.html">↩</a>
-    <button id="mobileClear">⌫</button>
-  </nav>
+  <div class="mobile-bottom">
+    <button class="active" id="mobileHome">Home</button>
+    <button id="mobileExplore">Explore</button>
+    <button id="mobileAlert">Alert</button>
+    <button id="mobileMsg">Msg</button>
+    <button id="mobileBack">Back</button>
+  </div>
+
+  <button class="fab" id="fabBtn">＋</button>
 
   <script>
-    const FEED_KEY = 'muzz_social_feed_v2';
-    const composerInput = document.getElementById('composerInput');
-    const charCount = document.getElementById('charCount');
-    const postList = document.getElementById('postList');
+    const STORAGE_KEY = 'muzz_social_demo_posts_v1';
+    const wallet = sessionStorage.getItem('muzz_wallet_address') || 'guest_muzz';
+    const savedName = sessionStorage.getItem('muzz_username');
 
-    const rawUser = sessionStorage.getItem('muzz_wallet_address') || 'guest_user';
-    const displayName = rawUser.startsWith('guest_') ? rawUser.replace('guest_','') : `Node_${rawUser.slice(-4)}`;
-    const handle = '@' + displayName.toLowerCase().replace(/[^a-z0-9_]/g,'');
-    const avatarLetter = (displayName[0] || 'M').toUpperCase();
+    function getIdentity(){
+      const isGuest = wallet.startsWith('guest_');
+      let username = 'Muzz User';
+      let handle = '@muzzuser';
 
-    document.getElementById('meName').textContent = displayName;
-    document.getElementById('meHandle').textContent = handle;
-    document.getElementById('meAvatar').textContent = avatarLetter;
-    document.getElementById('composerAvatar').textContent = avatarLetter;
+      if(savedName){
+        username = savedName;
+      }else if(isGuest){
+        username = wallet.replace('guest_','') || 'Guest';
+      }else{
+        username = 'Node_' + wallet.slice(-4);
+      }
 
-    const demoPosts = [
+      handle = '@' + username.toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,18);
+      return { username, handle, isGuest };
+    }
+
+    const me = getIdentity();
+
+    document.getElementById('meName').textContent = me.username;
+    document.getElementById('meHandle').textContent = me.handle;
+    document.getElementById('meAvatar').textContent = (me.username || 'MU').slice(0,2).toUpperCase();
+    document.getElementById('composerAvatar').textContent = (me.username || 'MU').slice(0,2).toUpperCase();
+
+    const seedPosts = [
       {
-        id: crypto.randomUUID(),
-        author:'MuzzSnap',
-        handle:'@muzzsnap',
-        content:'Welcome to the new Social demo. This is a clean X-style feed for the MUZZ ecosystem. #muzzsnap #social',
-        time: Date.now() - 1000 * 60 * 12,
-        likes: 18,
-        reposts: 5,
-        replies: 3,
-        liked:false,
-        reposted:false,
-        mine:false
-      },
-      {
-        id: crypto.randomUUID(),
-        author:'GalaxyBuilder',
-        handle:'@galaxybuilder',
-        content:'Working on the next visual pass for Muzzle Galaxy. Dark chrome, red neon, smoother mobile UI. 🚀',
-        time: Date.now() - 1000 * 60 * 48,
-        likes: 31,
+        id: 1,
+        name: 'MuzzSnap',
+        handle: '@muzzsnap',
+        time: '2h',
+        text: 'Welcome to Muzz Social demo. This page fixes the 404 by creating a basic social feed. You can publish local posts and preview a simple X-style layout.',
+        verified: true,
+        likes: 41,
         reposts: 9,
-        replies: 7,
-        liked:false,
-        reposted:false,
-        mine:false
+        comments: 12,
+        liked: false,
+        reposted: false
       },
       {
-        id: crypto.randomUUID(),
-        author:'DAO Watch',
-        handle:'@daowatch',
-        content:'Reminder: community proposals and pinned rules should be reviewed before launch events. #DAO',
-        time: Date.now() - 1000 * 60 * 95,
-        likes: 12,
-        reposts: 2,
-        replies: 1,
-        liked:false,
-        reposted:false,
-        mine:false
+        id: 2,
+        name: 'Muzzle Token',
+        handle: '@muzzletoken',
+        time: '4h',
+        text: 'Community first. Privacy, chat, social, and ecosystem tools can all live inside the same experience when the UI stays clean and mobile friendly.',
+        verified: true,
+        likes: 63,
+        reposts: 18,
+        comments: 20,
+        liked: false,
+        reposted: false,
+        media: true
+      },
+      {
+        id: 3,
+        name: 'Galaxy Builder',
+        handle: '@galaxyverse',
+        time: '7h',
+        text: 'Demo idea: add profiles, real comments, Firebase feed sync, follows, search, and notifications next. For now this version is lightweight and easy to publish on GitHub Pages.',
+        verified: false,
+        likes: 26,
+        reposts: 5,
+        comments: 7,
+        liked: false,
+        reposted: false
       }
     ];
 
-    function readFeed(){
-      const saved = localStorage.getItem(FEED_KEY);
-      if(!saved){
-        localStorage.setItem(FEED_KEY, JSON.stringify(demoPosts));
-        return [...demoPosts].sort((a,b)=>b.time-a.time);
-      }
+    function loadPosts(){
       try{
-        return JSON.parse(saved).sort((a,b)=>b.time-a.time);
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw){
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(seedPosts));
+          return [...seedPosts];
+        }
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) && parsed.length ? parsed : [...seedPosts];
       }catch(e){
-        localStorage.setItem(FEED_KEY, JSON.stringify(demoPosts));
-        return [...demoPosts].sort((a,b)=>b.time-a.time);
+        return [...seedPosts];
       }
     }
 
-    function writeFeed(feed){
-      localStorage.setItem(FEED_KEY, JSON.stringify(feed));
+    let posts = loadPosts();
+    const feed = document.getElementById('feed');
+    const postInput = document.getElementById('postInput');
+    const charCount = document.getElementById('charCount');
+
+    function savePosts(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
     }
 
-    function timeAgo(ts){
-      const sec = Math.floor((Date.now() - ts)/1000);
-      if(sec < 60) return sec + 's';
-      const min = Math.floor(sec/60);
-      if(min < 60) return min + 'm';
-      const hr = Math.floor(min/60);
-      if(hr < 24) return hr + 'h';
-      const day = Math.floor(hr/24);
-      if(day < 7) return day + 'd';
-      return new Date(ts).toLocaleDateString();
+    function escapeHtml(str){
+      return str.replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
     }
 
-    function linkTags(text){
-      return text
-        .replace(/(#[a-zA-Z0-9_]+)/g, '<span class="tag">$1</span>')
-        .replace(/(@[a-zA-Z0-9_]+)/g, '<span class="tag">$1</span>');
-    }
-
-    function renderFeed(){
-      const feed = readFeed();
-      if(!feed.length){
-        postList.innerHTML = '<div class="empty">No posts yet. Create the first one.</div>';
-        return;
-      }
-      postList.innerHTML = feed.map(post => `
+    function renderPosts(){
+      feed.innerHTML = posts.map(post => `
         <article class="post">
-          <div class="avatar">${(post.author[0]||'M').toUpperCase()}</div>
-          <div class="postBody">
-            <div class="postTop">
-              <span class="name">${escapeHtml(post.author)}</span>
-              <span class="handle">${escapeHtml(post.handle)}</span>
-              <span class="time">· ${timeAgo(post.time)}</span>
+          <div class="post-head">
+            <div class="avatar">${escapeHtml(post.name.slice(0,2).toUpperCase())}</div>
+            <div class="post-meta">
+              <div class="post-name-row">
+                <span class="post-name">${escapeHtml(post.name)}</span>
+                ${post.verified ? '<span class="verified">✓</span>' : ''}
+                <span class="post-handle">${escapeHtml(post.handle)}</span>
+                <span class="post-time">· ${escapeHtml(post.time)}</span>
+              </div>
             </div>
-            <div class="content">${linkTags(escapeHtml(post.content))}</div>
-            ${post.mine ? '<div class="postCard"><strong>Your demo post is now live.</strong><div class="small" style="margin-top:6px">Stored locally in this browser only.</div></div>' : ''}
-            <div class="metrics">
-              <button class="metricBtn" onclick="toggleMetric('${post.id}','replies')">💬 <span>${post.replies||0}</span></button>
-              <button class="metricBtn ${post.reposted ? 'reposted':''}" onclick="toggleRepost('${post.id}')">🔁 <span>${post.reposts||0}</span></button>
-              <button class="metricBtn ${post.liked ? 'liked':''}" onclick="toggleLike('${post.id}')">❤ <span>${post.likes||0}</span></button>
-              <button class="metricBtn" onclick="sharePost('${post.id}')">⤴ <span>Share</span></button>
+          </div>
+
+          <div class="post-text">${escapeHtml(post.text)}</div>
+
+          ${post.media ? `
+            <div class="post-media">
+              <div class="media-demo">
+                <strong>MUZZ SOCIAL</strong>
+                <span>Basic X-style showcase panel</span>
+              </div>
             </div>
+          ` : ''}
+
+          <div class="post-actions">
+            <button class="action-btn" onclick="commentPost(${post.id})">💬 <span>${post.comments}</span></button>
+            <button class="action-btn ${post.reposted ? 'reposted' : ''}" onclick="repostPost(${post.id})">🔁 <span>${post.reposts}</span></button>
+            <button class="action-btn ${post.liked ? 'liked' : ''}" onclick="likePost(${post.id})">❤ <span>${post.likes}</span></button>
+            <button class="action-btn" onclick="sharePost(${post.id})">↗ <span>Share</span></button>
           </div>
         </article>
       `).join('');
     }
 
-    function escapeHtml(str){
-      return String(str)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'",'&#039;');
-    }
+    function publishPost(){
+      const text = postInput.value.trim();
+      if(!text) return;
 
-    function publishPost(seedText){
-      const content = (seedText || composerInput.value).trim();
-      if(!content) return;
-      const feed = readFeed();
-      feed.unshift({
-        id: crypto.randomUUID(),
-        author: displayName,
-        handle,
-        content,
-        time: Date.now(),
+      const newPost = {
+        id: Date.now(),
+        name: me.username,
+        handle: me.handle,
+        time: 'now',
+        text,
+        verified: false,
         likes: 0,
         reposts: 0,
-        replies: 0,
+        comments: 0,
         liked: false,
-        reposted: false,
-        mine: true
-      });
-      writeFeed(feed);
-      composerInput.value = '';
+        reposted: false
+      };
+
+      posts.unshift(newPost);
+      savePosts();
+      renderPosts();
+      postInput.value = '';
       updateCount();
-      renderFeed();
+      document.getElementById('feedScroll').scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+
+    function goComposer(){
+      document.getElementById('composerCard').scrollIntoView({ behavior:'smooth', block:'start' });
+      postInput.focus();
+    }
+
+    function openExplore(){
+      const search = document.querySelector('.search input');
+      if(search){
+        search.focus();
+        search.scrollIntoView({ behavior:'smooth', block:'center' });
+      }else{
+        document.getElementById('feedScroll').scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function openAlerts(){
+      alert('Demo only: notifications can be connected later with Firebase.');
+    }
+
+    function openProfile(){
+      alert('Profile demo for ' + me.username);
+    }
+
+    function openMessages(){
+      location.href = 'private.html';
     }
 
     function updateCount(){
-      charCount.textContent = `${composerInput.value.length} / 280`;
+      charCount.textContent = `${postInput.value.length} / 280`;
     }
 
-    window.toggleLike = function(id){
-      const feed = readFeed();
-      const post = feed.find(p => p.id === id);
+    function likePost(id){
+      posts = posts.map(post => {
+        if(post.id !== id) return post;
+        const liked = !post.liked;
+        return { ...post, liked, likes: liked ? post.likes + 1 : Math.max(0, post.likes - 1) };
+      });
+      savePosts();
+      renderPosts();
+    }
+
+    function repostPost(id){
+      posts = posts.map(post => {
+        if(post.id !== id) return post;
+        const reposted = !post.reposted;
+        return { ...post, reposted, reposts: reposted ? post.reposts + 1 : Math.max(0, post.reposts - 1) };
+      });
+      savePosts();
+      renderPosts();
+    }
+
+    function commentPost(){
+      alert('Demo only: comments can be connected later with Firebase.');
+    }
+
+    function sharePost(id){
+      const post = posts.find(p => p.id === id);
       if(!post) return;
-      post.liked = !post.liked;
-      post.likes += post.liked ? 1 : -1;
-      writeFeed(feed);
-      renderFeed();
+      const text = `${post.name}: ${post.text}`;
+      if(navigator.share){
+        navigator.share({ title: 'Muzz Social Demo', text }).catch(()=>{});
+      }else{
+        navigator.clipboard.writeText(text).then(() => {
+          alert('Post copied to clipboard.');
+        }).catch(() => alert('Share text: ' + text));
+      }
     }
 
-    window.toggleRepost = function(id){
-      const feed = readFeed();
-      const post = feed.find(p => p.id === id);
-      if(!post) return;
-      post.reposted = !post.reposted;
-      post.reposts += post.reposted ? 1 : -1;
-      writeFeed(feed);
-      renderFeed();
+    function resetDemo(){
+      posts = [...seedPosts];
+      savePosts();
+      renderPosts();
     }
 
-    window.sharePost = async function(id){
-      const feed = readFeed();
-      const post = feed.find(p => p.id === id);
-      if(!post) return;
-      const text = `${post.author} ${post.handle}\n\n${post.content}`;
-      try{
-        if(navigator.share){
-          await navigator.share({ title:'MuzzSnap Social', text });
-        }else{
-          await navigator.clipboard.writeText(text);
-          alert('Post copied to clipboard');
-        }
-      }catch(e){}
-    }
+    window.likePost = likePost;
+    window.repostPost = repostPost;
+    window.commentPost = commentPost;
+    window.sharePost = sharePost;
 
-    document.getElementById('publishBtn').addEventListener('click', () => publishPost());
-    document.getElementById('mobilePost').addEventListener('click', () => publishPost());
-    composerInput.addEventListener('input', updateCount);
-    composerInput.addEventListener('keydown', (e) => {
+    document.getElementById('publishBtn').addEventListener('click', publishPost);
+    document.getElementById('postInput').addEventListener('input', updateCount);
+    document.getElementById('postInput').addEventListener('keydown', (e) => {
       if((e.ctrlKey || e.metaKey) && e.key === 'Enter') publishPost();
     });
-
-    document.getElementById('clearPosts').addEventListener('click', () => {
-      if(confirm('Clear the social demo feed?')){
-        localStorage.removeItem(FEED_KEY);
-        renderFeed();
-      }
-    });
-    document.getElementById('mobileClear').addEventListener('click', () => {
-      if(confirm('Clear the social demo feed?')){
-        localStorage.removeItem(FEED_KEY);
-        renderFeed();
-      }
-    });
-
-    document.getElementById('newDemoPost').addEventListener('click', () => {
-      const samples = [
-        'The new MUZZ social demo is live. Clean layout, faster mobile feel, stronger branding. #muzzsnap',
-        'Community idea: create a pinned section for launch updates, token news, and Galaxy previews.',
-        'Testing a sharper X-style feed with local posts, likes, reposts, and mobile nav. 🚀'
-      ];
-      publishPost(samples[Math.floor(Math.random()*samples.length)]);
-    });
+    document.getElementById('demoFill').addEventListener('click', resetDemo);
+    document.getElementById('openComposer').addEventListener('click', goComposer);
+    document.getElementById('fabBtn').addEventListener('click', goComposer);
+    document.getElementById('navHome').addEventListener('click', () => document.getElementById('feedScroll').scrollTo({ top: 0, behavior: 'smooth' }));
+    document.getElementById('navExplore').addEventListener('click', openExplore);
+    document.getElementById('navAlerts').addEventListener('click', openAlerts);
+    document.getElementById('navMessages').addEventListener('click', openMessages);
+    document.getElementById('navProfile').addEventListener('click', openProfile);
+    document.getElementById('mobileHome').addEventListener('click', () => document.getElementById('feedScroll').scrollTo({ top: 0, behavior: 'smooth' }));
+    document.getElementById('mobileExplore').addEventListener('click', openExplore);
+    document.getElementById('mobileAlert').addEventListener('click', openAlerts);
+    document.getElementById('mobileMsg').addEventListener('click', openMessages);
+    document.getElementById('mobileBack').addEventListener('click', () => location.href='index.html');
 
     updateCount();
-    renderFeed();
+    renderPosts();
   </script>
 </body>
 </html>
