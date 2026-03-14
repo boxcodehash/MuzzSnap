@@ -4,403 +4,323 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MuzzSnap Private</title>
-  <meta name="theme-color" content="#10141b" />
   <style>
     :root{
-      --bg:#0b0f14;
-      --panel:#141a22;
-      --panel-2:#1a212b;
-      --line:rgba(255,255,255,.07);
-      --text:#edf2f8;
-      --muted:#93a1b3;
-      --red:#ff2d2d;
-      --red-2:#940000;
-      --blue:#8cc4ff;
+      --bg:#181d23;
+      --panel:#11161c;
+      --panel-2:#0c1015;
+      --soft:#232a33;
+      --line:rgba(255,255,255,.08);
+      --red:#ff2a2a;
+      --red-2:#b40000;
+      --text:#f4f7fb;
+      --muted:#95a0af;
       --green:#39ff14;
-      --radius:24px;
-      --shadow:0 20px 45px rgba(0,0,0,.42);
+      --blue:#8ec5ff;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;padding:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at top, #1b232d 0%, #0d1116 36%, #090b0f 100%);color:var(--text)}
-    button,input,textarea{font:inherit}
-    .app{min-height:100vh;max-width:1520px;margin:0 auto;padding:14px;display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(8px)}
-    .sidebar,.chat{min-height:calc(100vh - 28px)}
-    .sidebar{padding:18px;position:sticky;top:14px;align-self:start}
-    .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-    .logo{width:52px;height:52px;border-radius:18px;background:linear-gradient(145deg,var(--red),#650000);display:grid;place-items:center;box-shadow:0 0 24px rgba(255,45,45,.28);font-size:24px}
-    h1{margin:0;font-size:32px;font-weight:900;font-style:italic;letter-spacing:-.04em}
-    h1 span{color:var(--red)}
-    .sidebarTop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-    .ghostBtn,.dangerBtn,.iconBtn{border:none;cursor:pointer}
-    .ghostBtn{height:44px;border-radius:16px;padding:0 16px;background:rgba(255,255,255,.04);color:var(--text);border:1px solid var(--line);font-weight:800}
-    .dangerBtn{height:44px;border-radius:16px;padding:0 18px;background:linear-gradient(145deg,var(--red),var(--red-2));color:#fff;font-weight:900;box-shadow:0 12px 24px rgba(255,45,45,.2)}
-    .search{width:100%;height:48px;border-radius:16px;border:1px solid var(--line);background:#0f141a;color:var(--text);padding:0 16px;outline:none}
-    .sectionTitle{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#9aa6b8;font-weight:900;margin:18px 0 10px}
-    .convList{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:calc(100vh - 280px);padding-right:4px}
-    .conv{display:flex;gap:12px;padding:14px;border-radius:18px;border:1px solid transparent;cursor:pointer;background:transparent;align-items:center;text-align:left;color:var(--text)}
-    .conv:hover,.conv.active{background:rgba(255,45,45,.07);border-color:rgba(255,45,45,.14)}
-    .avatar{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,#2d3947,#141920);display:grid;place-items:center;border:1px solid rgba(255,255,255,.08);font-weight:900;flex-shrink:0}
-    .avatar.online::after{content:'';position:absolute}
-    .convText{min-width:0;flex:1}
-    .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .name{font-weight:900}
+    html,body{margin:0;height:100%;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#252b33 0%, #1b2027 100%);color:var(--text)}
+    body{overflow:hidden;font-size:15px}
+    .app{height:100%;display:grid;grid-template-columns:320px 1fr}
+    .sidebar,.chat{min-height:0}
+    .sidebar{background:rgba(10,13,17,.82);backdrop-filter:blur(10px);border-right:1px solid rgba(255,42,42,.14);padding:18px;display:flex;flex-direction:column;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid rgba(255,42,42,.18);border-radius:22px;background:linear-gradient(180deg,rgba(255,42,42,.06),rgba(255,42,42,.02))}
+    .logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,var(--red),var(--red-2));display:grid;place-items:center;box-shadow:0 0 20px rgba(255,42,42,.22);font-size:22px}
+    .brand h1{margin:0;font-size:30px;letter-spacing:-1px;font-weight:900;font-style:italic}
+    .brand h1 span{color:var(--red)}
+    .card{background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:22px;padding:14px}
+    .section-title{font-size:11px;letter-spacing:.28em;color:#8c95a3;text-transform:uppercase;font-weight:800;margin:0 0 12px}
+    .user-badge{display:flex;align-items:center;gap:10px;padding:12px;border-radius:18px;background:rgba(255,42,42,.08);border:1px solid rgba(255,42,42,.16)}
+    .avatar{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#2a313b,#12171d);display:grid;place-items:center;color:#fff;font-weight:900;flex:0 0 auto}
+    .avatar.red{background:linear-gradient(145deg,var(--red),var(--red-2))}
     .muted{color:var(--muted)}
-    .preview{margin-top:4px;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .badge{min-width:24px;height:24px;border-radius:999px;background:rgba(255,45,45,.16);border:1px solid rgba(255,45,45,.18);display:grid;place-items:center;color:#ff8e8e;font-size:12px;font-weight:900;padding:0 6px}
-    .chat{display:flex;flex-direction:column;overflow:hidden}
-    .chatHead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .chatHeadLeft{display:flex;align-items:center;gap:12px;min-width:0}
-    .statusDot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 12px rgba(57,255,20,.5);display:inline-block;margin-right:8px}
-    .messages{flex:1;overflow:auto;padding:22px 18px 90px;background:linear-gradient(180deg, rgba(255,255,255,.008), rgba(255,255,255,.02))}
-    .dayDivider{display:flex;align-items:center;gap:10px;margin:14px 0 18px}
-    .dayDivider::before,.dayDivider::after{content:'';height:1px;background:var(--line);flex:1}
-    .dayDivider span{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.03);border:1px solid var(--line);font-size:12px;color:var(--muted)}
-    .msgRow{display:flex;margin-bottom:14px}
-    .msgRow.me{justify-content:flex-end}
-    .bubbleWrap{max-width:min(76%,560px)}
-    .msgMeta{display:flex;align-items:center;gap:8px;margin:0 4px 6px;color:var(--muted);font-size:12px}
-    .msgRow.me .msgMeta{justify-content:flex-end}
-    .bubble{padding:14px 16px;border-radius:20px;line-height:1.5;word-break:break-word;white-space:pre-wrap;border:1px solid transparent}
-    .msgRow.other .bubble{background:#1b222c;border-color:rgba(255,255,255,.06);color:var(--text);border-bottom-left-radius:6px}
-    .msgRow.me .bubble{background:linear-gradient(145deg,var(--red),#ad0000);color:#fff;border-bottom-right-radius:6px;box-shadow:0 12px 24px rgba(255,45,45,.18)}
-    .composer{padding:14px 16px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:flex-end;background:rgba(9,12,16,.65)}
-    .composerBox{flex:1;display:flex;gap:10px;align-items:flex-end;padding:10px;border-radius:22px;background:#0f141a;border:1px solid var(--line)}
-    .composer textarea{flex:1;background:transparent;border:none;outline:none;color:var(--text);resize:none;min-height:24px;max-height:140px;padding:8px 6px 8px 2px;line-height:1.45}
-    .iconBtn{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);font-size:18px}
-    .empty{display:grid;place-items:center;padding:40px;color:var(--muted);text-align:center}
-    .mobileNav{display:none}
-
-    @media (max-width: 940px){
-      .app{grid-template-columns:1fr;padding:10px}
+    .small{font-size:12px}
+    .contact-list{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-right:4px}
+    .contact{display:flex;align-items:center;gap:12px;padding:12px;border-radius:18px;border:1px solid transparent;background:rgba(255,255,255,.02);cursor:pointer;transition:.2s}
+    .contact:hover{background:rgba(255,255,255,.04)}
+    .contact.active{background:rgba(255,42,42,.08);border-color:rgba(255,42,42,.18)}
+    .status{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);display:inline-block;margin-right:8px;flex:0 0 auto}
+    .side-actions{display:grid;gap:10px}
+    .btn{border:none;border-radius:18px;padding:14px 16px;font-weight:800;cursor:pointer;transition:.2s}
+    .btn.red{background:linear-gradient(145deg,var(--red),var(--red-2));color:white;box-shadow:0 0 18px rgba(255,42,42,.18)}
+    .btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text)}
+    .btn:hover{transform:translateY(-1px)}
+    .chat{display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,rgba(16,20,25,.8),rgba(8,10,14,.9))}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+    .topbar-left{display:flex;align-items:center;gap:12px;min-width:0}
+    .topbar h2{margin:0;font-size:15px;letter-spacing:.2em;color:#ff6565;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pill{padding:8px 12px;border-radius:999px;background:rgba(255,42,42,.08);border:1px solid rgba(255,42,42,.18);font-size:12px;color:#ff9a9a;font-weight:700}
+    .messages{flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:14px}
+    .day{align-self:center;padding:8px 14px;border-radius:999px;background:rgba(255,42,42,.08);border:1px solid rgba(255,42,42,.15);font-size:11px;letter-spacing:.25em;color:#ff8080;font-weight:800}
+    .msg-wrap{display:flex;gap:10px;align-items:flex-end;max-width:82%}
+    .msg-wrap.me{align-self:flex-end;flex-direction:row-reverse}
+    .bubble{padding:13px 15px;border-radius:18px;background:var(--soft);border:1px solid rgba(255,255,255,.05);line-height:1.45;box-shadow:0 8px 20px rgba(0,0,0,.18);word-break:break-word;font-size:14px}
+    .msg-wrap.me .bubble{background:linear-gradient(145deg,var(--red),var(--red-2));border-color:transparent}
+    .meta{font-size:11px;color:var(--muted);margin:2px 6px}
+    .msg-user{font-weight:800;color:var(--blue);font-size:12px;margin:0 0 6px}
+    .composer{padding:16px 18px;border-top:1px solid var(--line);background:rgba(255,255,255,.02)}
+    .composer-box{display:flex;gap:12px;align-items:flex-end;background:#0b1015;border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:10px 10px 10px 16px}
+    textarea{flex:1;resize:none;background:transparent;border:none;outline:none;color:var(--text);font:inherit;font-size:16px;line-height:1.45;min-height:26px;max-height:140px;padding:6px 0}
+    textarea::placeholder{color:#6f7c8e}
+    .send{width:54px;height:54px;border-radius:18px;border:none;background:linear-gradient(145deg,var(--red),var(--red-2));color:#fff;font-size:20px;cursor:pointer;flex:0 0 auto}
+    .empty{display:grid;place-items:center;height:100%;padding:24px;text-align:center;color:var(--muted)}
+    .mobile-top{display:none}
+    @media (max-width: 920px){
+      .app{grid-template-columns:1fr}
       .sidebar{display:none}
-      .chat{min-height:calc(100vh - 20px)}
-      .messages{padding-bottom:110px}
-      .mobileNav{position:fixed;left:10px;right:10px;bottom:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px;border-radius:22px;background:rgba(12,16,20,.94);border:1px solid var(--line);backdrop-filter:blur(12px);box-shadow:var(--shadow);z-index:25}
-      .mobileNav a,.mobileNav button{height:54px;border:none;border-radius:16px;background:rgba(255,255,255,.03);display:grid;place-items:center;color:var(--text);font-size:19px}
-      .mobileNav .active{background:rgba(255,45,45,.12);color:var(--red)}
-      .bubbleWrap{max-width:86%}
+      .mobile-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);background:rgba(0,0,0,.25)}
+      .topbar{padding:14px}
+      .messages{padding:14px}
+      .composer{padding:12px}
+      .msg-wrap{max-width:92%}
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar card">
+    <aside class="sidebar">
       <div class="brand">
-        <div class="logo">🔒</div>
+        <div class="logo">👻</div>
         <h1>MUZZ<span>SNAP</span></h1>
       </div>
 
-      <div class="sidebarTop">
-        <button class="ghostBtn" onclick="location.href='index.html'">↩ Back</button>
-        <button class="dangerBtn" id="newChatBtn">New Chat</button>
-      </div>
-
-      <input class="search" id="searchInput" placeholder="Search conversations" />
-
-      <div class="sectionTitle">Private inbox</div>
-      <div class="convList" id="convList"></div>
-    </aside>
-
-    <main class="chat card">
-      <div class="chatHead">
-        <div class="chatHeadLeft">
-          <div class="avatar" id="chatAvatar">M</div>
-          <div style="min-width:0">
-            <div class="name" id="chatName">Select a conversation</div>
-            <div class="muted" id="chatStatus">Encrypted demo messages stored locally</div>
+      <div class="card">
+        <p class="section-title">Private Access</p>
+        <div class="user-badge">
+          <div class="avatar red" id="meAvatar">M</div>
+          <div>
+            <div style="font-weight:800" id="meName">Node_User</div>
+            <div class="muted small">Encrypted demo inbox</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="iconBtn" id="infoBtn">ℹ</button>
-          <button class="iconBtn" onclick="location.href='social.html'">⌂</button>
-        </div>
       </div>
 
-      <section class="messages" id="messages"></section>
+      <div class="card" style="min-height:0;display:flex;flex-direction:column;flex:1">
+        <p class="section-title">Conversations</p>
+        <div class="contact-list" id="contactList"></div>
+      </div>
 
-      <section class="composer">
-        <div class="composerBox">
-          <button class="iconBtn" id="emojiBtn">☺</button>
-          <textarea id="messageInput" rows="1" placeholder="Write a private message..."></textarea>
+      <div class="side-actions">
+        <button class="btn ghost" onclick="window.location.href='index.html'">← Back to Chat</button>
+        <button class="btn red" onclick="clearPrivateDemo()">Clear demo inbox</button>
+      </div>
+    </aside>
+
+    <section class="chat">
+      <div class="mobile-top">
+        <button class="btn ghost" style="padding:10px 12px;border-radius:14px" onclick="window.location.href='index.html'">← Back</button>
+        <div style="font-weight:900;letter-spacing:.08em">MUZZ<span style="color:var(--red)">SNAP</span></div>
+      </div>
+
+      <div class="topbar" id="chatHeader"></div>
+      <div class="messages" id="messages"></div>
+      <div class="composer">
+        <div class="composer-box">
+          <textarea id="messageInput" placeholder="Write a private message..."></textarea>
+          <button class="send" id="sendBtn">➤</button>
         </div>
-        <button class="dangerBtn" id="sendBtn">Send</button>
-      </section>
-    </main>
+      </div>
+    </section>
   </div>
 
-  <nav class="mobileNav">
-    <a href="social.html">⌂</a>
-    <button class="active" id="openList">☰</button>
-    <button id="mobileNew">＋</button>
-    <a href="index.html">↩</a>
-    <button id="mobileInfo">ℹ</button>
-  </nav>
-
   <script>
-    const STORE_KEY = 'muzz_private_threads_v2';
-    const rawUser = sessionStorage.getItem('muzz_wallet_address') || 'guest_user';
-    const me = rawUser.startsWith('guest_') ? rawUser.replace('guest_','') : `Node_${rawUser.slice(-4)}`;
+    const DEMO_KEY = 'muzz_private_demo_v1';
+    const meRaw = sessionStorage.getItem('muzz_wallet_address') || 'guest_demo';
+    const meName = meRaw.startsWith('guest_') ? meRaw.replace('guest_','') : `Node_${meRaw.slice(-4) || 'User'}`;
 
-    const demoThreads = [
-      {
-        id: 'thread_alpha',
-        user: 'Ryachu',
-        handle: '@ryachu',
-        online: true,
-        unread: 2,
+    const defaultChats = {
+      ryachu: {
+        id: 'ryachu',
+        name: 'Ryachu',
+        status: 'online',
+        subtitle: 'Core admin channel',
+        avatar: '👑',
         messages: [
-          { id: crypto.randomUUID(), from:'Ryachu', mine:false, text:'Welcome to the private inbox demo. This is a local conversation preview.', time: Date.now() - 1000 * 60 * 90 },
-          { id: crypto.randomUUID(), from:me, mine:true, text:'Looks good. I want something cleaner and more premium.', time: Date.now() - 1000 * 60 * 76 },
-          { id: crypto.randomUUID(), from:'Ryachu', mine:false, text:'Done. Dark panels, tighter spacing, better contrast, and mobile support.', time: Date.now() - 1000 * 60 * 61 }
+          { from: 'them', text: 'Welcome to the private demo inbox.', time: '9:08 AM' },
+          { from: 'them', text: 'This page is only a base mockup so your private section stops returning 404.', time: '9:09 AM' },
+          { from: 'me', text: 'Perfect. I only needed a functional basic version for now.', time: '9:10 AM' }
         ]
       },
-      {
-        id: 'thread_beta',
-        user: 'GalaxyBuilder',
-        handle: '@galaxybuilder',
-        online: false,
-        unread: 0,
+      support: {
+        id: 'support',
+        name: 'Muzz Support',
+        status: 'online',
+        subtitle: 'Encrypted help desk',
+        avatar: '🛡️',
         messages: [
-          { id: crypto.randomUUID(), from:'GalaxyBuilder', mine:false, text:'The new social demo can feel closer to X while keeping the MuzzSnap identity.', time: Date.now() - 1000 * 60 * 210 },
-          { id: crypto.randomUUID(), from:me, mine:true, text:'Perfect. Keep it fast on mobile too.', time: Date.now() - 1000 * 60 * 180 }
+          { from: 'them', text: 'Demo note: messages here are stored only in your browser.', time: '8:55 AM' },
+          { from: 'them', text: 'Later this can be connected to Firebase or wallet-based private messaging.', time: '8:56 AM' }
         ]
       },
-      {
-        id: 'thread_gamma',
-        user: 'DAO Watch',
-        handle: '@daowatch',
-        online: true,
-        unread: 1,
+      node7ccb: {
+        id: 'node7ccb',
+        name: 'Node_7ccb',
+        status: 'offline',
+        subtitle: 'Community member',
+        avatar: '💎',
         messages: [
-          { id: crypto.randomUUID(), from:'DAO Watch', mine:false, text:'Private governance notes can live here as a demo conversation.', time: Date.now() - 1000 * 60 * 34 }
+          { from: 'them', text: 'Morning. The new dark theme looks better.', time: 'Yesterday' }
         ]
       }
-    ];
+    };
 
-    function loadThreads(){
-      const saved = localStorage.getItem(STORE_KEY);
-      if(!saved){
-        localStorage.setItem(STORE_KEY, JSON.stringify(demoThreads));
-        return JSON.parse(JSON.stringify(demoThreads));
-      }
+    let store = loadStore();
+    let activeId = Object.keys(store)[0];
+
+    function loadStore(){
       try{
-        return JSON.parse(saved);
-      }catch(e){
-        localStorage.setItem(STORE_KEY, JSON.stringify(demoThreads));
-        return JSON.parse(JSON.stringify(demoThreads));
-      }
+        const raw = localStorage.getItem(DEMO_KEY);
+        if(raw){
+          const parsed = JSON.parse(raw);
+          if(parsed && typeof parsed === 'object') return parsed;
+        }
+      }catch(e){}
+      localStorage.setItem(DEMO_KEY, JSON.stringify(defaultChats));
+      return JSON.parse(JSON.stringify(defaultChats));
     }
 
-    function saveThreads(threads){
-      localStorage.setItem(STORE_KEY, JSON.stringify(threads));
+    function saveStore(){
+      localStorage.setItem(DEMO_KEY, JSON.stringify(store));
     }
 
-    let threads = loadThreads();
-    let activeId = threads[0]?.id || null;
-
-    const convList = document.getElementById('convList');
-    const messagesEl = document.getElementById('messages');
-    const chatName = document.getElementById('chatName');
-    const chatStatus = document.getElementById('chatStatus');
-    const chatAvatar = document.getElementById('chatAvatar');
-    const messageInput = document.getElementById('messageInput');
-    const searchInput = document.getElementById('searchInput');
-
-    function getActiveThread(){
-      return threads.find(t => t.id === activeId) || null;
-    }
-
-    function formatTime(ts){
-      return new Date(ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
-    }
-
-    function formatDay(ts){
-      return new Date(ts).toLocaleDateString([], { year:'numeric', month:'short', day:'numeric' });
+    function initials(text){
+      return (text || 'M').replace(/[^a-zA-Z0-9]/g,'').slice(0,1).toUpperCase() || 'M';
     }
 
     function escapeHtml(str){
       return String(str)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'",'&#039;');
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
     }
 
-    function renderList(){
-      const q = searchInput.value.trim().toLowerCase();
-      const filtered = threads
-        .slice()
-        .sort((a,b) => ((b.messages.at(-1)?.time || 0) - (a.messages.at(-1)?.time || 0)))
-        .filter(t => !q || t.user.toLowerCase().includes(q) || t.handle.toLowerCase().includes(q));
+    function renderMe(){
+      document.getElementById('meName').textContent = meName;
+      document.getElementById('meAvatar').textContent = initials(meName);
+    }
 
-      convList.innerHTML = filtered.map(t => {
-        const last = t.messages.at(-1);
-        return `
-          <button class="conv ${t.id === activeId ? 'active':''}" onclick="openThread('${t.id}')">
-            <div class="avatar">${(t.user[0]||'M').toUpperCase()}</div>
-            <div class="convText">
-              <div class="row">
-                <span class="name">${escapeHtml(t.user)}</span>
-                <span class="muted" style="font-size:12px">${last ? formatTime(last.time) : ''}</span>
-              </div>
-              <div class="row" style="margin-top:2px">
-                <span class="preview">${escapeHtml(last?.text || 'No messages yet')}</span>
-                ${t.unread ? `<span class="badge">${t.unread}</span>` : ''}
-              </div>
+    function renderContacts(){
+      const list = document.getElementById('contactList');
+      list.innerHTML = '';
+      Object.values(store).forEach(chat => {
+        const last = chat.messages[chat.messages.length - 1];
+        const row = document.createElement('button');
+        row.className = 'contact' + (chat.id === activeId ? ' active' : '');
+        row.innerHTML = `
+          <div class="avatar">${chat.avatar || initials(chat.name)}</div>
+          <div style="min-width:0;flex:1;text-align:left">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <div style="font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(chat.name)}</div>
+              <div class="small muted">${last ? escapeHtml(last.time) : ''}</div>
             </div>
-          </button>
-        `;
-      }).join('') || '<div class="empty">No conversations found.</div>';
-    }
-
-    function renderMessages(){
-      const thread = getActiveThread();
-      if(!thread){
-        chatName.textContent = 'Select a conversation';
-        chatStatus.textContent = 'Encrypted demo messages stored locally';
-        chatAvatar.textContent = 'M';
-        messagesEl.innerHTML = '<div class="empty">Open a conversation to start messaging.</div>';
-        return;
-      }
-
-      chatName.textContent = thread.user;
-      chatStatus.innerHTML = `${thread.online ? '<span class="statusDot"></span>Online now' : 'Last active recently'} · ${thread.handle}`;
-      chatAvatar.textContent = (thread.user[0] || 'M').toUpperCase();
-      thread.unread = 0;
-      saveThreads(threads);
-      renderList();
-
-      let lastDay = '';
-      messagesEl.innerHTML = thread.messages.map(msg => {
-        const day = formatDay(msg.time);
-        const divider = day !== lastDay ? `<div class="dayDivider"><span>${day}</span></div>` : '';
-        lastDay = day;
-        return `
-          ${divider}
-          <div class="msgRow ${msg.mine ? 'me':'other'}">
-            <div class="bubbleWrap">
-              <div class="msgMeta">
-                <span>${msg.mine ? 'You' : escapeHtml(msg.from)}</span>
-                <span>${formatTime(msg.time)}</span>
-              </div>
-              <div class="bubble">${escapeHtml(msg.text)}</div>
+            <div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${last ? escapeHtml(last.text) : escapeHtml(chat.subtitle || '')}
             </div>
           </div>
         `;
-      }).join('');
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    window.openThread = function(id){
-      activeId = id;
-      renderList();
-      renderMessages();
-    }
-
-    function autosize(){
-      messageInput.style.height = '24px';
-      messageInput.style.height = Math.min(messageInput.scrollHeight, 140) + 'px';
-    }
-
-    function sendMessage(seed){
-      const thread = getActiveThread();
-      if(!thread) return;
-      const text = (seed || messageInput.value).trim();
-      if(!text) return;
-      thread.messages.push({
-        id: crypto.randomUUID(),
-        from: me,
-        mine: true,
-        text,
-        time: Date.now()
+        row.onclick = () => {
+          activeId = chat.id;
+          autoResizeInput();
+    render();
+        };
+        list.appendChild(row);
       });
-      saveThreads(threads);
-      messageInput.value = '';
-      autosize();
-      renderList();
-      renderMessages();
-
-      setTimeout(() => {
-        const replies = [
-          'Received. This private demo is looking much better now.',
-          'Nice. We can keep refining the UI and later connect a real backend.',
-          'Got it. The layout feels cleaner and more like a real messaging app.'
-        ];
-        thread.messages.push({
-          id: crypto.randomUUID(),
-          from: thread.user,
-          mine: false,
-          text: replies[Math.floor(Math.random()*replies.length)],
-          time: Date.now()
-        });
-        thread.unread = activeId === thread.id ? 0 : (thread.unread || 0) + 1;
-        saveThreads(threads);
-        renderList();
-        renderMessages();
-      }, 900);
     }
 
-    function newChat(){
-      const name = prompt('Enter a demo username');
-      if(!name) return;
-      const clean = name.trim();
-      if(!clean) return;
-      const thread = {
-        id: crypto.randomUUID(),
-        user: clean,
-        handle: '@' + clean.toLowerCase().replace(/[^a-z0-9_]/g,''),
-        online: Math.random() > .4,
-        unread: 0,
-        messages: [
-          { id: crypto.randomUUID(), from: clean, mine:false, text:'This is a new private demo conversation.', time: Date.now() }
-        ]
-      };
-      threads.unshift(thread);
-      saveThreads(threads);
-      activeId = thread.id;
-      renderList();
-      renderMessages();
+    function renderHeader(chat){
+      const el = document.getElementById('chatHeader');
+      el.innerHTML = `
+        <div class="topbar-left">
+          <div class="avatar">${chat.avatar || initials(chat.name)}</div>
+          <div style="min-width:0">
+            <h2>${escapeHtml(chat.name)}</h2>
+            <div class="small muted"><span class="status" style="background:${chat.status === 'online' ? 'var(--green)' : '#5f6b7a'}; box-shadow:${chat.status === 'online' ? '0 0 10px var(--green)' : 'none'}"></span>${chat.status === 'online' ? 'Online' : 'Offline'} · ${escapeHtml(chat.subtitle || 'Private chat')}</div>
+          </div>
+        </div>
+        <div class="pill">E2EE demo</div>
+      `;
     }
 
-    document.getElementById('sendBtn').addEventListener('click', () => sendMessage());
-    document.getElementById('emojiBtn').addEventListener('click', () => {
-      messageInput.value += ' 😊';
-      autosize();
-      messageInput.focus();
-    });
-    document.getElementById('newChatBtn').addEventListener('click', newChat);
-    document.getElementById('mobileNew').addEventListener('click', newChat);
-    document.getElementById('infoBtn').addEventListener('click', () => {
-      const thread = getActiveThread();
-      if(!thread) return alert('No conversation selected');
-      alert(`${thread.user}\n${thread.handle}\n\nDemo private chat stored locally in this browser.`);
-    });
-    document.getElementById('mobileInfo').addEventListener('click', () => document.getElementById('infoBtn').click());
-    document.getElementById('openList').addEventListener('click', () => {
-      const names = threads.map((t,i)=>`${i+1}. ${t.user}`).join('\n');
-      const choice = prompt(`Open conversation:\n\n${names}\n\nType number`);
-      const idx = Number(choice) - 1;
-      if(threads[idx]){
-        activeId = threads[idx].id;
-        renderList();
-        renderMessages();
+    function renderMessages(chat){
+      const box = document.getElementById('messages');
+      if(!chat){
+        box.innerHTML = '<div class="empty">No conversation selected.</div>';
+        return;
       }
-    });
 
-    searchInput.addEventListener('input', renderList);
-    messageInput.addEventListener('input', autosize);
-    messageInput.addEventListener('keydown', (e) => {
+      let html = '<div class="day">TODAY</div>';
+      chat.messages.forEach(msg => {
+        const me = msg.from === 'me';
+        html += `
+          <div class="msg-wrap ${me ? 'me' : ''}">
+            <div class="avatar ${me ? 'red' : ''}" style="width:36px;height:36px;border-radius:12px;font-size:14px">${me ? initials(meName) : (chat.avatar || initials(chat.name))}</div>
+            <div>
+              <div class="meta">${me ? escapeHtml(meName) : escapeHtml(chat.name)} · ${escapeHtml(msg.time)}</div>
+              <div class="bubble">
+                ${!me ? `<div class="msg-user">${escapeHtml(chat.name)}</div>` : ''}
+                ${escapeHtml(msg.text)}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      box.innerHTML = html;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function sendMessage(){
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      if(!text) return;
+      const chat = store[activeId];
+      if(!chat) return;
+
+      const now = new Date();
+      const time = now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+      chat.messages.push({ from:'me', text, time });
+      saveStore();
+      input.value = '';
+      autoResizeInput();
+    render();
+    }
+
+    function render(){
+      const chat = store[activeId];
+      renderMe();
+      renderContacts();
+      renderHeader(chat);
+      renderMessages(chat);
+    }
+
+    function clearPrivateDemo(){
+      if(confirm('Clear all private demo conversations?')){
+        localStorage.removeItem(DEMO_KEY);
+        store = loadStore();
+        activeId = Object.keys(store)[0];
+        autoResizeInput();
+    render();
+      }
+    }
+
+    const privateInput = document.getElementById('messageInput');
+    function autoResizeInput(){
+      privateInput.style.height = '26px';
+      privateInput.style.height = Math.min(privateInput.scrollHeight, 140) + 'px';
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    privateInput.addEventListener('input', autoResizeInput);
+    privateInput.addEventListener('keydown', e => {
       if(e.key === 'Enter' && !e.shiftKey){
         e.preventDefault();
         sendMessage();
       }
     });
 
-    autosize();
-    renderList();
-    renderMessages();
+    autoResizeInput();
+    render();
   </script>
 </body>
 </html>
